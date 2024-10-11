@@ -1,0 +1,5 @@
+// Pliki wskazówek ułatwiają interpretowanie identyfikatorów programu Visual C++ w środowisku Visual Studio IDE
+// takich jak nazwy funkcji i makr.
+// Aby uzyskać więcej informacji, zobacz https://go.microsoft.com/fwlink/?linkid=865984
+#define EVT_BUTTON(winid, func) wx__DECLARE_EVT1(wxEVT_BUTTON, winid, wxCommandEventHandler(func))
+#define wxBEGIN_EVENT_TABLE(theClass, baseClass) const wxEventTable theClass::sm_eventTable = { &baseClass::sm_eventTable, &theClass::sm_eventTableEntries[0] }; const wxEventTable *theClass::GetEventTable() const { return &theClass::sm_eventTable; } wxEventHashTable theClass::sm_eventHashTable(theClass::sm_eventTable); wxEventHashTable &theClass::GetEventHashTable() const { return theClass::sm_eventHashTable; } const wxEventTableEntry theClass::sm_eventTableEntries[] = {

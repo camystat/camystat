@@ -1,0 +1,31 @@
+
+    About the Authors
+
+    If you find this tool useful, please consider citing our work:
+
+    Marcin Rojek  
+    Lead Statistician, Programmer, Poland  
+    Medical University of Silesia
+    Department of Histology and Cell Pathology  
+    (https://www.researchgate.net/profile/Marcin-Rojek-3)
+
+    Piotr Lewandowski  
+    Physician, Histology Specialist  
+    Medical University of Silesia
+    Department of Histology and Cell Pathology  
+    (https://www.researchgate.net/profile/Piotr-Lewandowski-4)
+
+    Filip Patryk Pietryga  
+    Independent Programmer  
+
+    Professor Romuald Wojnicz  
+    Project Supervisor, Head of Department  
+    Medical University of Silesia
+    Department of Histology and Cell Pathology 
+    (https://histologia-zabrze.sum.edu.pl/)
+
+    Project website:
+    https://github.com/MARROJEK/TIF_to_MOV
+
+    Your citation helps recognize our work and supports further research.
+    
