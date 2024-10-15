@@ -110,11 +110,11 @@ public:
     class Smoothing {
     public:
 
-        static std::vector<double> applySavgolFilter(std::vector<double> data, int window_length = 7, int polyorder = 5);
-        static std::vector<double> smoothValues(std::vector<double> values, float percentile);
-        static std::vector<double> modify_means(std::vector<double> input_list, int n = 2, int x = 1);
-        static std::vector<double> normalize_values(std::vector<double> values);
-        static std::vector<double> replace_zeros_values_below_threshold(const std::vector<double>& lst, double threshold, std::string resultPath);
+        static std::vector<double> applySavgolFilter(const std::vector<double>& data, size_t window_length = 7, size_t polyorder = 5);
+        static std::vector<double> smoothValues(const std::vector<double>&, float percentile);
+        static std::vector<double> modify_means(const std::vector<double>& input_list, size_t n = 2, size_t x = 1);
+        static std::vector<double> clone_normalized_values(const std::vector<double>& values);
+        static std::vector<double> clone_replace_zeros_values_below_threshold(const std::vector<double>& lst, double threshold, std::string resultPath);
     };
 
     class Detection {
@@ -145,10 +145,9 @@ public:
 
             return trimmed_list;
         }
-        static std::vector<double> add_zeros_to_list(std::vector<double> input_list);
-        static std::vector<std::vector<double>> calculate_integrals_with_reference_points(const std::vector<double> values);
-        static std::vector<std::vector<double>> merge_events(std::vector<std::vector<double>> event_list, double distance_threshold);
-        static std::vector<std::vector<double>> remove_events(std::vector<std::vector<double>> event_list, double threshold_value);
+        static std::vector<double> clone_padded_with_zeros(const std::vector<double>& input_list);
+        static std::vector<std::vector<double>> calculate_integrals_with_reference_points(const std::vector<double>& values);
+        static std::vector<std::vector<double>> merge_events(const std::vector<std::vector<double>>& event_list, double distance_threshold);
+        static std::vector<std::vector<double>> remove_events(const std::vector<std::vector<double>>& event_list, double threshold_value);
     };
 };
-

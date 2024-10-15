@@ -36,7 +36,6 @@ public:
 	void OnCiteMe(wxCommandEvent& event);
 	void OnCreateNewWindow(wxThreadEvent& event);
 	void OnClose(wxCloseEvent& event);
-	void OnCharNoDot(wxKeyEvent& event);
 
 	wxDECLARE_EVENT_TABLE();
 

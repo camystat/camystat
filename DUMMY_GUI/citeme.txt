@@ -18,6 +18,11 @@
     Filip Patryk Pietryga  
     Independent Programmer  
 
+    Artur Morys - Magiera
+    Programmer
+    Department of Automatic Control & Robotics
+    AGH University of Krakow
+ 
     Professor Romuald Wojnicz  
     Project Supervisor, Head of Department  
     Medical University of Silesia

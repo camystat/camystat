@@ -17,26 +17,15 @@
 #include <wx/app.h>
 #include "resource.h"
 
+#include "Utils.h"
+
 //UNCOMMENT BELOW LINE WITH DEFINE TO INTRODUCE DEBUG MODE
 //IN DEBUG MODE EVERY STEP IS BEING LOGGED
 //WHICH CAN BE QUITE ANNOYING
 // 
-//#DEFINE DEBUG 1 
+//#DEFINE DEBUG 1
 
 namespace fs = std::filesystem;
-
-std::string TCHARToString(const TCHAR* tcharStr) {
-#ifdef UNICODE
-	// Convert from wchar_t to std::string (UTF-8)
-	int size_needed = WideCharToMultiByte(CP_UTF8, 0, tcharStr, -1, NULL, 0, NULL, NULL);
-	std::string strTo(size_needed, 0);
-	WideCharToMultiByte(CP_UTF8, 0, tcharStr, -1, &strTo[0], size_needed, NULL, NULL);
-	return strTo;
-#else
-	// Convert from char to std::string (no conversion needed)
-	return std::string(tcharStr);
-#endif
-}
 
 void RemoveFilesAndFolder(const fs::path& folderPath) {
 	// Check if the folder exists
@@ -159,19 +148,19 @@ enum IDs {
 };
 
 wxBEGIN_EVENT_TABLE(MainFrame, wxFrame)
-	EVT_CHECKBOX(ID_FPS_AUTO_DETECT_ANALYSIS, MainFrame::wxFPSAutoDetectAnalysisToggle)
-	EVT_CHECKBOX(ID_AUTOMATIC_RECOGNITION_ANALYSIS, MainFrame::wxAutomaticRecognitionAnalysis)
-	EVT_CHECKBOX(ID_SAVINSKY_GOLAY_FILTER, MainFrame::wxSavinskyGolayFilter)
-	EVT_CHECKBOX(ID_MOVING_AVERAGE, MainFrame::wxMovingAverage)
-	EVT_CHECKBOX(ID_MERGE_EVENTS, MainFrame::wxMergeEvents)
-	EVT_CHECKBOX(ID_AUTO_SELECT_EVENTS, MainFrame::wxAutoSelectEvents)
-	EVT_TIMER(ID_Timer, MainFrame::OnTimer)
-	EVT_CHAR(MainFrame::OnChar)
-	EVT_KILL_FOCUS(MainFrame::OnKillFocus)
-	EVT_TEXT_PASTE(wxID_ANY, MainFrame::OnPaste)
-	EVT_CHECKBOX(ID_AUTO_DETECT_EVENTS, MainFrame::wxCBAutoMDetectEventsToggle)
-	EVT_MENU(wxID_ANY, MainFrame::OnCiteMe)
-	EVT_THREAD(wxEVT_CREATE_NEW_WINDOW, MainFrame::OnCreateNewWindow)
+EVT_CHECKBOX(ID_FPS_AUTO_DETECT_ANALYSIS, MainFrame::wxFPSAutoDetectAnalysisToggle)
+EVT_CHECKBOX(ID_AUTOMATIC_RECOGNITION_ANALYSIS, MainFrame::wxAutomaticRecognitionAnalysis)
+EVT_CHECKBOX(ID_SAVINSKY_GOLAY_FILTER, MainFrame::wxSavinskyGolayFilter)
+EVT_CHECKBOX(ID_MOVING_AVERAGE, MainFrame::wxMovingAverage)
+EVT_CHECKBOX(ID_MERGE_EVENTS, MainFrame::wxMergeEvents)
+EVT_CHECKBOX(ID_AUTO_SELECT_EVENTS, MainFrame::wxAutoSelectEvents)
+EVT_TIMER(ID_Timer, MainFrame::OnTimer)
+EVT_CHAR(MainFrame::OnChar)
+EVT_KILL_FOCUS(MainFrame::OnKillFocus)
+EVT_TEXT_PASTE(wxID_ANY, MainFrame::OnPaste)
+EVT_CHECKBOX(ID_AUTO_DETECT_EVENTS, MainFrame::wxCBAutoMDetectEventsToggle)
+EVT_MENU(wxID_ANY, MainFrame::OnCiteMe)
+EVT_THREAD(wxEVT_CREATE_NEW_WINDOW, MainFrame::OnCreateNewWindow)
 wxEND_EVENT_TABLE()
 
 MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) {
@@ -277,16 +266,18 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 		wxSTOptionsForAnalysis->Refresh();
 	}
 
-	wxTCFPS = new wxTextCtrl(panel, wxID_ANY, "30", wxPoint(320, 45), wxSize(40, 20));
-	wxTCFPS->Bind(wxEVT_CHAR, &MainFrame::OnCharNoDot, this);
+	wxCBFPSAutoDetect = new wxCheckBox(panel, ID_FPS_AUTO_DETECT_ANALYSIS, "FPS auto detect analysis", wxPoint(320, 45));
+
+	wxTCFPS = new wxTextCtrl(panel, wxID_ANY, "", wxPoint(510, 45), wxSize(40, 20));
+	wxTCFPS->Bind(wxEVT_CHAR, &MainFrame::OnChar, this);
 	wxTCFPS->Bind(wxEVT_KILL_FOCUS, &MainFrame::OnKillFocus, this);
 	wxTCFPS->Bind(wxEVT_TEXT_PASTE, &MainFrame::OnPaste, this);
 
-	wxSTFPS = new wxStaticText(panel, wxID_ANY, "FPS", wxPoint(370, 45), wxSize(40, 20));
+	wxSTFPS = new wxStaticText(panel, wxID_ANY, "FPS", wxPoint(560, 45), wxSize(40, 20));
 
 	wxSTBinarizationTreshold = new wxStaticText(panel, wxID_ANY, "Binarization treshold", wxPoint(320, 70), wxSize(150, 20));
 	wxTCBinarizationTreshold = new wxTextCtrl(panel, wxID_ANY, "100", wxPoint(510, 70), wxSize(40, 20));
-	wxTCBinarizationTreshold->Bind(wxEVT_CHAR, &MainFrame::OnCharNoDot, this);
+	wxTCBinarizationTreshold->Bind(wxEVT_CHAR, &MainFrame::OnChar, this);
 	wxTCBinarizationTreshold->Bind(wxEVT_KILL_FOCUS, &MainFrame::OnKillFocus, this);
 	wxTCBinarizationTreshold->Bind(wxEVT_TEXT_PASTE, &MainFrame::OnPaste, this);
 
@@ -295,14 +286,14 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 	wxCBAutomaticRecognitionAnalysis = new wxCheckBox(panel, ID_AUTOMATIC_RECOGNITION_ANALYSIS, "Automatic recognition analysis", wxPoint(320, 95));
 	wxCBAutomaticRecognitionAnalysis->SetValue(true);
 
-	wxTCFirstFrame = new wxTextCtrl(panel, wxID_ANY, "0", wxPoint(320, 120), wxSize(40, 20));
-	wxTCFirstFrame->Bind(wxEVT_CHAR, &MainFrame::OnCharNoDot, this);
+	wxTCFirstFrame = new wxTextCtrl(panel, wxID_ANY, "", wxPoint(320, 120), wxSize(40, 20));
+	wxTCFirstFrame->Bind(wxEVT_CHAR, &MainFrame::OnChar, this);
 	wxTCFirstFrame->Bind(wxEVT_KILL_FOCUS, &MainFrame::OnKillFocus, this);
 	wxTCFirstFrame->Bind(wxEVT_TEXT_PASTE, &MainFrame::OnPaste, this);
 	wxSTFirstFrame = new wxStaticText(panel, wxID_ANY, "First frame", wxPoint(370, 120), wxSize(80, 20));
 
-	wxTCLastFrame = new wxTextCtrl(panel, wxID_ANY, "90", wxPoint(460, 120), wxSize(40, 20));
-	wxTCLastFrame->Bind(wxEVT_CHAR, &MainFrame::OnCharNoDot, this);
+	wxTCLastFrame = new wxTextCtrl(panel, wxID_ANY, "", wxPoint(460, 120), wxSize(40, 20));
+	wxTCLastFrame->Bind(wxEVT_CHAR, &MainFrame::OnChar, this);
 	wxTCLastFrame->Bind(wxEVT_KILL_FOCUS, &MainFrame::OnKillFocus, this);
 	wxTCLastFrame->Bind(wxEVT_TEXT_PASTE, &MainFrame::OnPaste, this);
 	wxSTLastFrame = new wxStaticText(panel, wxID_ANY, "Last frame", wxPoint(510, 120), wxSize(80, 30));
@@ -310,13 +301,13 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 	wxCBFocusCoordinatesAnalysis = new wxStaticText(panel, wxID_ANY, "Focus coordinates analysis:", wxPoint(320, 150), wxSize(280, 20));
 
 	wxTCSizeOfFocusField = new wxTextCtrl(panel, wxID_ANY, "25", wxPoint(320, 175), wxSize(40, 20));
-	wxTCSizeOfFocusField->Bind(wxEVT_CHAR, &MainFrame::OnCharNoDot, this);
+	wxTCSizeOfFocusField->Bind(wxEVT_CHAR, &MainFrame::OnChar, this);
 	wxTCSizeOfFocusField->Bind(wxEVT_KILL_FOCUS, &MainFrame::OnKillFocus, this);
 	wxTCSizeOfFocusField->Bind(wxEVT_TEXT_PASTE, &MainFrame::OnPaste, this);
 	wxSTSizeOfFocusField = new wxStaticText(panel, wxID_ANY, "Size of the focus field", wxPoint(370, 175), wxSize(80, 30));
 
 	wxTCPercentileOfTheHighestValues = new wxTextCtrl(panel, wxID_ANY, "90", wxPoint(460, 175), wxSize(40, 20));
-	wxTCPercentileOfTheHighestValues->Bind(wxEVT_CHAR, &MainFrame::OnCharNoDot, this);
+	wxTCPercentileOfTheHighestValues->Bind(wxEVT_CHAR, &MainFrame::OnChar, this);
 	wxTCPercentileOfTheHighestValues->Bind(wxEVT_KILL_FOCUS, &MainFrame::OnKillFocus, this);
 	wxTCPercentileOfTheHighestValues->Bind(wxEVT_TEXT_PASTE, &MainFrame::OnPaste, this);
 	wxSTPercentileOfTheHighestValues = new wxStaticText(panel, wxID_ANY, "Percentile of the highest values", wxPoint(510, 175), wxSize(80, 50));
@@ -337,13 +328,13 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 	wxCBSavitskyGolayFilter->SetValue(true);
 
 	wxTCWindowLengthSGF = new wxTextCtrl(panel, wxID_ANY, "7", wxPoint(320, 260), wxSize(40, 20));
-	wxTCWindowLengthSGF->Bind(wxEVT_CHAR, &MainFrame::OnCharNoDot, this);
+	wxTCWindowLengthSGF->Bind(wxEVT_CHAR, &MainFrame::OnChar, this);
 	wxTCWindowLengthSGF->Bind(wxEVT_KILL_FOCUS, &MainFrame::OnKillFocus, this);
 	wxTCWindowLengthSGF->Bind(wxEVT_TEXT_PASTE, &MainFrame::OnPaste, this);
 	wxSTWindowLengthSGF = new wxStaticText(panel, wxID_ANY, "Window length", wxPoint(370, 260), wxSize(80, 40));
 
 	wxTCPolyorder = new wxTextCtrl(panel, wxID_ANY, "5", wxPoint(460, 260), wxSize(40, 20));
-	wxTCPolyorder->Bind(wxEVT_CHAR, &MainFrame::OnCharNoDot, this);
+	wxTCPolyorder->Bind(wxEVT_CHAR, &MainFrame::OnChar, this);
 	wxTCPolyorder->Bind(wxEVT_KILL_FOCUS, &MainFrame::OnKillFocus, this);
 	wxTCPolyorder->Bind(wxEVT_TEXT_PASTE, &MainFrame::OnPaste, this);
 	wxSTPolyorder = new wxStaticText(panel, wxID_ANY, "Polyorder", wxPoint(510, 260), wxSize(80, 20));
@@ -352,13 +343,13 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 	wxCBMovingAverage->SetValue(true);
 
 	wxTCWindowLengthMA = new wxTextCtrl(panel, wxID_ANY, "2", wxPoint(320, 325), wxSize(40, 20));
-	wxTCWindowLengthMA->Bind(wxEVT_CHAR, &MainFrame::OnCharNoDot, this);
+	wxTCWindowLengthMA->Bind(wxEVT_CHAR, &MainFrame::OnChar, this);
 	wxTCWindowLengthMA->Bind(wxEVT_KILL_FOCUS, &MainFrame::OnKillFocus, this);
 	wxTCWindowLengthMA->Bind(wxEVT_TEXT_PASTE, &MainFrame::OnPaste, this);
 	wxSTWindowLengthMA = new wxStaticText(panel, wxID_ANY, "Window length", wxPoint(370, 325), wxSize(80, 40));
 
 	wxTCNumberOfRepetitions = new wxTextCtrl(panel, wxID_ANY, "10", wxPoint(460, 325), wxSize(40, 20));
-	wxTCNumberOfRepetitions->Bind(wxEVT_CHAR, &MainFrame::OnCharNoDot, this);
+	wxTCNumberOfRepetitions->Bind(wxEVT_CHAR, &MainFrame::OnChar, this);
 	wxTCNumberOfRepetitions->Bind(wxEVT_KILL_FOCUS, &MainFrame::OnKillFocus, this);
 	wxTCNumberOfRepetitions->Bind(wxEVT_TEXT_PASTE, &MainFrame::OnPaste, this);
 	wxSTNumberOfRepetitions = new wxStaticText(panel, wxID_ANY, "Number of repetitions", wxPoint(510, 325), wxSize(80, 40));
@@ -366,13 +357,13 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 	wxSTTrimList = new wxStaticText(panel, wxID_ANY, "Trim list:", wxPoint(320, 360), wxSize(280, 20));
 
 	wxTCLeftTrim = new wxTextCtrl(panel, wxID_ANY, "0", wxPoint(320, 385), wxSize(40, 20));
-	wxTCLeftTrim->Bind(wxEVT_CHAR, &MainFrame::OnCharNoDot, this);
+	wxTCLeftTrim->Bind(wxEVT_CHAR, &MainFrame::OnChar, this);
 	wxTCLeftTrim->Bind(wxEVT_KILL_FOCUS, &MainFrame::OnKillFocus, this);
 	wxTCLeftTrim->Bind(wxEVT_TEXT_PASTE, &MainFrame::OnPaste, this);
 	wxSTLeftTrim = new wxStaticText(panel, wxID_ANY, "Left trim", wxPoint(370, 385), wxSize(80, 30));
 
 	wxTCRightTrim = new wxTextCtrl(panel, wxID_ANY, "0", wxPoint(460, 385), wxSize(40, 20));
-	wxTCRightTrim->Bind(wxEVT_CHAR, &MainFrame::OnCharNoDot, this);
+	wxTCRightTrim->Bind(wxEVT_CHAR, &MainFrame::OnChar, this);
 	wxTCRightTrim->Bind(wxEVT_KILL_FOCUS, &MainFrame::OnKillFocus, this);
 	wxTCRightTrim->Bind(wxEVT_TEXT_PASTE, &MainFrame::OnPaste, this);
 	wxSTRightTrim = new wxStaticText(panel, wxID_ANY, "Right trim", wxPoint(510, 385), wxSize(80, 30));
@@ -391,7 +382,7 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 	wxCBAutoMergeEvents = new wxCheckBox(panel, ID_MERGE_EVENTS, "Auto merge events", wxPoint(345, 465));
 	wxCBAutoMergeEvents->SetValue(true);
 
-	wxTCAutoMergeEvents = new wxTextCtrl(panel, wxID_ANY, "0", wxPoint(510, 465), wxSize(40, 20));
+	wxTCAutoMergeEvents = new wxTextCtrl(panel, wxID_ANY, "", wxPoint(510, 465), wxSize(40, 20));
 	wxTCAutoMergeEvents->Bind(wxEVT_CHAR, &MainFrame::OnChar, this);
 	wxTCAutoMergeEvents->Bind(wxEVT_KILL_FOCUS, &MainFrame::OnKillFocus, this);
 	wxTCAutoMergeEvents->Bind(wxEVT_TEXT_PASTE, &MainFrame::OnPaste, this);
@@ -400,7 +391,7 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 	wxCBAutoSelectEvents = new wxCheckBox(panel, ID_AUTO_SELECT_EVENTS, "Auto select events", wxPoint(345, 490));
 	wxCBAutoSelectEvents->SetValue(true);
 
-	wxTCAutoSelectEvents = new wxTextCtrl(panel, wxID_ANY, "5", wxPoint(510, 490), wxSize(40, 20));
+	wxTCAutoSelectEvents = new wxTextCtrl(panel, wxID_ANY, "", wxPoint(510, 490), wxSize(40, 20));
 	wxTCAutoSelectEvents->Bind(wxEVT_CHAR, &MainFrame::OnChar, this);
 	wxTCAutoSelectEvents->Bind(wxEVT_KILL_FOCUS, &MainFrame::OnKillFocus, this);
 	wxTCAutoSelectEvents->Bind(wxEVT_TEXT_PASTE, &MainFrame::OnPaste, this);
@@ -505,7 +496,7 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 		});
 }
 
-void MainFrame::DisableUI() 
+void MainFrame::DisableUI()
 {
 	wxCTFileList->Enable(false);
 	wxBChooseVideo->Enable(false);
@@ -517,6 +508,7 @@ void MainFrame::DisableUI()
 	wxCBCVSRaw->Enable(false);
 	wxCBLineChart->Enable(false);
 	wxCBNormalizedChart->Enable(false);
+	wxCBFPSAutoDetect->Enable(false);
 	wxTCFPS->Enable(false);
 	wxTCBinarizationTreshold->Enable(false);
 	wxCBAutomaticRecognitionAnalysis->Enable(false);
@@ -570,6 +562,7 @@ void MainFrame::UpdateUIAfterProcessing()
 	wxCBCVSRaw->Enable(true);
 	wxCBLineChart->Enable(true);
 	wxCBNormalizedChart->Enable(true);
+	wxCBFPSAutoDetect->Enable(true);
 	wxTCFPS->Enable(true);
 	wxTCBinarizationTreshold->Enable(true);
 	wxCBAutomaticRecognitionAnalysis->Enable(true);
@@ -611,7 +604,7 @@ void MainFrame::UpdateUIAfterProcessing()
 	wxSTAutoSelectEvents->Enable(true);
 }
 
-void MainFrame::wxFPSAutoDetectAnalysisToggle(wxCommandEvent & evt) {
+void MainFrame::wxFPSAutoDetectAnalysisToggle(wxCommandEvent& evt) {
 	if (evt.IsChecked()) {
 		wxTCFPS->Disable();
 	}
@@ -645,7 +638,7 @@ void MainFrame::wxCBAutoMDetectEventsToggle(wxCommandEvent& evt) {
 	}
 }
 
-void MainFrame::wxAutomaticRecognitionAnalysis(wxCommandEvent & evt) {
+void MainFrame::wxAutomaticRecognitionAnalysis(wxCommandEvent& evt) {
 	if (evt.IsChecked()) {
 		wxTCFirstFrame->Enable();
 		wxTCLastFrame->Enable();
@@ -660,7 +653,7 @@ void MainFrame::wxAutomaticRecognitionAnalysis(wxCommandEvent & evt) {
 	}
 }
 
-void MainFrame::wxSavinskyGolayFilter(wxCommandEvent & evt) {
+void MainFrame::wxSavinskyGolayFilter(wxCommandEvent& evt) {
 	if (evt.IsChecked()) {
 		wxTCWindowLengthSGF->Enable();
 		wxTCPolyorder->Enable();
@@ -671,7 +664,7 @@ void MainFrame::wxSavinskyGolayFilter(wxCommandEvent & evt) {
 	}
 }
 
-void MainFrame::wxMovingAverage(wxCommandEvent & evt) {
+void MainFrame::wxMovingAverage(wxCommandEvent& evt) {
 	if (evt.IsChecked()) {
 		wxTCWindowLengthMA->Enable();
 		wxTCNumberOfRepetitions->Enable();
@@ -682,7 +675,7 @@ void MainFrame::wxMovingAverage(wxCommandEvent & evt) {
 	}
 }
 
-void MainFrame::wxMergeEvents(wxCommandEvent & evt) {
+void MainFrame::wxMergeEvents(wxCommandEvent& evt) {
 	if (evt.IsChecked()) {
 		wxTCAutoMergeEvents->Enable();
 	}
@@ -691,7 +684,7 @@ void MainFrame::wxMergeEvents(wxCommandEvent & evt) {
 	}
 }
 
-void MainFrame::wxAutoSelectEvents(wxCommandEvent & evt) {
+void MainFrame::wxAutoSelectEvents(wxCommandEvent& evt) {
 	if (evt.IsChecked()) {
 		wxTCAutoSelectEvents->Enable();
 	}
@@ -721,294 +714,22 @@ void MainFrame::RunAnalysis()
 
 	//BLEDNY INPUT - ZABEZPIECZONE
 
-	int fps;
-	wxString strTemp;
+	wxCommandEvent dummyEvent;
+	OnCiteMe(dummyEvent);
 
-	std::string errorMessage = "";
-
-	strTemp = wxTCFPS->GetValue();
-	long longTemp;
-	if (strTemp.ToLong(&longTemp)) {
-		// Conversion successful, int_value now contains the integer
-		fps = static_cast<int>(longTemp);
-	}
-	else {
-#ifdef DEBUG
-		wxMessageDialog dialog(NULL, "WARNING: FPS has not been specified by the user, assumed to be 30.", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT | wxICON_WARNING);
-		dialog.ShowModal();
-#endif
-		errorMessage += "Empty or wrong format value of FPS.\n";
-	}
-
-	if (fps <= 0) {
-		errorMessage += "FPS should be more than zero.\n";
-	}
-
-	strTemp = wxTCFirstFrame->GetValue();
-	int startFrame;
-	if (strTemp.ToLong(&longTemp)) {
-		startFrame = static_cast<int>(longTemp);
-	}
-	else {
-#ifdef DEBUG
-		wxMessageDialog dialog(NULL, "WARNING: Index of the start frame was not specified by the user, it is assumed to be FPS times two", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
-		dialog.ShowModal();
-#endif
-		errorMessage += "Empty or wrong format value of start frame.\n";
-	}
-
-	if (startFrame < 0) {
-		errorMessage += "Start frame should be positive.\n";
-	}
-
-	strTemp = wxTCLastFrame->GetValue();
-	int endFrame;
-	if (strTemp.ToLong(&longTemp)) {
-		endFrame = static_cast<int>(longTemp);
-	}
-	else {
-#ifdef DEBUG
-		wxMessageDialog dialog(NULL, "WARNING: Index of the end frame was not specified, it is assumed to be FPS times twelve", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
-		dialog.ShowModal();
-#endif
-		errorMessage += "Empty or wrong format value of end frame.\n";
-	}
-
-	if (endFrame < 0) {
-		errorMessage += "End frame should be positive.\n";
-	}
-
-	if (endFrame - startFrame < 2) {
-		errorMessage += "Start and end frame should min. 2 frames apart.\n";
-	}
-
-	strTemp = wxTCBinarizationTreshold->GetValue();
-	int threshold;
-	if (strTemp.ToLong(&longTemp)) {
-		threshold = static_cast<int>(longTemp);
-	}
-	else {
-#ifdef DEBUG
-		wxMessageDialog dialog(NULL, "WARNING: Binarization treshold not specified, it is assumed to be 158", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
-		dialog.ShowModal();
-#endif
-		errorMessage += "Empty or wrong format value of treshold.\n";
-	}
-
-	if (!(threshold >= 0 && threshold <= 255)) {
-		errorMessage += "Treshold value should be (O-255).\n";
-	}
-
-	double squarePercent;
-	double topPercent;
-
-	// Find max sum square coordinates
-	strTemp = wxTCSizeOfFocusField->GetValue();
-	if (strTemp.ToDouble(&squarePercent)) {
-	}
-	else {
-#ifdef DEBUG
-		wxMessageDialog dialog(NULL, "WARNING: Focus field not specified, it is assumed to be 25", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
-		dialog.ShowModal();
-#endif
-		errorMessage += "Empty or wrong format value of size of focus field.\n";
-	}
-
-	if (!(squarePercent >= 1 && squarePercent <= 100)) {
-		errorMessage += "Square percent value should be (1-100).\n";
-	}
-
-	strTemp = wxTCPercentileOfTheHighestValues->GetValue();
-	if (strTemp.ToDouble(&topPercent)) {
-	}
-	else {
-#ifdef DEBUG
-		wxMessageDialog dialog(NULL, "WARNING: Percentile of the highest values, it is assumed to be 90", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
-		dialog.ShowModal();
-#endif
-		errorMessage += "Empty or wrong format value percentile of the highest values is wrong.\n";
-	}
-
-	if (!(topPercent > 0 && topPercent <= 100)) {
-		errorMessage += "Top percent value should be (0-100) excluding zero.\n";
-	}
-
-	strTemp = wxTCWindowLengthSGF->GetValue();
-	int windowLength;
-	if (strTemp.ToLong(&longTemp)) {
-		windowLength = static_cast<int>(longTemp);
-	}
-	else {
-#ifdef DEBUG
-		wxMessageDialog dialog(NULL, "WARNING: Window length (savitzky-golay filter) not specified, it is assumed to be 7", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
-		dialog.ShowModal();
-#endif
-		errorMessage += "Empty or wrong format value of window length (savitzky-golay filter).\n";
-	}
-
-	if (windowLength % 2 == 0) {
-		errorMessage += "Window length value should be odd.\n";
-	}
-
-	strTemp = wxTCPolyorder->GetValue();
-	int polyorder;
-	if (strTemp.ToLong(&longTemp)) {
-		polyorder = static_cast<int>(longTemp);
-	}
-	else {
-#ifdef DEBUG
-		wxMessageDialog dialog(NULL, "WARNING: Polyorder (savitzky-golay filter) not specified, it is assumed to be 5", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
-		dialog.ShowModal();
-#endif
-		errorMessage += "Empty or wrong format value in polyorder field.\n";
-	}
-
-	if (polyorder >= windowLength) {
-		errorMessage += "Polyorder value should be lower than window length.\n";
-	}
-
-	strTemp = wxTCWindowLengthMA->GetValue();
-	int windowLength2 = 0;
-	if (strTemp.ToLong(&longTemp)) {
-		windowLength2 = static_cast<int>(longTemp);
-	}
-	else {
-#ifdef DEBUG
-		wxMessageDialog dialog(NULL, "WARNING: Window length (Moving Average) not specified, it is assumed to be FPS times 0.1", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
-		dialog.ShowModal()
-#endif
-		errorMessage += "Empty or wrong format value in window length (moving average) field.\n";
-	}
-
-	if (windowLength2 < 2) {
-		errorMessage += "Window length (moving average) should be higher than two.\n";
-	}
-
-	strTemp = wxTCNumberOfRepetitions->GetValue();
-	int numberOfRepetitions = 0;
-	if (strTemp.ToLong(&longTemp)) {
-		numberOfRepetitions = static_cast<int>(longTemp);
-	}
-	else {
-#ifdef DEBUG
-		wxMessageDialog dialog(NULL, "WARNING: Number of repetitions (Moving Average) not specified, it is assumed to be 10", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
-		dialog.ShowModal();
-#endif
-		errorMessage += "Empty or wrong format value in number of repetitions field.\n";
-	}
-
-	if (numberOfRepetitions < 0) {
-		errorMessage += "Number of repetitions value should be higher than zero.\n";
-	}
-
-	strTemp = wxTCAutoMovementTreshold->GetValue();
-	double movementTreshold;
-	if (strTemp.ToDouble(&movementTreshold)) {
-	}
-	else {
-#ifdef DEBUG
-		wxMessageDialog dialog(NULL, "WARNING: Auto movement treshold not specified, it is assumed to be 0.45", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
-		dialog.ShowModal();
-#endif
-		errorMessage += "Empty or wrong value format in movement treshold field.\n";
-	}
-
-	if (movementTreshold <= 0.0) {
-		errorMessage += "Movement treshold should be higher than zero.\n";
-	}
-
-	strTemp = wxTCLeftTrim->GetValue();
-	int leftTrim;
-	if (strTemp.ToLong(&longTemp)) {
-		leftTrim = static_cast<int>(longTemp);
-	}
-	else {
-#ifdef DEBUG
-		wxMessageDialog dialog(NULL, "WARNING: Left trim not specified, it is assumed to be 0", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
-		dialog.ShowModal();
-#endif
-		errorMessage += "Empty or wrong format value in left trim field.\n";
-	}
-
-	if (leftTrim < 0) {
-		errorMessage += "Left trim value should be non-negative.\n";
-	}
-
-	strTemp = wxTCRightTrim->GetValue();
-	int rightTrim;
-	if (strTemp.ToLong(&longTemp)) {
-		rightTrim = static_cast<int>(longTemp);
-	}
-	else {
-#ifdef DEBUG
-		wxMessageDialog dialog(NULL, "WARNING: Right trim not specified, it is assumed to be 0", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
-		dialog.ShowModal();
-#endif
-		errorMessage += "Empty of wrong format value in right trim field.\n";
-		return;
-	}
-
-	if (rightTrim < 0) {
-		errorMessage += "Right trim value should be non-negative.\n";
-	}
-
-	strTemp = wxTCAutoMergeEvents->GetValue();
-	double autoMergedEvents;
-	if (strTemp.ToDouble(&autoMergedEvents)) {
-	}
-	else {
-#ifdef DEBUG
-		wxMessageDialog dialog(NULL, "WARNING: Auto merged events not specified, it is assumed to be 0", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
-		dialog.ShowModal();
-#endif
-		errorMessage += "Empty or wrong format value in auto merged events field.\n";
-	}
-
-	if (autoMergedEvents < 0.0) {
-		errorMessage += "Right trim value should be non-negative.\n";
-	}
-
-	strTemp = wxTCAutoSelectEvents->GetValue();
-	double autoSelectEvents;
-	if (strTemp.ToDouble(&autoSelectEvents)) {
-	}
-	else {
-#ifdef DEBUG
-		wxMessageDialog dialog(NULL, "WARNING: Auto merged events not specified, it is assumed to be 0", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
-		dialog.ShowModal();
-#endif
-		errorMessage += "Empty or wrong format value in auto select events field.\n";
-	}
-
-	if (autoSelectEvents < 0.0) {
-		errorMessage += "Auto select events value should be non-negative.\n";
-	}
-
-	strTemp = wxCTOutputPath->GetValue();
+	wxString strTemp = wxCTOutputPath->GetValue();
 	std::string outputPath = std::string(strTemp.mb_str());
 
 	if (!fs::exists(outputPath)) {
-		errorMessage += "Output path has to be specified.\n";
-	}
-
-	if (directories.empty()) {
-		errorMessage += "Video paths have to be specified.\n";
-	}
-
-	if (errorMessage != "") {
-		wxMessageDialog dialog(NULL, "Following inputs have to be corrected:\n\n" + errorMessage, wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_ERROR | wxDIALOG_NO_PARENT);
-		dialog.ShowModal();
 		return;
 	}
-
-	wxCommandEvent dummyEvent;
-	OnCiteMe(dummyEvent);
 
 	std::string dateTime = getCurrentDateTime();
 	std::string outputFolderName = "camystat_output_" + dateTime;
 	fs::path outputFolderPath = fs::path(outputPath) / outputFolderName;
 
 	createDirectoryWithCheck(outputFolderPath);
+
 
 	for (wxString strTemp : directories) {
 		std::string inputPath = std::string(strTemp.mb_str());
@@ -1021,6 +742,56 @@ void MainFrame::RunAnalysis()
 		}
 
 		fs::path pathObj(inputPath);
+
+		int fps;
+
+		if (wxCBFPSAutoDetect->IsChecked()) {
+			cv::VideoCapture cap(inputPath);
+
+			if (!cap.isOpened()) {
+				wxSTStatus->SetLabel("Status: Could not open a file: " + inputPath + ".");
+				wxMessageDialog dialog(NULL, "ERROR: Could not open a file: " + inputPath + ".", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_ERROR | wxDIALOG_NO_PARENT);
+				dialog.ShowModal();
+				return;
+			}
+
+			// Get the FPS (Frames Per Second)
+			fps = static_cast<int>(cap.get(cv::CAP_PROP_FPS));
+
+			wxTCFPS->SetValue(std::to_string(fps));
+			if (wxTCFirstFrame->GetValue() == "") {
+				wxTCFirstFrame->SetValue(std::to_string(fps * 2));
+			}
+			if (wxTCFirstFrame->GetValue() == "") {
+				wxTCLastFrame->SetValue(std::to_string(fps * 12));
+			}
+			if (wxTCNumberOfRepetitions->GetValue() == "") {
+				wxTCNumberOfRepetitions->SetValue(std::to_string(static_cast<int>(std::round(fps * 0.1))));
+			}
+			if (wxTCNumberOfRepetitions->GetValue() == "") {
+				wxTCNumberOfRepetitions->SetValue(std::to_string(static_cast<int>(std::round(fps * 0.05))));
+			}
+
+#ifdef DEBUG
+			wxMessageDialog dialog(NULL, "LOG: FPS has been read from file: " + std::to_string(fps) + ".", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
+			dialog.ShowModal();
+#endif
+		}
+		else {
+			strTemp = wxTCFPS->GetValue();
+			long longTemp;
+			if (strTemp.ToLong(&longTemp)) {
+				// Conversion successful, int_value now contains the integer
+				fps = static_cast<int>(longTemp);
+			}
+			else {
+#ifdef DEBUG
+				wxMessageDialog dialog(NULL, "WARNING: FPS has not been specified by the user, assumed to be 30.", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT | wxICON_WARNING);
+				dialog.ShowModal();
+#endif
+				fps = 30;
+			}
+		}
 
 		wxSTStatus->SetLabel("Status: Initializing...");
 
@@ -1063,59 +834,6 @@ void MainFrame::RunAnalysis()
 		}
 		if (normalizedChart) {
 			createDirectoryWithCheck(outputFolderPath / "normalized_chart");
-		}
-
-		// Create the dump of settings
-
-		{
-			std::string filePath = "settings.txt";
-			std::ofstream outFile(outputFolderPath.string() + "/" + filePath);
-
-			std::string settings = "";
-
-			std::string temp = cvsstats ? "yes" : "no";
-			settings += "CSV with stats: " + temp + "\n";
-			temp = cVSRaw ? "yes" : "no";
-			settings += "CSV with raw data: " + temp + "\n";
-			temp = lineChart ? "yes" : "no";
-			settings += "Generate line chart: " + temp + "\n";
-			temp = normalizedChart ? "yes" : "no";
-			settings += "Generate normalized chart: " + temp + "\n";
-
-			settings += "FPS: " + std::to_string(fps) + "\n";
-			settings += "Binarization treshold: " + std::to_string(threshold) + "\n";
-			temp = wxCBAutomaticRecognitionAnalysis->IsChecked() ? "yes" : "no";
-			settings += "Automatic recognition analysis: " + temp + "\n";
-			settings += "First frame: " + std::to_string(startFrame) + "\n";
-			settings += "Last frame: " + std::to_string(endFrame) + "\n";
-			settings += "Size of the focus field: " + std::to_string(squarePercent) + "\n";
-			settings += "Percentile of the highest values: " + std::to_string(topPercent) + "\n";
-
-			temp = wxCBSavitskyGolayFilter->IsChecked() ? "yes" : "no";
-			settings += "Savitzky-Golay filter: " + temp + "\n";
-			settings += "Window length: " + std::to_string(windowLength) + "\n";
-			settings += "Polyorder: " + std::to_string(polyorder) + "\n";
-			temp = wxCBMovingAverage->IsChecked() ? "yes" : "no";
-			settings += "Moving average: " + temp + "\n";
-			settings += "Window length: " + std::to_string(windowLength2) + "\n";
-			settings += "Number of repetitions: " + std::to_string(numberOfRepetitions) + "\n";
-			settings += "Left trim: " + std::to_string(leftTrim) + "\n";
-			settings += "Right trim: " + std::to_string(rightTrim) + "\n";
-
-			temp = wxCBAutoMDetectEvents->IsChecked() ? "yes" : "no";
-			settings += "Auto-detect events: " + temp + "\n";
-			settings += "Movement treshold: " + std::to_string(movementTreshold) + "\n";
-			temp = wxCBAutoMergeEvents->IsChecked() ? "yes" : "no";
-			settings += "Auto merge events: " + temp + "\n";
-			settings += "Frames: " + std::to_string(autoMergedEvents) + "\n";
-			temp = wxCBAutoSelectEvents->IsChecked() ? "yes" : "no";
-			settings += "Auto select events: " + temp + "\n";
-			settings += "Units: " + std::to_string(autoSelectEvents) + "\n";
-
-			if (outFile.is_open()) {
-				outFile << settings;
-				outFile.close();
-			}
 		}
 
 		TCHAR tempPath[MAX_PATH];
@@ -1171,11 +889,78 @@ void MainFrame::RunAnalysis()
 			inputPaths.push_back(line);
 		}
 
+		strTemp = wxTCFirstFrame->GetValue();
+		long longTemp;
+		int startFrame;
+		if (strTemp.ToLong(&longTemp)) {
+			startFrame = static_cast<int>(longTemp);
+		}
+		else {
+#ifdef DEBUG
+			wxMessageDialog dialog(NULL, "WARNING: Index of the start frame was not specified by the user, it is assumed to be FPS times two", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
+			dialog.ShowModal();
+#endif
+			startFrame = 2 * fps;
+		}
+
+		strTemp = wxTCLastFrame->GetValue();
+		int endFrame;
+		if (strTemp.ToLong(&longTemp)) {
+			endFrame = static_cast<int>(longTemp);
+			std::cout << "Converted value:" << endFrame << std::endl;
+		}
+		else {
+#ifdef DEBUG
+			wxMessageDialog dialog(NULL, "WARNING: Index of the end frame was not specified, it is assumed to be FPS times twelve", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
+			dialog.ShowModal();
+#endif
+			endFrame = 12 * fps;
+		}
+
+		strTemp = wxTCBinarizationTreshold->GetValue();
+		int threshold;
+		if (strTemp.ToLong(&longTemp)) {
+			threshold = static_cast<int>(longTemp);
+		}
+		else {
+#ifdef DEBUG
+			wxMessageDialog dialog(NULL, "WARNING: Binarization treshold not specified, it is assumed to be 158", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
+			dialog.ShowModal();
+#endif
+			threshold = 158;
+		}
+
 		// Create heatmap
 		std::vector<std::pair<int, int>> maxSumCoords12;
 		if (wxCBAutomaticRecognitionAnalysis->IsChecked()) {
 			wxSTStatus->SetLabel("Status: Creating heatmaps");
 			cv::Mat heatmap11 = V3::Preprocessing::createHeatmap(inputPath, startFrame, endFrame, threshold, heatmapPath);
+
+			double squarePercent;
+			double topPercent;
+
+			// Find max sum square coordinates
+			strTemp = wxTCSizeOfFocusField->GetValue();
+			if (strTemp.ToDouble(&squarePercent)) {
+			}
+			else {
+#ifdef DEBUG
+				wxMessageDialog dialog(NULL, "WARNING: Focus field not specified, it is assumed to be 25", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
+				dialog.ShowModal();
+#endif
+				squarePercent = 25;
+			}
+
+			strTemp = wxTCPercentileOfTheHighestValues->GetValue();
+			if (strTemp.ToDouble(&topPercent)) {
+			}
+			else {
+#ifdef DEBUG
+				wxMessageDialog dialog(NULL, "WARNING: Percentile of the highest values, it is assumed to be 90", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
+				dialog.ShowModal();
+#endif
+				topPercent = 90;
+			}
 
 			std::string heatmapCoordinatesPath = outputFolderPath.string() + "\\heatmap_coordinates\\" + fileName + ".png";
 
@@ -1193,71 +978,136 @@ void MainFrame::RunAnalysis()
 		if (wxCBAutomaticRecognitionAnalysis->IsChecked()) {
 			wxSTStatus->SetLabel("Status: Couting ones in xor");
 			passedDoubleVector = V3::Preprocessing::countOnesInXorAtCoordinates(inputPath, maxSumCoords12, threshold, rawCSVPath);
-#ifdef DEBUG
 			{
+#ifdef DEBUG
 				wxMessageDialog dialog(NULL, "LOG: XOR (with coords) calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 				dialog.ShowModal();
-			}
 #endif
+			}
 		}
 		else {
 			std::vector<std::pair<int, int>> coordinates;
 			wxSTStatus->SetLabel("Status: Couting ones in xor without coords");
 			passedDoubleVector = V3::Preprocessing::countOnesInXorAtCoordinates(inputPath, coordinates, threshold, rawCSVPath);
-#ifdef DEBUG
 			{
+#ifdef DEBUG
 				wxMessageDialog dialog(NULL, "LOG: no coordinates XOR calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 				dialog.ShowModal();
 				Utils::plotVector(passedDoubleVector, "XOR", 1000, 1500);
-			}
 #endif
+			}
 		}
 
 		std::string valuesB4XORPath = str + "\\Cammystat\\" + fileName + "\\valuesB4XOR" + fileName + ".csv";
 		wxSTStatus->SetLabel("Status: Saving vectors before xor");
 		Utils::writeVectorToFile(valuesB4XORPath, passedDoubleVector);
 
+		strTemp = wxTCWindowLengthSGF->GetLabel();
+		int windowLength;
+		if (strTemp.ToLong(&longTemp)) {
+			windowLength = static_cast<int>(longTemp);
+		}
+		else {
+#ifdef DEBUG
+			wxMessageDialog dialog(NULL, "WARNING: Window length (Savitzky-Golay filter) not specified, it is assumed to be 7", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
+			dialog.ShowModal();
+#endif
+			windowLength = 7;
+		}
+
+		strTemp = wxTCPolyorder->GetLabel();
+		int polyorder;
+		if (strTemp.ToLong(&longTemp)) {
+			polyorder = static_cast<int>(longTemp);
+		}
+		else {
+#ifdef DEBUG
+			wxMessageDialog dialog(NULL, "WARNING: Polyorder (Savitzky-Golay filter) not specified, it is assumed to be 5", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
+			dialog.ShowModal();
+#endif
+			polyorder = 5;
+		}
+
 		if (wxCBSavitskyGolayFilter->IsChecked()) {
 			wxSTStatus->SetLabel("Status: Filtering (Savgol)");
 			passedDoubleVector = Savgol::savgol_filter(passedDoubleVector, windowLength, polyorder);
-#ifdef DEBUG
 			{
+#ifdef DEBUG
 				wxMessageDialog dialog(NULL, "LOG: Savgol (Savitzky-Golay) filter has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 				dialog.ShowModal();
 				Utils::plotVector(passedDoubleVector, "Savgol filter", 1000, 1500);
-			}
 #endif
+			}
+		}
+
+		strTemp = wxTCWindowLengthMA->GetLabel();
+		int windowLength2;
+		if (strTemp.ToLong(&longTemp)) {
+			windowLength2 = static_cast<int>(longTemp);
+		}
+		else {
+#ifdef DEBUG
+			wxMessageDialog dialog(NULL, "WARNING: Window length (Moving Average) not specified, it is assumed to be FPS times 0.1", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
+			dialog.ShowModal()
+#endif
+				windowLength2 = 0.1 * fps;
+		}
+
+		strTemp = wxTCNumberOfRepetitions->GetLabel();
+		int numberOfRepetitions;
+		if (strTemp.ToLong(&longTemp)) {
+			numberOfRepetitions = static_cast<int>(longTemp);
+		}
+		else {
+#ifdef DEBUG
+			wxMessageDialog dialog(NULL, "WARNING: Number of repetitions (Moving Average) not specified, it is assumed to be 10", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
+			dialog.ShowModal();
+#endif
+			numberOfRepetitions = 10;
 		}
 
 		if (wxCBMovingAverage->IsChecked()) {
 			wxSTStatus->SetLabel("Status: Modifying means");
 			passedDoubleVector = V3::Smoothing::modify_means(passedDoubleVector, windowLength2, numberOfRepetitions);
-#ifdef DEBUG
 			{
+#ifdef DEBUG
 				wxMessageDialog dialog(NULL, "LOG: Moving Average calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 				dialog.ShowModal();
 				Utils::plotVector(passedDoubleVector, "Moving average", 1000, 1500);
-			}
 #endif
+			}
 		}
 
 		wxSTStatus->SetLabel("Status: Normalizing values");
-		passedDoubleVector = V3::Smoothing::normalize_values(passedDoubleVector);
-#ifdef DEBUG
+		passedDoubleVector = V3::Smoothing::clone_normalized_values(passedDoubleVector);
 		{
+#ifdef DEBUG
 			Utils::plotVector(passedDoubleVector, "normalize_values", 1000, 1500);
 			wxMessageDialog dialog(NULL, "LOG: Normalize values calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 			dialog.ShowModal();
-		}
 #endif
+		}
 
 		std::string valuesPath = str + "\\Cammystat\\" + fileName + "\\values" + fileName + ".csv";
 		wxSTStatus->SetLabel("Status: Saving vectors");
 		Utils::writeVectorToFile(valuesPath, passedDoubleVector);
 
+		strTemp = wxTCAutoMovementTreshold->GetValue();
+		double movementTreshold;
+		if (strTemp.ToLong(&longTemp)) {
+			movementTreshold = static_cast<double>(longTemp);
+		}
+		else {
+#ifdef DEBUG
+			wxMessageDialog dialog(NULL, "WARNING: Auto movement treshold not specified, it is assumed to be 0.45", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
+			dialog.ShowModal();
+#endif
+			movementTreshold = 0.45;
+		}
+
 		std::string rawChartPath = outputFolderPath.string() + "\\csv_stats\\" + fileName + ".csv";
 		wxSTStatus->SetLabel("Status: Replacing zeros");
-		passedDoubleVector = V3::Smoothing::replace_zeros_values_below_threshold(passedDoubleVector, movementTreshold, rawChartPath);
+		passedDoubleVector = V3::Smoothing::clone_replace_zeros_values_below_threshold(passedDoubleVector, movementTreshold, rawChartPath);
 #ifdef DEBUG
 		Utils::plotVector(passedDoubleVector, "replace_zeros_values_below_threshold", 1000, 1500);
 		{
@@ -1266,45 +1116,95 @@ void MainFrame::RunAnalysis()
 		}
 #endif
 
+		strTemp = wxTCLeftTrim->GetLabel();
+		int leftTrim;
+		if (strTemp.ToLong(&longTemp)) {
+			leftTrim = static_cast<int>(longTemp);
+		}
+		else {
+#ifdef DEBUG
+			wxMessageDialog dialog(NULL, "WARNING: Left trim not specified, it is assumed to be 0", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
+			dialog.ShowModal();
+#endif
+			leftTrim = 0;
+		}
+
+		strTemp = wxTCRightTrim->GetLabel();
+		int rightTrim;
+		if (strTemp.ToLong(&longTemp)) {
+			rightTrim = static_cast<int>(longTemp);
+		}
+		else {
+#ifdef DEBUG
+			wxMessageDialog dialog(NULL, "WARNING: Right trim not specified, it is assumed to be 0", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
+			dialog.ShowModal();
+#endif
+			rightTrim = 0;
+		}
+
 		wxSTStatus->SetLabel("Status: Trimming");
 		passedDoubleVector = V3::Detection::trim_list(passedDoubleVector, leftTrim, rightTrim);
-#ifdef DEBUG
 		{
+#ifdef DEBUG
 			Utils::plotVector(passedDoubleVector, "trim_list", 1000, 1500);
 			wxMessageDialog dialog(NULL, "LOG: Trim_list calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 			dialog.ShowModal();
-		}
 #endif
+		}
 		wxSTStatus->SetLabel("Status: Adding zeros");
-		passedDoubleVector = V3::Detection::add_zeros_to_list(passedDoubleVector);
+		passedDoubleVector = V3::Detection::clone_padded_with_zeros(passedDoubleVector);
 		wxSTStatus->SetLabel("Status: Zeros has been added to a list.");
-#ifdef DEBUG
 		{
+#ifdef DEBUG
 			Utils::plotVector(passedDoubleVector, "add_zeros_to_list", 1000, 1500);
 			wxMessageDialog dialog(NULL, "LOG: add_zeros_to_list calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 			dialog.ShowModal();
-		}
 #endif
+		}
 
 		std::vector<std::vector<double>> events;
 		if (wxCBAutoMDetectEvents->GetValue()) {
 			wxSTStatus->SetLabel("Status: Calculating integrals");
 			events = V3::Detection::calculate_integrals_with_reference_points(passedDoubleVector);
-#ifdef DEBUG
 			{
+#ifdef DEBUG
 				wxMessageDialog dialog(NULL, "LOG: calculate_integrals_with_reference_points calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 				dialog.ShowModal();
-			}
 #endif
+			}
+
+			strTemp = wxTCAutoMergeEvents->GetValue();
+			double autoMergedEvents;
+			if (strTemp.ToDouble(&autoMergedEvents)) {
+			}
+			else {
+#ifdef DEBUG
+				wxMessageDialog dialog(NULL, "WARNING: Auto merged events not specified, it is assumed to be 0", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
+				dialog.ShowModal();
+#endif
+				autoMergedEvents = fps * 0.05;
+			}
 
 			wxSTStatus->SetLabel("Status: Merging events");
 			events = V3::Detection::merge_events(events, autoMergedEvents);
-#ifdef DEBUG
 			{
+#ifdef DEBUG
 				wxMessageDialog dialog(NULL, "LOG: merge_events calculation has been finished successfully", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
 				dialog.ShowModal();
-			}
 #endif
+			}
+
+			strTemp = wxTCAutoSelectEvents->GetValue();
+			double autoSelectEvents;
+			if (strTemp.ToDouble(&autoSelectEvents)) {
+			}
+			else {
+#ifdef DEBUG
+				wxMessageDialog dialog(NULL, "WARNING: Auto merged events not specified, it is assumed to be 0", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
+				dialog.ShowModal();
+#endif
+				autoSelectEvents = 5.5; // this is how you live B) ~ Marcin A. R.
+			}
 
 			wxSTStatus->SetLabel("Status: Removing events");
 			events = V3::Detection::remove_events(events, autoSelectEvents);
@@ -1323,24 +1223,24 @@ void MainFrame::RunAnalysis()
 		wxSTStatus->SetLabel("Status: Reading current path");
 		TCHAR buffer[MAX_PATH];
 		DWORD length = GetCurrentDirectory(MAX_PATH, buffer);
-		std::string plotPath = TCHARToString(buffer);
+		std::string plotPath = Utils::TCHARToString(buffer);
 		plotPath = plotPath.substr(0, plotPath.size() - 1);
 		wxSTStatus->SetLabel("Status: Calculating path to plot");
 		plotPath = plotPath + "\\plot.exe";
-#ifdef DEBUG
 		{
+#ifdef DEBUG
 			wxMessageDialog dialog(NULL, "LOG: a path to the plot.exe: " + plotPath, wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 			dialog.ShowModal();
 			wxMessageDialog dialog(NULL, plotPath, wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 			dialog.ShowModal();
-		}
 #endif
-#ifdef DEBUG
+		}
 		{
+#ifdef DEBUG
 			wxMessageDialog dialog(NULL, fileName + " " + normalizedChartsPath + " " + std::to_string(fps), wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 			dialog.ShowModal();
-		}
 #endif
+		}
 
 		std::string eventsPath = str + "\\Cammystat\\" + fileName + "\\events" + fileName + ".csv";
 
@@ -1352,11 +1252,11 @@ void MainFrame::RunAnalysis()
 		wxSTStatus->SetLabel("Status: Saving plots");
 
 		if (lineChart) {
-			Utils::callPlotEvents(plotPath, valuesB4XORPath, "", fileName, outputFolderPath.string() + "\\raw_chart", fps, pathToRemove, 0);
+			Utils::callPlotEvents(plotPath, valuesB4XORPath, "", fileName, outputFolderPath.string() + "\\raw_chart", fps, pathToRemove);
 		}
 
 		if (normalizedChart) {
-			Utils::callPlotEvents(plotPath, valuesPath, eventsPath, fileName, normalizedChartsPath, fps, pathToRemove, 1);
+			Utils::callPlotEvents(plotPath, valuesPath, eventsPath, fileName, normalizedChartsPath, fps, pathToRemove);
 		}
 	}
 }
@@ -1369,13 +1269,13 @@ void MainFrame::OnTimer(wxTimerEvent& event)
 	m_dotCount %= 4;
 }
 
-void MainFrame::OnCharNoDot(wxKeyEvent& event) {
+void MainFrame::OnChar(wxKeyEvent& event) {
 	wxTextCtrl* textCtrl = dynamic_cast<wxTextCtrl*>(event.GetEventObject());
 	if (textCtrl) {
 		int keyCode = event.GetKeyCode();
 
 		// Allow control keys (like backspace, delete, etc.)
-		if (keyCode == WXK_DELETE || keyCode == WXK_BACK) {
+		if (keyCode < WXK_SPACE || keyCode == WXK_DELETE || keyCode == WXK_BACK || keyCode == WXK_TAB) {
 			event.Skip();
 			return;
 		}
@@ -1390,37 +1290,9 @@ void MainFrame::OnCharNoDot(wxKeyEvent& event) {
 		//else if (textCtrl == m_decimalInput) {
 			// Allow digits and one decimal point
 		wxString value = textCtrl->GetValue();
-		if (wxIsdigit(keyCode)) {
+		if (wxIsdigit(keyCode) || (keyCode == '.' && !value.Contains('.'))) {
 			event.Skip();
 		}
-		//}
-	}
-}
-
-void MainFrame::OnChar(wxKeyEvent& event) {
-	wxTextCtrl* textCtrl = dynamic_cast<wxTextCtrl*>(event.GetEventObject());
-	if (textCtrl) {
-		int keyCode = event.GetKeyCode();
-
-		// Allow control keys (like backspace, delete, etc.)
-		if (keyCode == WXK_DELETE || keyCode == WXK_BACK) {
-			event.Skip();
-			return;
-		}
-
-		// Handle different input restrictions based on the specific field
-		//if (textCtrl == m_numberInput) {
-			// Allow only digits
-			if (wxIsdigit(keyCode)) {
-				event.Skip();
-			}
-		//}
-		//else if (textCtrl == m_decimalInput) {
-			// Allow digits and one decimal point
-			wxString value = textCtrl->GetValue();
-			if (wxIsdigit(keyCode) || (keyCode == '.' && !value.Contains('.'))) {
-				event.Skip();
-			}
 		//}
 	}
 }
@@ -1432,10 +1304,10 @@ void MainFrame::OnKillFocus(wxFocusEvent& event) {
 
 		//if (textCtrl == m_numberInput || textCtrl == m_decimalInput) {
 			// Prevent leading zeros (e.g., 00 or 000)
-			if (value.StartsWith("0") && value.Length() > 1 && value[1] != '.') {
-				value.Trim(false);  // Remove leading zeroes
-				textCtrl->SetValue(value);
-			}
+		if (value.StartsWith("0") && value.Length() > 1 && value[1] != '.') {
+			value.Trim(false);  // Remove leading zeroes
+			textCtrl->SetValue(value);
+		}
 		//}
 	}
 	event.Skip();  // Make sure other event handlers still get this event
