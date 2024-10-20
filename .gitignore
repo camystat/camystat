@@ -401,3 +401,4 @@ FodyWeavers.xsd
 DUMMY_GUI/sandbox
 DUMMY_GUI/include/python
 DUMMY_GUI/include/wxWidgets
+DUMMY_GUI/command.txt
