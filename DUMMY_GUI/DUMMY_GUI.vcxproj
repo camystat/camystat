@@ -187,7 +187,6 @@
     <ClCompile Include="Savgol.cpp" />
     <ClCompile Include="Utils.cpp" />
     <ClCompile Include="V3.cpp" />
-    <ClCompile Include="WorkerThread.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h" />
@@ -196,7 +195,6 @@
     <ClInclude Include="Savgol.h" />
     <ClInclude Include="Utils.h" />
     <ClInclude Include="V3.h" />
-    <ClInclude Include="WorkerThread.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="icon.rc" />
