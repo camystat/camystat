@@ -1249,7 +1249,7 @@ void MainFrame::RunAnalysis()
 
 		std::string pathToRemove = str + "\\Cammystat\\" + fileName;
 
-		wxSTStatus->SetLabel("Status: Saving plots");
+		if(lineChart || normalizedChart) wxSTStatus->SetLabel("Status: Saving plots");
 
 		if (lineChart) {
 			Utils::callPlotEvents(plotPath, valuesB4XORPath, "", fileName, outputFolderPath.string() + "\\raw_chart", fps, pathToRemove);
@@ -1258,6 +1258,8 @@ void MainFrame::RunAnalysis()
 		if (normalizedChart) {
 			Utils::callPlotEvents(plotPath, valuesPath, eventsPath, fileName, normalizedChartsPath, fps, pathToRemove);
 		}
+
+		wxSTStatus->SetLabel("Status: Finished");
 	}
 }
 

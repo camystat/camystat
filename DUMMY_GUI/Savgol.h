@@ -20,7 +20,7 @@ public:
 	/// <param name="deriv">Order of derivative to compute; defaults to 0</param>
 	/// <param name="delta">Spacing of input data samples; defaults to 1.0</param>
 	/// <returns>Filtered signal</returns>
-	static std::vector<double> savgol_coeffs(size_t window_length, int polyorder, int deriv = 0, double delta = 1.0) {
+	static std::vector<double> savgol_coeffs(size_t window_length, size_t polyorder, size_t deriv = 0, double delta = 1.0) {
 		if (polyorder >= window_length) {
 			throw std::invalid_argument("polyorder (received: " + std::to_string(polyorder) + ") must be < than window_length (received: " + std::to_string(window_length) + ")");
 		}
