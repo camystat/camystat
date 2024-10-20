@@ -19,9 +19,10 @@
     Independent Programmer  
 
     Artur Morys - Magiera
-    Programmer
+    Programmer (fixes & improvements)
     Department of Automatic Control & Robotics
     AGH University of Krakow
+    (https://www.researchgate.net/profile/Artur-Morys-Magiera)
  
     Professor Romuald Wojnicz  
     Project Supervisor, Head of Department  
