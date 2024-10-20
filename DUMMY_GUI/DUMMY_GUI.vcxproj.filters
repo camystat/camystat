@@ -62,4 +62,15 @@
       <Filter>Pliki zasobów</Filter>
     </ResourceCompile>
   </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="citeme.txt">
+      <Filter>Pliki zasobów</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="command.txt">
+      <Filter>Pliki zasobów</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="icon.ico">
+      <Filter>Pliki zasobów</Filter>
+    </CopyFileToFolders>
+  </ItemGroup>
 </Project>

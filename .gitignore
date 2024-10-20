@@ -399,3 +399,5 @@ FodyWeavers.xsd
 
 # GUI
 DUMMY_GUI/sandbox
+DUMMY_GUI/include/python
+DUMMY_GUI/include/wxWidgets
