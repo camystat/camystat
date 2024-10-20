@@ -25,7 +25,6 @@ public:
 	static std::vector<double> clone_trimmed_list(const std::vector<double>& lst, size_t n, size_t x);
 	static void plotVector(const std::vector<double>& values, const std::string& name, size_t min, size_t max);
 	static std::vector<double> aggregate(const std::string& videoPath, const std::string& compressedPath, const std::string& heatmapPath, const std::string& coordPath, const std::string& resultPath);
-	static std::vector<double> clone_normalized_values(const std::vector<double>& values);
 	static void plot_events(const std::vector<double>& values, const std::vector<std::vector<double>>& events);
 	static void write_vector_to_file(const std::vector<std::vector<double>>& data, const std::string& filename);
 	static std::string TCHARToString(const TCHAR* tcharStr);

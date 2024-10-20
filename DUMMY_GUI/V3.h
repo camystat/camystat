@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include <iostream>
 #include <vector>
 #include <algorithm>
@@ -19,13 +19,13 @@ public:
 
         // Funkcja kompresji nagrania - 0.1
         //
-        // Kompresja stanowi bardzo istotn¹ czêœæ w procesie analizy. 
+        // Kompresja stanowi bardzo istotnÄ… czÄ™Å›Ä‡ w procesie analizy. 
         //
-        // Po pierwsze zmniejsza rozmiar analizowanej w kolejnych etapach macierzy znacznie podnosz¹c wydajnoœæ, 
-        // a przy tym(dla nagrañ wykonanych w wiêkszej rozdzielczoœci) nie powoduj¹c utraty kluczowej informacji.
+        // Po pierwsze zmniejsza rozmiar analizowanej w kolejnych etapach macierzy znacznie podnoszÄ…c wydajnoÅ›Ä‡, 
+        // a przy tym(dla nagraÅ„ wykonanych w wiÄ™kszej rozdzielczoÅ›ci) nie powodujÄ…c utraty kluczowej informacji.
         //
-        // Po drugie, redukcja rozmiaru oparta na ³¹czeniu kilku pikseli w jeden redukuje zak³ócenia polegaj¹ce 
-        // na mikrodrganiach obrazu, które okaza³y siê wyj¹tkowo uci¹¿liwe w analizie angrañ opartych na ró¿nicowaniu macierzy
+        // Po drugie, redukcja rozmiaru oparta na Å‚Ä…czeniu kilku pikseli w jeden redukuje zakÅ‚Ã³cenia polegajÄ…ce 
+        // na mikrodrganiach obrazu, ktÃ³re okazaÅ‚y siÄ™ wyjÄ…tkowo uciÄ…Å¼liwe w analizie angraÅ„ opartych na rÃ³Å¼nicowaniu macierzy
 
         static void resizeVideo(std::string inputPath, std::string outputPath, double scaleFactor);
     };
@@ -35,23 +35,23 @@ public:
     class Preprocessing {
     public:
         
-        // 1.1 Heatmapa aktywnoœci na filmie
+        // 1.1 Heatmapa aktywnoÅ›ci na filmie
         // 
-        // Funkcja s³u¿y stworzeniu heatmapy aktywnoœci przyjmuj¹c œcie¿kê do filmu wideo. 
+        // Funkcja sÅ‚uÅ¼y stworzeniu heatmapy aktywnoÅ›ci przyjmujÄ…c Å›cieÅ¼kÄ™ do filmu wideo. 
         //
-        // Celem funkcji jest stworzenie heatmapy w postaci tablicy numpy, w oparciu o któr¹ inne funkcje podejmuj¹ 
-        // decyzjê o tym jaki fragment obrazu poddaæ analizie.
+        // Celem funkcji jest stworzenie heatmapy w postaci tablicy numpy, w oparciu o ktÃ³rÄ… inne funkcje podejmujÄ… 
+        // decyzjÄ™ o tym jaki fragment obrazu poddaÄ‡ analizie.
         //
         // Funkcja przyjmuje cztery argumenty:
-        // œcie¿kê do filmu
-        // Klatkê pocz¹tkow¹
-        // Klatkê koñcow¹
-        // Próg binaryzacji
+        // Å›cieÅ¼kÄ™ do filmu
+        // KlatkÄ™ poczÄ…tkowÄ…
+        // KlatkÄ™ koÅ„cowÄ…
+        // PrÃ³g binaryzacji
         //
-        // Funkcja dzia³a poprzez tworzenie macierzy binarnych z kolejnych klatek i wykonywanie na nich funkcji 
-        // XOR z s¹siaduj¹cymi obrazami.W ten sposób otrzymuje informacjê o zmianie pomiêdzy klatkami odpowiadaj¹cej 
-        // odpowiednim pikselom.Funkcja zlicza te zmiany dla ka¿dego piksela i zwraca macierz odpowiadaj¹c¹ kszta³tem 
-        // wideo z liczb¹ odnotowanych zmian dla ka¿dego piksela.
+        // Funkcja dziaÅ‚a poprzez tworzenie macierzy binarnych z kolejnych klatek i wykonywanie na nich funkcji 
+        // XOR z sÄ…siadujÄ…cymi obrazami.W ten sposÃ³b otrzymuje informacjÄ™ o zmianie pomiÄ™dzy klatkami odpowiadajÄ…cej 
+        // odpowiednim pikselom.Funkcja zlicza te zmiany dla kaÅ¼dego piksela i zwraca macierz odpowiadajÄ…cÄ… ksztaÅ‚tem 
+        // wideo z liczbÄ… odnotowanych zmian dla kaÅ¼dego piksela.
 
         static cv::Mat createHeatmap(std::string videoPath, int startFrame = 0, int endFrame = -1, int threshold = 128, std::string resultPath = "");
 
@@ -59,13 +59,13 @@ public:
         // 
         // Funkcja do znajdowania najbardziej aktywnych koordynatow
         //
-        // Funkcja find_max_sum_square_coordinates_with_percent stanowi rozwiniêcie wersji V1.
-        // W odró¿nieniu od niej funkcja przyjmuje procent przeliczany na wielkoœæ poszukiwanego kwadratu o najwiêkszej aktywnoœci.
-        // Zaktualizowana funkcja posiada ponadto drugi stopieñ doboru koordynat do analizy.
+        // Funkcja find_max_sum_square_coordinates_with_percent stanowi rozwiniÄ™cie wersji V1.
+        // W odrÃ³Å¼nieniu od niej funkcja przyjmuje procent przeliczany na wielkoÅ›Ä‡ poszukiwanego kwadratu o najwiÄ™kszej aktywnoÅ›ci.
+        // Zaktualizowana funkcja posiada ponadto drugi stopieÅ„ doboru koordynat do analizy.
         // 
-        // Z wczeœniej wyselekcjonowanej puli w ramach kwadratu wybiera okreœlony zmienn¹ "top_percent"
-        // wycinek zbioru o najwiêkszej aktywnoœci.
-        // Funkcja podobnie do poprzedniej wersji zwraca listê koordynat zakwalifikowanych do analizy
+        // Z wczeÅ›niej wyselekcjonowanej puli w ramach kwadratu wybiera okreÅ›lony zmiennÄ… "top_percent"
+        // wycinek zbioru o najwiÄ™kszej aktywnoÅ›ci.
+        // Funkcja podobnie do poprzedniej wersji zwraca listÄ™ koordynat zakwalifikowanych do analizy
 
         static std::vector<std::pair<int, int>> findMaxSumSquareCoordinatesWithPercent(
             const cv::Mat& pixel_count_array,
@@ -75,29 +75,29 @@ public:
             std::string imagePath
         );
 
-        // 1.3 Analiza aktywnoœci na nagraniu
+        // 1.3 Analiza aktywnoÅ›ci na nagraniu
         // 
-        // Funkcja count_ones_in_xor_at_coordinates jest kluczowym etapem analizy, s³u¿y 
-        // dokonaniu analizy aktywnoœci na przestrzeni kolejnych klatek na nagraniu i 
-        // zwraca listê zawieraj¹c¹ aktywnoœæ odpowiadaj¹cej ka¿dej klatce wyra¿on¹ jako 
+        // Funkcja count_ones_in_xor_at_coordinates jest kluczowym etapem analizy, sÅ‚uÅ¼y 
+        // dokonaniu analizy aktywnoÅ›ci na przestrzeni kolejnych klatek na nagraniu i 
+        // zwraca listÄ™ zawierajÄ…cÄ… aktywnoÅ›Ä‡ odpowiadajÄ…cej kaÅ¼dej klatce wyraÅ¼onÄ… jako 
         // stosunek procentowy liczby pikseli aktywnych do liczbie pikseli poddawanych analizie.
         //
         // Funkcja przyjmuje trzy zmienne :
-        // video_path - stanowi¹c¹ œcie¿kê do analizowanego nagrania
-        // coordinates - listê koordynat poddawanych analizie. Jeœli ta zmienna nie zostanie 
-        // zdefiniowania, analizie bêd¹ poddane wszystkie piksele.
-        // threshold - okreœlaj¹c¹ próg binaryzacji
+        // video_path - stanowiÄ…cÄ… Å›cieÅ¼kÄ™ do analizowanego nagrania
+        // coordinates - listÄ™ koordynat poddawanych analizie. JeÅ›li ta zmienna nie zostanie 
+        // zdefiniowania, analizie bÄ™dÄ… poddane wszystkie piksele.
+        // threshold - okreÅ›lajÄ…cÄ… prÃ³g binaryzacji
         //
-        // Analiza aktywnoœci :
+        // Analiza aktywnoÅ›ci :
         //
-        // Proces analizy aktywnoœci jest podobny do tworzenia heatmapy aktywnoœci funkcji 1.1.
-        // Funkcja binaryzacje parê klatek wed³ug progu wszystkie tworz¹c zestaw macierzy binarnych.
-        // Kolejno funkcja porównuje pary macierzy binarnych przy pomocy funkcji XOR, tworz¹c macierze ró¿nicowe.
+        // Proces analizy aktywnoÅ›ci jest podobny do tworzenia heatmapy aktywnoÅ›ci funkcji 1.1.
+        // Funkcja binaryzacje parÄ™ klatek wedÅ‚ug progu wszystkie tworzÄ…c zestaw macierzy binarnych.
+        // Kolejno funkcja porÃ³wnuje pary macierzy binarnych przy pomocy funkcji XOR, tworzÄ…c macierze rÃ³Å¼nicowe.
         // 
-        // Nastêpnie funkcja zlicza ró¿nice dla analizowanych koordynat dla danej pary klatek i dodaje 
+        // NastÄ™pnie funkcja zlicza rÃ³Å¼nice dla analizowanych koordynat dla danej pary klatek i dodaje 
         // je do listy w postaci stosunku koordynat aktywnych do poddanych analizie.
-        // Po iteracji przez wszystkie klatki filmu funkcja zwraca listê zawieraj¹c¹ kolejne ró¿nice 
-        // odpowiadaj¹ce aktywnoœci na kolejnych klatkach filmu.
+        // Po iteracji przez wszystkie klatki filmu funkcja zwraca listÄ™ zawierajÄ…cÄ… kolejne rÃ³Å¼nice 
+        // odpowiadajÄ…ce aktywnoÅ›ci na kolejnych klatkach filmu.
 
         static std::vector<double> countOnesInXorAtCoordinates(
             std::string videoPath,

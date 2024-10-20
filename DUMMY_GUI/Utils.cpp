@@ -86,30 +86,12 @@ std::vector<double> Utils::aggregate(const std::string& videoPath, const std::st
 }
 
 /// <summary>
-/// Creates a copy of the given vector of values <paramref name="values"/> with values normalized using the min-max feature scaling formula
-/// </summary>
-/// <param name="values">The vector of values to create a copy of with normalized values from</param>
-/// <returns>Vector of normalized values (new object)</returns>
-std::vector<double> Utils::clone_normalized_values(const std::vector<double>& values) {
-	double min_value = *std::min_element(values.begin(), values.end());
-	double max_value = *std::max_element(values.begin(), values.end());
-
-	std::vector<double> normalized_values(values.size());
-	std::transform(values.begin(), values.end(), normalized_values.begin(),
-		[min_value, max_value](double x) {
-			return (x - min_value) / (max_value - min_value);
-		});
-
-	return normalized_values;
-}
-
-/// <summary>
 /// Plots events on a line plot with the given <paramref name="values"/> and <paramref name="events"/>
 /// </summary>
 /// <param name="values">The values to be plotted</param>
 /// <param name="events">The events to be plotted</param>
 void Utils::plot_events(const std::vector<double>& values, const std::vector<std::vector<double>>& events) {
-	std::vector<double> normalized_values = clone_normalized_values(values);
+	std::vector<double> normalized_values = V3::Smoothing::clone_normalized_values(values);
 
 	plt::figure();
 
@@ -123,7 +105,7 @@ void Utils::plot_events(const std::vector<double>& values, const std::vector<std
 	for (const auto& event : events) {
 		event_values.push_back(event[1]);
 	}
-	std::vector<double> normalized_event_values = clone_normalized_values(event_values);
+	std::vector<double> normalized_event_values = V3::Smoothing::clone_normalized_values(event_values);
 
 	for (size_t idx = 0; idx < events.size(); ++idx) {
 		const auto& event = events[idx];
