@@ -1,14 +1,14 @@
 Write-Host "Pulling submodules..."
 git submodule update --init
 
-Write-Host "Copying files..."
-Copy-Item -Path DUMMY_GUI/include/pyconfig.h -Destination DUMMY_GUI/include/python/pyconfig.h
-
 Write-Host "Creating symlinks..."
 cd DUMMY_GUI/include
-cmd /c 'mklink /J python "../python/Include"'
-cmd /c 'mklink /J wxWidgets "../wxWidgets/include"'
+cmd /c 'mklink /J python "../../python/Include"'
+cmd /c 'mklink /J wxWidgets "../../wxWidgets/include"'
 cd ../..
+
+Write-Host "Copying files..."
+Copy-Item -Path DUMMY_GUI/include/pyconfig.h -Destination DUMMY_GUI/include/python/pyconfig.h
 
 Write-Host "Applying patches..."
 Copy-Item -Path patches/matplotlibcpp.h.patch -Destination DUMMY_GUI/include/matplotlib-cpp/matplotlibcpp.h.patch
@@ -28,7 +28,7 @@ if ($installationPath -and (test-path "$installationPath\Common7\Tools\vsdevcmd.
 }
 
 Write-Host "Building wxWidgets (this may take a while)..."
-cd DUMMY_GUI/wxWidgets/build/msw
+cd wxWidgets/build/msw
 git submodule update --init
 # set CL=/MP
 # nmake.exe -f makefile.vc SHARED=0 BUILD=release RUNTIME_LIBS=static TARGET_CPU=X64 # CFG=-mt TARGET_CPU=X64
@@ -45,7 +45,7 @@ msbuild wx_vc17.sln /p:Configuration=Release /property:MultiProcessorCompilation
 
 cd ../..
 Write-Host "Copying wxWidgets lib files..."
-Copy-Item -Path lib/vc_x64_lib/*.lib -Destination ../lib/wxwidgets-MT
-cd ../..
+Copy-Item -Path lib/vc_x64_lib/*.lib -Destination ../DUMMY_GUI/lib/wxwidgets-MT
+cd ..
 
 Write-Host "Done"
