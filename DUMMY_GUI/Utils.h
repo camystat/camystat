@@ -366,6 +366,11 @@ public:
 			// Log CreateProcess result code
 			std::cout << "CreateProcess Exit Code: " << exitCode << std::endl;
 
+			if (exitCode != 0) {
+				wxMessageDialog dialog(NULL, "Plotting script finished with a non-zero exit code!.", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
+				dialog.ShowModal();
+			}
+
 			// Close process and thread handles
 			CloseHandle(pi.hProcess);
 			CloseHandle(pi.hThread);
@@ -374,6 +379,9 @@ public:
 			// Log CreateProcess error
 			DWORD error = GetLastError();
 			std::cout << "CreateProcess Failed with Error Code: " << error << std::endl;
+
+			wxMessageDialog dialog(NULL, "Failed to execute plotting script using CreateProcess.", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
+			dialog.ShowModal();
 		}
 
 		// Save command to a file
@@ -383,16 +391,6 @@ public:
 			outFile << command;
 			outFile.close();
 		}
-
-		// Show the result of CreateProcess
-		//if (resultCreateProcess) {
-		//    wxMessageDialog dialog(NULL, "Plotting script executed successfully using CreateProcess.", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
-		//    dialog.ShowModal();
-		//}
-		//else {
-		//    wxMessageDialog dialog(NULL, "Plotting script failed using CreateProcess.", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
-		//    dialog.ShowModal();
-		//}
 	}
 
 	static void writeVectorToFile(const std::string& filePath, const std::vector<double>& vec) {
@@ -458,4 +456,3 @@ public:
 		return modifiedResults;
 	}
 };
-

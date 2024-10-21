@@ -3,6 +3,7 @@ import sys
 import os
 import plotly.graph_objects as go
 import shutil
+import argparse
 
 def remove_folder(folder_path):
     """Remove a folder and all its contents."""
@@ -41,8 +42,8 @@ def read_vector_of_vectors_from_csv(file_path):
             vector_of_vectors.append([float(value) for value in row])
         return vector_of_vectors
 
-def plot_events(valuesPath, eventsPath, video_name, save_path, fps, pathToRemove, normalize_flag):
-    print("log: path to remove:" + pathToRemove)
+def plot_events(valuesPath, eventsPath, video_name, save_path, fps, path_to_remove, normalize_flag):
+    print("log: path to remove:" + path_to_remove)
     values = read_vector_from_csv(valuesPath)
     
     events = []
@@ -118,9 +119,9 @@ def plot_events(valuesPath, eventsPath, video_name, save_path, fps, pathToRemove
             
             print("log: add_trace")
 
-            print("log: path from which we remove files: " + pathToRemove)
+            print("log: path from which we remove files: " + path_to_remove)
             
-            remove_folder(pathToRemove)
+            remove_folder(path_to_remove)
 
     # Update layout
     if(normalize_flag):
@@ -143,17 +144,23 @@ def plot_events(valuesPath, eventsPath, video_name, save_path, fps, pathToRemove
     print("log: written to html")
 
 if __name__ == "__main__":
-    if len(sys.argv) < 6:
-        print("Usage: plot.exe <valuesPath> <eventsPath> <video_name> <save_path> [fps] <pathToRemove> [normalize_flag]")
-        sys.exit(1)
-    print(f"Received arguments: {sys.argv}")
+    parser = argparse.ArgumentParser(description='Plot video events.')
+    parser.add_argument('valuesPath', type=str, help='Path to the CSV file containing the values.')
+    parser.add_argument('eventsPath', type=str, help='Path to the CSV file containing the events.')
+    parser.add_argument('video_name', type=str, help='Name of the video.')
+    parser.add_argument('save_path', type=str, help='Path to save the plot.')
+    parser.add_argument('fps', type=int, help='Frames per second of the video.')
+    parser.add_argument('path_to_remove', type=str, help='Path to remove.')
+    parser.add_argument('normalize_flag', type=int, help='Normalize the values.', default=False, nargs='?')
+    args = parser.parse_args()
 
-    valuesPath = sys.argv[1].replace("\\", "/")
-    eventsPath = sys.argv[2].replace("\\", "/")
-    video_name = sys.argv[3]
-    save_path = sys.argv[4].replace("\\", "/")
-    fps = int(sys.argv[5]) 
-    pathToRemove = sys.argv[6].replace("\\", "/")
-    normalize_flag = int(sys.argv[7]) # 0 / 1
+    valuesPath = args.valuesPath.replace("\\", "/")
+    eventsPath = args.eventsPath.replace("\\", "/")
+    video_name = args.video_name
+    save_path = args.save_path.replace("\\", "/")
+    fps = args.fps
+    path_to_remove = args.path_to_remove.replace("\\", "/")
+    normalize_flag = args.normalize_flag
+
     
-    plot_events(valuesPath, eventsPath, video_name, save_path, fps, pathToRemove, normalize_flag)
+    plot_events(valuesPath, eventsPath, video_name, save_path, fps, path_to_remove, normalize_flag)

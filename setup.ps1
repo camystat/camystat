@@ -48,4 +48,14 @@ Write-Host "Copying wxWidgets lib files..."
 Copy-Item -Path lib/vc_x64_lib/*.lib -Destination ../DUMMY_GUI/lib/wxwidgets-MT
 cd ..
 
+Write-Host "Installing pyinstaller with pip..."
+pip install -U pyinstaller
+
+Write-Host "Building plot.exe (this may take a while)..."
+cd plot
+pyinstaller --onefile plot.py
+cd dist
+Copy-Item -Path plot.exe -Destination ../../DUMMY_GUI/plot.exe
+cd ../..
+
 Write-Host "Done"

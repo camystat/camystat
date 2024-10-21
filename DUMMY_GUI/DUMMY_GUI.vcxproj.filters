@@ -60,10 +60,10 @@
     <CopyFileToFolders Include="citeme.txt">
       <Filter>Pliki zasobów</Filter>
     </CopyFileToFolders>
-    <CopyFileToFolders Include="command.txt">
+    <CopyFileToFolders Include="icon.ico">
       <Filter>Pliki zasobów</Filter>
     </CopyFileToFolders>
-    <CopyFileToFolders Include="icon.ico">
+    <CopyFileToFolders Include="plot.exe">
       <Filter>Pliki zasobów</Filter>
     </CopyFileToFolders>
   </ItemGroup>
