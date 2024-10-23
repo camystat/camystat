@@ -37,6 +37,11 @@ public:
 	void OnCreateNewWindow(wxThreadEvent& event);
 	void OnClose(wxCloseEvent& event);
 
+	void syncAutomaticRecognitionAnalysisFieldStates();
+	bool isAnyAutomaticAnalysisOptionActive;
+
+	std::vector<wxControl*> allInteractiveControls;
+
 	wxDECLARE_EVENT_TABLE();
 
 	wxPanel* panel;
@@ -66,7 +71,6 @@ public:
 
 	wxStaticText* wxSTOptionsForAnalysis;
 
-	wxCheckBox* wxCBFPSAutoDetect;
 	wxTextCtrl* wxTCFPS;
 	wxStaticText* wxSTFPS;
 
@@ -74,7 +78,7 @@ public:
 	wxTextCtrl* wxTCBinarizationTreshold;
 	wxStaticText* wxSTBinarizationTresholdRange;
 
-	wxCheckBox* wxCBAutomaticRecognitionAnalysis;
+	wxStaticText* wxSTAutomaticRecognitionAnalysis;
 
 	wxTextCtrl* wxTCFirstFrame;
 	wxStaticText* wxSTFirstFrame;
@@ -92,6 +96,9 @@ public:
 
 	wxStaticText* wxSTOptionsOfEventDetection;
 	wxCheckBox* wxCBSavitskyGolayFilter;
+
+	wxCheckBox* wxCBAutomaticBinarizationThreshold;
+	wxCheckBox* wxCBFocusField;
 
 	wxTextCtrl* wxTCWindowLengthSGF;
 	wxStaticText* wxSTWindowLengthSGF;

@@ -162,5 +162,4 @@ if __name__ == "__main__":
     path_to_remove = args.path_to_remove.replace("\\", "/")
     normalize_flag = args.normalize_flag
 
-    
     plot_events(valuesPath, eventsPath, video_name, save_path, fps, path_to_remove, normalize_flag)

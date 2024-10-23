@@ -8,7 +8,8 @@ Research project.
 
 - MSVC along with Visual Studio
 - GIT
-- Python 3.12 (installed **and** binary directory containing the `python312.dll` & `python.exe` added to PATH environment variable)
+- OpenCV 4.9.0 installed and on PATH
+- Python 3.12 installed and on PATH (`python312.dll`)
 
 To build the project, first clone it along with submodules:
 

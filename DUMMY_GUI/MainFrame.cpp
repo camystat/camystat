@@ -76,7 +76,7 @@ bool RemoveDirectoryRecursively(const wxString& dirPath)
 		}
 
 		cont = dir.GetNext(&filename);
-	}
+	} 
 
 	return wxFileName::Rmdir(dirPath);
 }
@@ -138,18 +138,18 @@ protected:
 
 enum IDs {
 	ID_FPS_AUTO_DETECT_ANALYSIS = 1,
-	ID_AUTOMATIC_RECOGNITION_ANALYSIS,
 	ID_SAVINSKY_GOLAY_FILTER,
 	ID_MOVING_AVERAGE,
 	ID_MERGE_EVENTS,
 	ID_AUTO_SELECT_EVENTS,
 	ID_Timer,
-	ID_AUTO_DETECT_EVENTS
+	ID_AUTO_DETECT_EVENTS,
+	ID_AUTOMATIC_BINARIZATION_THRESHOLD,
+	ID_FOCUS_FIELD
 };
 
 wxBEGIN_EVENT_TABLE(MainFrame, wxFrame)
 EVT_CHECKBOX(ID_FPS_AUTO_DETECT_ANALYSIS, MainFrame::wxFPSAutoDetectAnalysisToggle)
-EVT_CHECKBOX(ID_AUTOMATIC_RECOGNITION_ANALYSIS, MainFrame::wxAutomaticRecognitionAnalysis)
 EVT_CHECKBOX(ID_SAVINSKY_GOLAY_FILTER, MainFrame::wxSavinskyGolayFilter)
 EVT_CHECKBOX(ID_MOVING_AVERAGE, MainFrame::wxMovingAverage)
 EVT_CHECKBOX(ID_MERGE_EVENTS, MainFrame::wxMergeEvents)
@@ -162,6 +162,14 @@ EVT_CHECKBOX(ID_AUTO_DETECT_EVENTS, MainFrame::wxCBAutoMDetectEventsToggle)
 EVT_MENU(wxID_ANY, MainFrame::OnCiteMe)
 EVT_THREAD(wxEVT_CREATE_NEW_WINDOW, MainFrame::OnCreateNewWindow)
 wxEND_EVENT_TABLE()
+
+void MainFrame::syncAutomaticRecognitionAnalysisFieldStates() {
+	isAnyAutomaticAnalysisOptionActive = wxCBSavitskyGolayFilter->IsEnabled() || wxCBMovingAverage->IsEnabled() || wxCBAutoMDetectEvents->IsEnabled();
+	std::cout << (isAnyAutomaticAnalysisOptionActive ? "T" : "N") << std::endl;
+
+	wxTCFirstFrame->Enable(isAnyAutomaticAnalysisOptionActive);
+	wxTCLastFrame->Enable(isAnyAutomaticAnalysisOptionActive);
+}
 
 MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) {
 
@@ -254,7 +262,9 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 
 	//Right side of the GUI
 
-	wxSTOptionsForAnalysis = new wxStaticText(panel, wxID_ANY, "Options for analysis:", wxPoint(320, 20), wxSize(280, 20));
+	uint rightSideCoordY = 20;
+
+	wxSTOptionsForAnalysis = new wxStaticText(panel, wxID_ANY, "Options of automatic analysis:", wxPoint(320, rightSideCoordY), wxSize(280, rightSideCoordY));
 	{
 		wxFont font = wxSTOptionsForAnalysis->GetFont();
 		font.SetWeight(wxFONTWEIGHT_BOLD);
@@ -266,53 +276,71 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 		wxSTOptionsForAnalysis->Refresh();
 	}
 
-	wxCBFPSAutoDetect = new wxCheckBox(panel, ID_FPS_AUTO_DETECT_ANALYSIS, "FPS auto detect analysis", wxPoint(320, 45));
+	rightSideCoordY += 25;
 
-	wxTCFPS = new wxTextCtrl(panel, wxID_ANY, "", wxPoint(510, 45), wxSize(40, 20));
-	wxTCFPS->Bind(wxEVT_CHAR, &MainFrame::OnChar, this);
-	wxTCFPS->Bind(wxEVT_KILL_FOCUS, &MainFrame::OnKillFocus, this);
-	wxTCFPS->Bind(wxEVT_TEXT_PASTE, &MainFrame::OnPaste, this);
+	wxCBAutomaticBinarizationThreshold = new wxCheckBox(panel, ID_AUTOMATIC_BINARIZATION_THRESHOLD, "Auto binarization threshold", wxPoint(320, rightSideCoordY));
+	wxCBAutomaticBinarizationThreshold->SetValue(true);
+	wxCBAutomaticBinarizationThreshold->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent& event)
+		{
+			wxTCBinarizationTreshold->Enable(!event.IsChecked());
+		});
 
-	wxSTFPS = new wxStaticText(panel, wxID_ANY, "FPS", wxPoint(560, 45), wxSize(40, 20));
 
-	wxSTBinarizationTreshold = new wxStaticText(panel, wxID_ANY, "Binarization treshold", wxPoint(320, 70), wxSize(150, 20));
-	wxTCBinarizationTreshold = new wxTextCtrl(panel, wxID_ANY, "100", wxPoint(510, 70), wxSize(40, 20));
+	rightSideCoordY += 25;
+
+	wxSTBinarizationTreshold = new wxStaticText(panel, wxID_ANY, "Binarization threshold", wxPoint(320, rightSideCoordY), wxSize(150, 20));
+	wxTCBinarizationTreshold = new wxTextCtrl(panel, wxID_ANY, "100", wxPoint(510, rightSideCoordY), wxSize(40, 20));
+	wxTCBinarizationTreshold->Enable(false);
 	wxTCBinarizationTreshold->Bind(wxEVT_CHAR, &MainFrame::OnChar, this);
 	wxTCBinarizationTreshold->Bind(wxEVT_KILL_FOCUS, &MainFrame::OnKillFocus, this);
 	wxTCBinarizationTreshold->Bind(wxEVT_TEXT_PASTE, &MainFrame::OnPaste, this);
 
-	wxSTBinarizationTresholdRange = new wxStaticText(panel, wxID_ANY, "0-255", wxPoint(560, 70), wxSize(40, 20));
+	wxSTBinarizationTresholdRange = new wxStaticText(panel, wxID_ANY, "0-255", wxPoint(560, rightSideCoordY), wxSize(40, 20));
 
-	wxCBAutomaticRecognitionAnalysis = new wxCheckBox(panel, ID_AUTOMATIC_RECOGNITION_ANALYSIS, "Automatic recognition analysis", wxPoint(320, 95));
-	wxCBAutomaticRecognitionAnalysis->SetValue(true);
+	rightSideCoordY += 25;
 
-	wxTCFirstFrame = new wxTextCtrl(panel, wxID_ANY, "", wxPoint(320, 120), wxSize(40, 20));
-	wxTCFirstFrame->Bind(wxEVT_CHAR, &MainFrame::OnChar, this);
-	wxTCFirstFrame->Bind(wxEVT_KILL_FOCUS, &MainFrame::OnKillFocus, this);
-	wxTCFirstFrame->Bind(wxEVT_TEXT_PASTE, &MainFrame::OnPaste, this);
-	wxSTFirstFrame = new wxStaticText(panel, wxID_ANY, "First frame", wxPoint(370, 120), wxSize(80, 20));
+	wxCBFocusField = new wxCheckBox(panel, ID_FOCUS_FIELD, "Focus field", wxPoint(320, rightSideCoordY));
+	wxCBFocusField->SetValue(true);
 
-	wxTCLastFrame = new wxTextCtrl(panel, wxID_ANY, "", wxPoint(460, 120), wxSize(40, 20));
-	wxTCLastFrame->Bind(wxEVT_CHAR, &MainFrame::OnChar, this);
-	wxTCLastFrame->Bind(wxEVT_KILL_FOCUS, &MainFrame::OnKillFocus, this);
-	wxTCLastFrame->Bind(wxEVT_TEXT_PASTE, &MainFrame::OnPaste, this);
-	wxSTLastFrame = new wxStaticText(panel, wxID_ANY, "Last frame", wxPoint(510, 120), wxSize(80, 30));
+	rightSideCoordY += 25;
 
-	wxCBFocusCoordinatesAnalysis = new wxStaticText(panel, wxID_ANY, "Focus coordinates analysis:", wxPoint(320, 150), wxSize(280, 20));
+	wxCBFocusCoordinatesAnalysis = new wxStaticText(panel, wxID_ANY, "Focus coordinates analysis:", wxPoint(320, rightSideCoordY), wxSize(280, 20));
 
-	wxTCSizeOfFocusField = new wxTextCtrl(panel, wxID_ANY, "25", wxPoint(320, 175), wxSize(40, 20));
+	rightSideCoordY += 25;
+
+	wxTCSizeOfFocusField = new wxTextCtrl(panel, wxID_ANY, "25", wxPoint(320, rightSideCoordY), wxSize(40, 20));
 	wxTCSizeOfFocusField->Bind(wxEVT_CHAR, &MainFrame::OnChar, this);
 	wxTCSizeOfFocusField->Bind(wxEVT_KILL_FOCUS, &MainFrame::OnKillFocus, this);
 	wxTCSizeOfFocusField->Bind(wxEVT_TEXT_PASTE, &MainFrame::OnPaste, this);
-	wxSTSizeOfFocusField = new wxStaticText(panel, wxID_ANY, "Size of the focus field", wxPoint(370, 175), wxSize(80, 30));
+	wxSTSizeOfFocusField = new wxStaticText(panel, wxID_ANY, "Size of the focus field", wxPoint(370, rightSideCoordY), wxSize(80, 30));
 
-	wxTCPercentileOfTheHighestValues = new wxTextCtrl(panel, wxID_ANY, "90", wxPoint(460, 175), wxSize(40, 20));
+	wxTCPercentileOfTheHighestValues = new wxTextCtrl(panel, wxID_ANY, "90", wxPoint(460, rightSideCoordY), wxSize(40, 20));
 	wxTCPercentileOfTheHighestValues->Bind(wxEVT_CHAR, &MainFrame::OnChar, this);
 	wxTCPercentileOfTheHighestValues->Bind(wxEVT_KILL_FOCUS, &MainFrame::OnKillFocus, this);
 	wxTCPercentileOfTheHighestValues->Bind(wxEVT_TEXT_PASTE, &MainFrame::OnPaste, this);
-	wxSTPercentileOfTheHighestValues = new wxStaticText(panel, wxID_ANY, "Percentile of the highest values", wxPoint(510, 175), wxSize(80, 50));
+	wxSTPercentileOfTheHighestValues = new wxStaticText(panel, wxID_ANY, "Percentile of the highest values", wxPoint(510, rightSideCoordY), wxSize(80, 50));
 
-	wxSTOptionsOfEventDetection = new wxStaticText(panel, wxID_ANY, "Options of event detection:", wxPoint(320, 210), wxSize(280, 30));
+	rightSideCoordY += 50;
+
+	wxSTAutomaticRecognitionAnalysis = new wxStaticText(panel, wxID_ANY, "Determine recognition analysis depth", wxPoint(320, rightSideCoordY));
+
+	rightSideCoordY += 25;
+
+	wxTCFirstFrame = new wxTextCtrl(panel, wxID_ANY, "", wxPoint(320, rightSideCoordY), wxSize(40, 20));
+	wxTCFirstFrame->Bind(wxEVT_CHAR, &MainFrame::OnChar, this);
+	wxTCFirstFrame->Bind(wxEVT_KILL_FOCUS, &MainFrame::OnKillFocus, this);
+	wxTCFirstFrame->Bind(wxEVT_TEXT_PASTE, &MainFrame::OnPaste, this);
+	wxSTFirstFrame = new wxStaticText(panel, wxID_ANY, "First frame", wxPoint(370, rightSideCoordY), wxSize(80, 20));
+
+	wxTCLastFrame = new wxTextCtrl(panel, wxID_ANY, "", wxPoint(460, rightSideCoordY), wxSize(40, 20));
+	wxTCLastFrame->Bind(wxEVT_CHAR, &MainFrame::OnChar, this);
+	wxTCLastFrame->Bind(wxEVT_KILL_FOCUS, &MainFrame::OnKillFocus, this);
+	wxTCLastFrame->Bind(wxEVT_TEXT_PASTE, &MainFrame::OnPaste, this);
+	wxSTLastFrame = new wxStaticText(panel, wxID_ANY, "Last frame", wxPoint(510, rightSideCoordY), wxSize(80, 30));
+
+	rightSideCoordY += 25;
+
+	wxSTOptionsOfEventDetection = new wxStaticText(panel, wxID_ANY, "Options of event detection:", wxPoint(320, rightSideCoordY), wxSize(280, 30));
 	{
 		wxFont font = wxSTOptionsOfEventDetection->GetFont();
 		font.SetWeight(wxFONTWEIGHT_BOLD);
@@ -324,78 +352,111 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 		wxSTOptionsOfEventDetection->Refresh();
 	}
 
-	wxCBSavitskyGolayFilter = new wxCheckBox(panel, ID_SAVINSKY_GOLAY_FILTER, "Savitsky-Golay filter", wxPoint(320, 235));
-	wxCBSavitskyGolayFilter->SetValue(true);
+	rightSideCoordY += 25;
 
-	wxTCWindowLengthSGF = new wxTextCtrl(panel, wxID_ANY, "7", wxPoint(320, 260), wxSize(40, 20));
+	wxTCFPS = new wxTextCtrl(panel, wxID_ANY, "", wxPoint(320, rightSideCoordY), wxSize(40, 20));
+	wxTCFPS->Bind(wxEVT_CHAR, &MainFrame::OnChar, this);
+	wxTCFPS->Bind(wxEVT_KILL_FOCUS, &MainFrame::OnKillFocus, this);
+	wxTCFPS->Bind(wxEVT_TEXT_PASTE, &MainFrame::OnPaste, this);
+
+	wxSTFPS = new wxStaticText(panel, wxID_ANY, "FPS", wxPoint(370, rightSideCoordY), wxSize(40, 20));
+
+	rightSideCoordY += 25;
+
+	wxCBSavitskyGolayFilter = new wxCheckBox(panel, ID_SAVINSKY_GOLAY_FILTER, "Savitsky-Golay filter", wxPoint(320, rightSideCoordY));
+	wxCBSavitskyGolayFilter->SetValue(true);
+	wxCBSavitskyGolayFilter->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent &event) { syncAutomaticRecognitionAnalysisFieldStates(); });
+
+	rightSideCoordY += 25;
+
+	wxTCWindowLengthSGF = new wxTextCtrl(panel, wxID_ANY, "7", wxPoint(320, rightSideCoordY), wxSize(40, 20));
 	wxTCWindowLengthSGF->Bind(wxEVT_CHAR, &MainFrame::OnChar, this);
 	wxTCWindowLengthSGF->Bind(wxEVT_KILL_FOCUS, &MainFrame::OnKillFocus, this);
 	wxTCWindowLengthSGF->Bind(wxEVT_TEXT_PASTE, &MainFrame::OnPaste, this);
-	wxSTWindowLengthSGF = new wxStaticText(panel, wxID_ANY, "Window length", wxPoint(370, 260), wxSize(80, 40));
+	wxSTWindowLengthSGF = new wxStaticText(panel, wxID_ANY, "Window length", wxPoint(370, rightSideCoordY), wxSize(80, 40));
 
-	wxTCPolyorder = new wxTextCtrl(panel, wxID_ANY, "5", wxPoint(460, 260), wxSize(40, 20));
+	wxTCPolyorder = new wxTextCtrl(panel, wxID_ANY, "5", wxPoint(460, rightSideCoordY), wxSize(40, 20));
 	wxTCPolyorder->Bind(wxEVT_CHAR, &MainFrame::OnChar, this);
 	wxTCPolyorder->Bind(wxEVT_KILL_FOCUS, &MainFrame::OnKillFocus, this);
 	wxTCPolyorder->Bind(wxEVT_TEXT_PASTE, &MainFrame::OnPaste, this);
-	wxSTPolyorder = new wxStaticText(panel, wxID_ANY, "Polyorder", wxPoint(510, 260), wxSize(80, 20));
+	wxSTPolyorder = new wxStaticText(panel, wxID_ANY, "Polyorder", wxPoint(510, rightSideCoordY), wxSize(80, 20));
 
-	wxCBMovingAverage = new wxCheckBox(panel, ID_MOVING_AVERAGE, "Moving average", wxPoint(320, 300));
+	rightSideCoordY += 40;
+
+	wxCBMovingAverage = new wxCheckBox(panel, ID_MOVING_AVERAGE, "Moving average", wxPoint(320, rightSideCoordY));
 	wxCBMovingAverage->SetValue(true);
+	wxCBMovingAverage->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent &event) { syncAutomaticRecognitionAnalysisFieldStates(); });
 
-	wxTCWindowLengthMA = new wxTextCtrl(panel, wxID_ANY, "2", wxPoint(320, 325), wxSize(40, 20));
+	rightSideCoordY += 25;
+
+	wxTCWindowLengthMA = new wxTextCtrl(panel, wxID_ANY, "2", wxPoint(320, rightSideCoordY), wxSize(40, 20));
 	wxTCWindowLengthMA->Bind(wxEVT_CHAR, &MainFrame::OnChar, this);
 	wxTCWindowLengthMA->Bind(wxEVT_KILL_FOCUS, &MainFrame::OnKillFocus, this);
 	wxTCWindowLengthMA->Bind(wxEVT_TEXT_PASTE, &MainFrame::OnPaste, this);
-	wxSTWindowLengthMA = new wxStaticText(panel, wxID_ANY, "Window length", wxPoint(370, 325), wxSize(80, 40));
+	wxSTWindowLengthMA = new wxStaticText(panel, wxID_ANY, "Window length", wxPoint(370, rightSideCoordY), wxSize(80, 40));
 
-	wxTCNumberOfRepetitions = new wxTextCtrl(panel, wxID_ANY, "10", wxPoint(460, 325), wxSize(40, 20));
+	wxTCNumberOfRepetitions = new wxTextCtrl(panel, wxID_ANY, "10", wxPoint(460, rightSideCoordY), wxSize(40, 20));
 	wxTCNumberOfRepetitions->Bind(wxEVT_CHAR, &MainFrame::OnChar, this);
 	wxTCNumberOfRepetitions->Bind(wxEVT_KILL_FOCUS, &MainFrame::OnKillFocus, this);
 	wxTCNumberOfRepetitions->Bind(wxEVT_TEXT_PASTE, &MainFrame::OnPaste, this);
-	wxSTNumberOfRepetitions = new wxStaticText(panel, wxID_ANY, "Number of repetitions", wxPoint(510, 325), wxSize(80, 40));
+	wxSTNumberOfRepetitions = new wxStaticText(panel, wxID_ANY, "Number of repetitions", wxPoint(510, rightSideCoordY), wxSize(80, 40));
 
-	wxSTTrimList = new wxStaticText(panel, wxID_ANY, "Trim list:", wxPoint(320, 360), wxSize(280, 20));
+	rightSideCoordY += 45;
 
-	wxTCLeftTrim = new wxTextCtrl(panel, wxID_ANY, "0", wxPoint(320, 385), wxSize(40, 20));
+	wxSTTrimList = new wxStaticText(panel, wxID_ANY, "Trim list:", wxPoint(320, rightSideCoordY), wxSize(280, 20));
+
+	rightSideCoordY += 25;
+
+	wxTCLeftTrim = new wxTextCtrl(panel, wxID_ANY, "0", wxPoint(320, rightSideCoordY), wxSize(40, 20));
 	wxTCLeftTrim->Bind(wxEVT_CHAR, &MainFrame::OnChar, this);
 	wxTCLeftTrim->Bind(wxEVT_KILL_FOCUS, &MainFrame::OnKillFocus, this);
 	wxTCLeftTrim->Bind(wxEVT_TEXT_PASTE, &MainFrame::OnPaste, this);
-	wxSTLeftTrim = new wxStaticText(panel, wxID_ANY, "Left trim", wxPoint(370, 385), wxSize(80, 30));
+	wxSTLeftTrim = new wxStaticText(panel, wxID_ANY, "Left trim", wxPoint(370, rightSideCoordY), wxSize(80, 30));
 
-	wxTCRightTrim = new wxTextCtrl(panel, wxID_ANY, "0", wxPoint(460, 385), wxSize(40, 20));
+	wxTCRightTrim = new wxTextCtrl(panel, wxID_ANY, "0", wxPoint(460, rightSideCoordY), wxSize(40, 20));
 	wxTCRightTrim->Bind(wxEVT_CHAR, &MainFrame::OnChar, this);
 	wxTCRightTrim->Bind(wxEVT_KILL_FOCUS, &MainFrame::OnKillFocus, this);
 	wxTCRightTrim->Bind(wxEVT_TEXT_PASTE, &MainFrame::OnPaste, this);
-	wxSTRightTrim = new wxStaticText(panel, wxID_ANY, "Right trim", wxPoint(510, 385), wxSize(80, 30));
+	wxSTRightTrim = new wxStaticText(panel, wxID_ANY, "Right trim", wxPoint(510, rightSideCoordY), wxSize(80, 30));
 
-	wxCBAutoMDetectEvents = new wxCheckBox(panel, ID_AUTO_DETECT_EVENTS, "Auto detect events", wxPoint(320, 415));
+	rightSideCoordY += 30;
+
+	wxCBAutoMDetectEvents = new wxCheckBox(panel, ID_AUTO_DETECT_EVENTS, "Auto detect events", wxPoint(320, rightSideCoordY));
 	wxCBAutoMDetectEvents->SetValue(true);
 
-	wxSTAutoMovementTresholdStatic = new wxStaticText(panel, wxID_ANY, "Movement treshold", wxPoint(345, 440));
+	rightSideCoordY += 25;
 
-	wxTCAutoMovementTreshold = new wxTextCtrl(panel, wxID_ANY, "0.45", wxPoint(510, 440), wxSize(40, 20));
+	wxSTAutoMovementTresholdStatic = new wxStaticText(panel, wxID_ANY, "Movement treshold", wxPoint(345, rightSideCoordY));
+
+	wxTCAutoMovementTreshold = new wxTextCtrl(panel, wxID_ANY, "0.45", wxPoint(510, rightSideCoordY), wxSize(40, 20));
 	wxTCAutoMovementTreshold->Bind(wxEVT_CHAR, &MainFrame::OnChar, this);
 	wxTCAutoMovementTreshold->Bind(wxEVT_KILL_FOCUS, &MainFrame::OnKillFocus, this);
 	wxTCAutoMovementTreshold->Bind(wxEVT_TEXT_PASTE, &MainFrame::OnPaste, this);
-	wxSTAutoMovementTreshold = new wxStaticText(panel, wxID_ANY, "units", wxPoint(560, 440), wxSize(40, 20));
+	wxSTAutoMovementTreshold = new wxStaticText(panel, wxID_ANY, "units", wxPoint(560, rightSideCoordY), wxSize(40, 20));
 
-	wxCBAutoMergeEvents = new wxCheckBox(panel, ID_MERGE_EVENTS, "Auto merge events", wxPoint(345, 465));
+	rightSideCoordY += 25;
+
+	wxCBAutoMergeEvents = new wxCheckBox(panel, ID_MERGE_EVENTS, "Auto merge events", wxPoint(345, rightSideCoordY));
 	wxCBAutoMergeEvents->SetValue(true);
 
-	wxTCAutoMergeEvents = new wxTextCtrl(panel, wxID_ANY, "", wxPoint(510, 465), wxSize(40, 20));
+	wxTCAutoMergeEvents = new wxTextCtrl(panel, wxID_ANY, "0", wxPoint(510, rightSideCoordY), wxSize(40, 20));
 	wxTCAutoMergeEvents->Bind(wxEVT_CHAR, &MainFrame::OnChar, this);
 	wxTCAutoMergeEvents->Bind(wxEVT_KILL_FOCUS, &MainFrame::OnKillFocus, this);
 	wxTCAutoMergeEvents->Bind(wxEVT_TEXT_PASTE, &MainFrame::OnPaste, this);
-	wxSTAutoMergeEvents = new wxStaticText(panel, wxID_ANY, "frames", wxPoint(560, 465), wxSize(40, 20));
+	wxSTAutoMergeEvents = new wxStaticText(panel, wxID_ANY, "frames", wxPoint(560, rightSideCoordY), wxSize(40, 20));
 
-	wxCBAutoSelectEvents = new wxCheckBox(panel, ID_AUTO_SELECT_EVENTS, "Auto select events", wxPoint(345, 490));
+	rightSideCoordY += 25;
+
+	wxCBAutoSelectEvents = new wxCheckBox(panel, ID_AUTO_SELECT_EVENTS, "Auto select events", wxPoint(345, rightSideCoordY));
 	wxCBAutoSelectEvents->SetValue(true);
 
-	wxTCAutoSelectEvents = new wxTextCtrl(panel, wxID_ANY, "", wxPoint(510, 490), wxSize(40, 20));
+	wxTCAutoSelectEvents = new wxTextCtrl(panel, wxID_ANY, "5", wxPoint(510, rightSideCoordY), wxSize(40, 20));
 	wxTCAutoSelectEvents->Bind(wxEVT_CHAR, &MainFrame::OnChar, this);
 	wxTCAutoSelectEvents->Bind(wxEVT_KILL_FOCUS, &MainFrame::OnKillFocus, this);
 	wxTCAutoSelectEvents->Bind(wxEVT_TEXT_PASTE, &MainFrame::OnPaste, this);
-	wxSTAutoSelectEvents = new wxStaticText(panel, wxID_ANY, "units", wxPoint(560, 490), wxSize(40, 20));
+	wxSTAutoSelectEvents = new wxStaticText(panel, wxID_ANY, "units", wxPoint(560, rightSideCoordY), wxSize(40, 20));
+
+	rightSideCoordY += 25;
 
 	wxMenuBar* menuBar = new wxMenuBar;
 	wxMenu* fileMenu = new wxMenu;
@@ -406,6 +467,8 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 	Bind(wxEVT_MENU, &MainFrame::OnCiteMe, this, citeMeMenuItem->GetId());
 	Bind(wxEVT_CREATE_NEW_WINDOW, &MainFrame::OnCreateNewWindow, this);
 	Bind(wxEVT_CLOSE_WINDOW, &MainFrame::OnClose, this);
+
+	SetSize(640, rightSideCoordY + 90);
 
 	wxBOutputPath->Bind(wxEVT_BUTTON, [this](wxCommandEvent& event)
 		{
@@ -471,6 +534,8 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 
 	wxCBAutoMDetectEvents->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent& event)
 		{
+			syncAutomaticRecognitionAnalysisFieldStates();
+
 			if (event.IsChecked()) {
 				wxSTAutoMovementTresholdStatic->Enable(true);
 				wxTCAutoMovementTreshold->Enable(true);
@@ -494,114 +559,71 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 				wxSTAutoSelectEvents->Enable(false);
 			}
 		});
+
+	allInteractiveControls.push_back(wxCTFileList);
+	allInteractiveControls.push_back(wxBChooseVideo);
+	allInteractiveControls.push_back(wxBAnalyze);
+	allInteractiveControls.push_back(wxBOutputPath);
+	allInteractiveControls.push_back(wxCTOutputPath);
+	allInteractiveControls.push_back(wxSTBinarizationTreshold);
+	allInteractiveControls.push_back(wxCBCVSStats);
+	allInteractiveControls.push_back(wxCBCVSRaw);
+	allInteractiveControls.push_back(wxCBLineChart);
+	allInteractiveControls.push_back(wxCBNormalizedChart);
+	allInteractiveControls.push_back(wxTCFPS);
+	allInteractiveControls.push_back(wxTCBinarizationTreshold);
+	allInteractiveControls.push_back(wxTCFirstFrame);
+	allInteractiveControls.push_back(wxTCLastFrame);
+	allInteractiveControls.push_back(wxTCSizeOfFocusField);
+	allInteractiveControls.push_back(wxTCPercentileOfTheHighestValues);
+	allInteractiveControls.push_back(wxCBSavitskyGolayFilter);
+	allInteractiveControls.push_back(wxTCWindowLengthSGF);
+	allInteractiveControls.push_back(wxTCPolyorder);
+	allInteractiveControls.push_back(wxCBMovingAverage);
+	allInteractiveControls.push_back(wxTCWindowLengthMA);
+	allInteractiveControls.push_back(wxTCNumberOfRepetitions);
+	allInteractiveControls.push_back(wxTCAutoMovementTreshold);
+	allInteractiveControls.push_back(wxTCLeftTrim);
+	allInteractiveControls.push_back(wxTCRightTrim);
+	allInteractiveControls.push_back(wxCBAutoMergeEvents);
+	allInteractiveControls.push_back(wxTCAutoMergeEvents);
+	allInteractiveControls.push_back(wxCBAutoSelectEvents);
+	allInteractiveControls.push_back(wxTCAutoSelectEvents);
+	allInteractiveControls.push_back(wxSTFPS);
+	allInteractiveControls.push_back(wxSTBinarizationTresholdRange);
+	allInteractiveControls.push_back(wxSTFirstFrame);
+	allInteractiveControls.push_back(wxSTLastFrame);
+	allInteractiveControls.push_back(wxCBFocusCoordinatesAnalysis);
+	allInteractiveControls.push_back(wxSTSizeOfFocusField);
+	allInteractiveControls.push_back(wxSTPercentileOfTheHighestValues);
+	allInteractiveControls.push_back(wxSTWindowLengthSGF);
+	allInteractiveControls.push_back(wxSTPolyorder);
+	allInteractiveControls.push_back(wxSTWindowLengthMA);
+	allInteractiveControls.push_back(wxCBAutoMDetectEvents);
+	allInteractiveControls.push_back(wxSTNumberOfRepetitions);
+	allInteractiveControls.push_back(wxSTAutoMovementTresholdStatic);
+	allInteractiveControls.push_back(wxSTAutoMovementTreshold);
+	allInteractiveControls.push_back(wxSTTrimList);
+	allInteractiveControls.push_back(wxSTLeftTrim);
+	allInteractiveControls.push_back(wxSTRightTrim);
+	allInteractiveControls.push_back(wxSTAutoMergeEvents);
+	allInteractiveControls.push_back(wxSTAutoSelectEvents);
+
+	syncAutomaticRecognitionAnalysisFieldStates();
 }
 
 void MainFrame::DisableUI()
 {
-	wxCTFileList->Enable(false);
-	wxBChooseVideo->Enable(false);
-	wxBAnalyze->Enable(false);
-	wxBOutputPath->Enable(false);
-	wxCTOutputPath->Enable(false);
-	wxSTBinarizationTreshold->Enable(false);
-	wxCBCVSStats->Enable(false);
-	wxCBCVSRaw->Enable(false);
-	wxCBLineChart->Enable(false);
-	wxCBNormalizedChart->Enable(false);
-	wxCBFPSAutoDetect->Enable(false);
-	wxTCFPS->Enable(false);
-	wxTCBinarizationTreshold->Enable(false);
-	wxCBAutomaticRecognitionAnalysis->Enable(false);
-	wxTCFirstFrame->Enable(false);
-	wxTCLastFrame->Enable(false);
-	wxTCSizeOfFocusField->Enable(false);
-	wxTCPercentileOfTheHighestValues->Enable(false);
-	wxCBSavitskyGolayFilter->Enable(false);
-	wxTCWindowLengthSGF->Enable(false);
-	wxTCPolyorder->Enable(false);
-	wxCBMovingAverage->Enable(false);
-	wxTCWindowLengthMA->Enable(false);
-	wxTCNumberOfRepetitions->Enable(false);
-	wxTCAutoMovementTreshold->Enable(false);
-	wxTCLeftTrim->Enable(false);
-	wxTCRightTrim->Enable(false);
-	wxCBAutoMergeEvents->Enable(false);
-	wxTCAutoMergeEvents->Enable(false);
-	wxCBAutoSelectEvents->Enable(false);
-	wxTCAutoSelectEvents->Enable(false);
-	wxSTFPS->Enable(false);
-	wxSTBinarizationTresholdRange->Enable(false);
-	wxSTFirstFrame->Enable(false);
-	wxSTLastFrame->Enable(false);
-	wxCBFocusCoordinatesAnalysis->Enable(false);
-	wxSTSizeOfFocusField->Enable(false);
-	wxSTPercentileOfTheHighestValues->Enable(false);
-	wxSTWindowLengthSGF->Enable(false);
-	wxSTPolyorder->Enable(false);
-	wxSTWindowLengthMA->Enable(false);
-	wxCBAutoMDetectEvents->Enable(false);
-	wxSTNumberOfRepetitions->Enable(false);
-	wxSTAutoMovementTresholdStatic->Enable(false);
-	wxSTAutoMovementTreshold->Enable(false);
-	wxSTTrimList->Enable(false);
-	wxSTLeftTrim->Enable(false);
-	wxSTRightTrim->Enable(false);
-	wxSTAutoMergeEvents->Enable(false);
-	wxSTAutoSelectEvents->Enable(false);
+	for (wxControl*& ctrl : allInteractiveControls) {
+		ctrl->Enable(false);
+	}
 }
 
 void MainFrame::UpdateUIAfterProcessing()
 {
-	wxCTFileList->Enable(true);
-	wxBChooseVideo->Enable(true);
-	wxBAnalyze->Enable(true);
-	wxBOutputPath->Enable(true);
-	wxCTOutputPath->Enable(true);
-	wxSTBinarizationTreshold->Enable(true);
-	wxCBCVSStats->Enable(true);
-	wxCBCVSRaw->Enable(true);
-	wxCBLineChart->Enable(true);
-	wxCBNormalizedChart->Enable(true);
-	wxCBFPSAutoDetect->Enable(true);
-	wxTCFPS->Enable(true);
-	wxTCBinarizationTreshold->Enable(true);
-	wxCBAutomaticRecognitionAnalysis->Enable(true);
-	wxTCFirstFrame->Enable(true);
-	wxTCLastFrame->Enable(true);
-	wxTCSizeOfFocusField->Enable(true);
-	wxTCPercentileOfTheHighestValues->Enable(true);
-	wxCBSavitskyGolayFilter->Enable(true);
-	wxTCWindowLengthSGF->Enable(true);
-	wxTCPolyorder->Enable(true);
-	wxCBMovingAverage->Enable(true);
-	wxTCWindowLengthMA->Enable(true);
-	wxTCNumberOfRepetitions->Enable(true);
-	wxTCAutoMovementTreshold->Enable(true);
-	wxTCLeftTrim->Enable(true);
-	wxTCRightTrim->Enable(true);
-	wxCBAutoMergeEvents->Enable(true);
-	wxTCAutoMergeEvents->Enable(true);
-	wxCBAutoSelectEvents->Enable(true);
-	wxTCAutoSelectEvents->Enable(true);
-	wxSTFPS->Enable(true);
-	wxCBAutoMDetectEvents->Enable(true);
-	wxSTBinarizationTresholdRange->Enable(true);
-	wxSTFirstFrame->Enable(true);
-	wxSTLastFrame->Enable(true);
-	wxCBFocusCoordinatesAnalysis->Enable(true);
-	wxSTSizeOfFocusField->Enable(true);
-	wxSTPercentileOfTheHighestValues->Enable(true);
-	wxSTWindowLengthSGF->Enable(true);
-	wxSTPolyorder->Enable(true);
-	wxSTWindowLengthMA->Enable(true);
-	wxSTNumberOfRepetitions->Enable(true);
-	wxSTAutoMovementTresholdStatic->Enable(true);
-	wxSTAutoMovementTreshold->Enable(true);
-	wxSTTrimList->Enable(true);
-	wxSTLeftTrim->Enable(true);
-	wxSTRightTrim->Enable(true);
-	wxSTAutoMergeEvents->Enable(true);
-	wxSTAutoSelectEvents->Enable(true);
+	for (wxControl*& ctrl : allInteractiveControls) {
+		ctrl->Enable(true);
+	}
 }
 
 void MainFrame::wxFPSAutoDetectAnalysisToggle(wxCommandEvent& evt) {
@@ -635,21 +657,6 @@ void MainFrame::wxCBAutoMDetectEventsToggle(wxCommandEvent& evt) {
 		wxCBAutoSelectEvents->Enable(false);
 		wxTCAutoSelectEvents->Enable(false);
 		wxSTAutoSelectEvents->Enable(false);
-	}
-}
-
-void MainFrame::wxAutomaticRecognitionAnalysis(wxCommandEvent& evt) {
-	if (evt.IsChecked()) {
-		wxTCFirstFrame->Enable();
-		wxTCLastFrame->Enable();
-		wxTCSizeOfFocusField->Enable();
-		wxTCPercentileOfTheHighestValues->Enable();
-	}
-	else {
-		wxTCFirstFrame->Disable();
-		wxTCLastFrame->Disable();
-		wxTCSizeOfFocusField->Disable();
-		wxTCPercentileOfTheHighestValues->Disable();
 	}
 }
 
@@ -744,53 +751,18 @@ void MainFrame::RunAnalysis()
 		fs::path pathObj(inputPath);
 
 		int fps;
-
-		if (wxCBFPSAutoDetect->IsChecked()) {
-			cv::VideoCapture cap(inputPath);
-
-			if (!cap.isOpened()) {
-				wxSTStatus->SetLabel("Status: Could not open a file: " + inputPath + ".");
-				wxMessageDialog dialog(NULL, "ERROR: Could not open a file: " + inputPath + ".", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_ERROR | wxDIALOG_NO_PARENT);
-				dialog.ShowModal();
-				return;
-			}
-
-			// Get the FPS (Frames Per Second)
-			fps = static_cast<int>(cap.get(cv::CAP_PROP_FPS));
-
-			wxTCFPS->SetValue(std::to_string(fps));
-			if (wxTCFirstFrame->GetValue() == "") {
-				wxTCFirstFrame->SetValue(std::to_string(fps * 2));
-			}
-			if (wxTCFirstFrame->GetValue() == "") {
-				wxTCLastFrame->SetValue(std::to_string(fps * 12));
-			}
-			if (wxTCNumberOfRepetitions->GetValue() == "") {
-				wxTCNumberOfRepetitions->SetValue(std::to_string(static_cast<int>(std::round(fps * 0.1))));
-			}
-			if (wxTCNumberOfRepetitions->GetValue() == "") {
-				wxTCNumberOfRepetitions->SetValue(std::to_string(static_cast<int>(std::round(fps * 0.05))));
-			}
-
-#ifdef DEBUG
-			wxMessageDialog dialog(NULL, "LOG: FPS has been read from file: " + std::to_string(fps) + ".", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
-			dialog.ShowModal();
-#endif
+		long longTemp;
+		strTemp = wxTCFPS->GetValue();
+		if (strTemp.ToLong(&longTemp)) {
+			// Conversion successful, int_value now contains the integer
+			fps = static_cast<int>(longTemp);
 		}
 		else {
-			strTemp = wxTCFPS->GetValue();
-			long longTemp;
-			if (strTemp.ToLong(&longTemp)) {
-				// Conversion successful, int_value now contains the integer
-				fps = static_cast<int>(longTemp);
-			}
-			else {
 #ifdef DEBUG
-				wxMessageDialog dialog(NULL, "WARNING: FPS has not been specified by the user, assumed to be 30.", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT | wxICON_WARNING);
-				dialog.ShowModal();
+			wxMessageDialog dialog(NULL, "WARNING: FPS has not been specified by the user, assumed to be 30.", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT | wxICON_WARNING);
+			dialog.ShowModal();
 #endif
-				fps = 30;
-			}
+			fps = 30;
 		}
 
 		wxSTStatus->SetLabel("Status: Initializing...");
@@ -819,7 +791,7 @@ void MainFrame::RunAnalysis()
 		createDirectoryWithCheck(outputFolderPath);
 
 		// Create the subfolders
-		if (wxCBAutomaticRecognitionAnalysis->IsChecked()) {
+		if (isAnyAutomaticAnalysisOptionActive) {
 			createDirectoryWithCheck(outputFolderPath / "activity_heatmap");
 			createDirectoryWithCheck(outputFolderPath / "heatmap_coordinates");
 		}
@@ -890,7 +862,6 @@ void MainFrame::RunAnalysis()
 		}
 
 		strTemp = wxTCFirstFrame->GetValue();
-		long longTemp;
 		int startFrame;
 		if (strTemp.ToLong(&longTemp)) {
 			startFrame = static_cast<int>(longTemp);
@@ -917,6 +888,16 @@ void MainFrame::RunAnalysis()
 			endFrame = 12 * fps;
 		}
 
+		if (endFrame - 2 < startFrame) {
+			wxMessageDialog dialog(NULL, "Last frame must be greater than start frame at least by 2", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
+			dialog.ShowModal();
+		}
+
+		if (startFrame < 0) {
+			wxMessageDialog dialog(NULL, "LasStart frame must not be less than 0", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
+			dialog.ShowModal();
+		}
+
 		strTemp = wxTCBinarizationTreshold->GetValue();
 		int threshold;
 		if (strTemp.ToLong(&longTemp)) {
@@ -932,7 +913,7 @@ void MainFrame::RunAnalysis()
 
 		// Create heatmap
 		std::vector<std::pair<int, int>> maxSumCoords12;
-		if (wxCBAutomaticRecognitionAnalysis->IsChecked()) {
+		if (isAnyAutomaticAnalysisOptionActive) {
 			wxSTStatus->SetLabel("Status: Creating heatmaps");
 			cv::Mat heatmap11 = V3::Preprocessing::createHeatmap(inputPath, startFrame, endFrame, threshold, heatmapPath);
 
@@ -975,7 +956,7 @@ void MainFrame::RunAnalysis()
 
 		// Count ones in XOR at coordinates
 		std::vector<double> passedDoubleVector;
-		if (wxCBAutomaticRecognitionAnalysis->IsChecked()) {
+		if (isAnyAutomaticAnalysisOptionActive) {
 			wxSTStatus->SetLabel("Status: Couting ones in xor");
 			passedDoubleVector = V3::Preprocessing::countOnesInXorAtCoordinates(inputPath, maxSumCoords12, threshold, rawCSVPath);
 			{
