@@ -608,6 +608,8 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 	allInteractiveControls.push_back(wxSTRightTrim);
 	allInteractiveControls.push_back(wxSTAutoMergeEvents);
 	allInteractiveControls.push_back(wxSTAutoSelectEvents);
+	allInteractiveControls.push_back(wxCBAutomaticBinarizationThreshold);
+	allInteractiveControls.push_back(wxCBFocusField);
 
 	syncAutomaticRecognitionAnalysisFieldStates();
 }

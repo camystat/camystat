@@ -36,8 +36,8 @@ $vcxprojFiles = Get-ChildItem -Path . -Recurse -Filter *.vcxproj
 
 foreach ($file in $vcxprojFiles) {
     $content = Get-Content -Path $file.FullName
-    $modifiedContent = $content -replace "MultiThreadedDebugDLL", "MultiThreaded"
-    $modifiedContent = $content -replace "MultiThreadedDLL", "MultiThreaded"
+    $modifiedContent = $content -replace "MultiThreadedDebugDLL", "MultiThreadedDebug"
+    $modifiedContent = $modifiedContent -replace "MultiThreadedDLL", "MultiThreaded"
     Set-Content -Path $file.FullName -Value $modifiedContent
 }
 
@@ -45,7 +45,7 @@ msbuild wx_vc17.sln /p:Configuration=Release /property:MultiProcessorCompilation
 
 cd ../..
 Write-Host "Copying wxWidgets lib files..."
-Copy-Item -Path lib/vc_x64_lib/*.lib -Destination ../DUMMY_GUI/lib/wxwidgets-MT
+Copy-Item -Path lib/vc_x64_lib/* -Destination ../DUMMY_GUI/lib/wxwidgets-MT
 cd ..
 
 Write-Host "Installing pyinstaller with pip..."
