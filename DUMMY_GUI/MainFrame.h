@@ -18,7 +18,7 @@ public:
 	MainFrame(const wxString &title);
 	void wxFPSAutoDetectAnalysisToggle(wxCommandEvent& evt);
 	void wxAutomaticRecognitionAnalysis(wxCommandEvent& evt);
-	void wxSavinskyGolayFilter(wxCommandEvent& evt);
+	void wxSavitzkyGolayFilter(wxCommandEvent& evt);
 	void wxMovingAverage(wxCommandEvent& evt);
 	void wxMergeEvents(wxCommandEvent& evt);
 	void wxAutoSelectEvents(wxCommandEvent& evt);
@@ -36,6 +36,7 @@ public:
 	void OnCiteMe(wxCommandEvent& event);
 	void OnCreateNewWindow(wxThreadEvent& event);
 	void OnClose(wxCloseEvent& event);
+	void OnCharNoDot(wxKeyEvent& event);
 
 	void syncAutomaticRecognitionAnalysisFieldStates();
 	bool isAnyAutomaticAnalysisOptionActive;
@@ -95,7 +96,7 @@ public:
 	wxStaticText* wxSTPercentileOfTheHighestValues;
 
 	wxStaticText* wxSTOptionsOfEventDetection;
-	wxCheckBox* wxCBSavitskyGolayFilter;
+	wxCheckBox* wxCBSavitzkyGolayFilter;
 
 	wxCheckBox* wxCBAutomaticBinarizationThreshold;
 	wxCheckBox* wxCBFocusField;
