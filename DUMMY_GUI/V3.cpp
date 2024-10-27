@@ -139,11 +139,13 @@ cv::Mat V3::Preprocessing::createHeatmap(std::string videoPath, int startFrame, 
 			// Normalize the heatmap
 			cv::normalize(pixelCount, pixelCount, 0, 255, cv::NORM_MINMAX);
 
-			pixelCount.convertTo(pixelCount, CV_8UC1);
+			cv::Mat pixelCountU8;
+
+			pixelCount.convertTo(pixelCountU8, CV_8UC1);
 
 			// Apply color palette to the heatmap
 			cv::Mat heatmapColor;
-			cv::applyColorMap(pixelCount, heatmapColor, cv::COLORMAP_JET);
+			cv::applyColorMap(pixelCountU8, heatmapColor, cv::COLORMAP_JET);
 
 			// Save the heatmap
 			cv::imwrite(resultPath, heatmapColor);
@@ -216,7 +218,7 @@ std::vector<std::pair<int, int>> V3::Preprocessing::findMaxSumSquareCoordinatesW
 	// Find values and their coordinates in the found square
 	for (int i = start_i; i < start_i + square_size; ++i) {
 		for (int j = start_j; j < start_j + square_size; ++j) {
-			values_inside_square.push_back({ pixel_count_array.at<int>(i, j), i * cols + j });
+ 			values_inside_square.push_back({ pixel_count_array.at<int>(i, j), i * cols + j });
 		}
 	}
 
