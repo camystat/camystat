@@ -14,6 +14,7 @@ Research project.
 
 - MSVC along with Visual Studio
 - GIT
+- Python >= 3.10
 
 To build the project, first clone it along with submodules:
 

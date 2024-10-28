@@ -36,15 +36,13 @@ public:
 		return std::wstring(str.begin(), str.end());
 	}
 
-	static void callPlotEvents(const std::string& exePath,
-		const std::string& valuesPath,
-		const std::string& eventsPath,
-		const std::string& videoName,
-		const std::string& savePath,
-		int fps,
-		const std::string& pathToRemove) {
-
-		std::string command = "\"" + exePath + "\" \"" + valuesPath + "\" \"" + eventsPath + "\" \"" + videoName + "\" \"" + savePath + "\" " + std::to_string(fps) + " \"" + pathToRemove + "\"";
+	static void callPlotExe(
+		const std::string& exePath,
+		const std::string& subCommand,
+		const std::string& flags
+	)
+	{
+		std::string command = "\"" + exePath + "\" \"" + subCommand + "\" " + flags;
 		std::cout << "Command: " << command << std::endl;
 
 		// Display command using wxMessageDialog
@@ -113,7 +111,7 @@ public:
 		}
 	}
 
-	static void writeVectorToFile(const std::string& filePath, const std::vector<double>& vec) {
+	template<typename T> static void writeVectorToFile(const std::string& filePath, const std::vector<T>& vec) {
 		std::ofstream outFile(filePath);
 		if (outFile.is_open()) {
 			for (const auto& value : vec) {
@@ -126,7 +124,7 @@ public:
 		}
 	}
 
-	static void writeVectorOfVectorsToFile(const std::string& filePath, const std::vector<std::vector<double>>& vecOfVecs) {
+	template<typename T> static void writeVectorOfVectorsToFile(const std::string& filePath, const std::vector<std::vector<T>>& vecOfVecs) {
 		std::ofstream outFile(filePath);
 		if (outFile.is_open()) {
 			for (const auto& vec : vecOfVecs) {

@@ -68,10 +68,9 @@ void V3::Compression::resizeVideo(const std::string inputPath, std::string outpu
 /// <param name="videoPath">The path to the video file</param>
 /// <param name="startFrame">The starting frame</param>
 /// <param name="endFrame">The ending frame</param>
-/// <param name="threshold">The threshold value for binarization</param>
-/// <param name="resultPath">The path to the file where the result will be saved</param>
-/// <returns>The matrix with pixel counts</returns>
-int V3::Preprocessing::calculateBinarizationThreshold(std::string videoPath, int startFrame, int endFrame, V3::Preprocessing::BinarizationThresholdCalcProgressCallback progressCallback) {
+/// <param name="progressCallback">Callback invoked when progress changes.</param>
+/// <returns>The threshold & XOR scores vector for all tested threshold values (0-255).</returns>
+std::pair<int, std::vector<int>> V3::Preprocessing::calculateBinarizationThreshold(std::string videoPath, int startFrame, int endFrame, V3::Preprocessing::BinarizationThresholdCalcProgressCallback progressCallback) {
 	progressCallback(V3::Preprocessing::BinarizationThresholdCalcProgress::STARTING, std::nullopt, std::nullopt);
 
 	// For handling edge case when XOR operation returns 0s for the selected given pair of frames to retry with a next-in-turn pair of frames
@@ -110,7 +109,7 @@ int V3::Preprocessing::calculateBinarizationThreshold(std::string videoPath, int
 	std::optional<std::pair<cv::Mat, cv::Mat>> maxAvgBrightnessDiffFramesPair;
 	std::optional<std::pair<int, int>> maxAvgBrightnessDiffFramesPairIndices;
 	int maxAvgBrightnessDiff;
-	std::vector<double> xorScores; // stored in a vector for debug & visualization purposes
+	std::vector<int> xorScores; // stored in a vector for debug & visualization purposes
 	xorScores.reserve(256);
 	int maxXorThreshold;
 
@@ -176,7 +175,7 @@ int V3::Preprocessing::calculateBinarizationThreshold(std::string videoPath, int
 			xorScores.push_back(cv::countNonZero(xorResult));
 		}
 
-		std::vector<double>::iterator maxXorScore = std::max_element(xorScores.begin(), xorScores.end());
+		std::vector<int>::iterator maxXorScore = std::max_element(xorScores.begin(), xorScores.end());
 		// Since thresholds range from 0-255, the index of the max value is the threshold itself
 		maxXorThreshold = std::distance(xorScores.begin(), maxXorScore);
 
@@ -202,7 +201,7 @@ int V3::Preprocessing::calculateBinarizationThreshold(std::string videoPath, int
 
 			std::cout << "calculateBinarizationThreshold: calculated binarization threshold is " << maxXorThreshold << std::endl;
 
-			return maxXorThreshold;
+			return { maxXorThreshold, xorScores };
 		}
 	}
 }

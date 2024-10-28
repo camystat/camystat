@@ -727,6 +727,18 @@ void MainFrame::SetTaskBarIcon()
 	SendMessage(hwnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
 }
 
+std::string joinPlotVideoEventsFlags(
+	const std::string& valuesPath,
+	const std::string& eventsPath,
+	const std::string& videoName,
+	const std::string& savePath,
+	int fps,
+	const std::string& pathToRemove
+)
+{
+	return "\"" + valuesPath + "\" \"" + eventsPath + "\" \"" + videoName + "\" \"" + savePath + "\" \"" + std::to_string(fps) + "\" \"" + pathToRemove + "\"";
+}
+
 void MainFrame::RunAnalysis()
 {
 	// Place the entire block of calculation code here.
@@ -1064,6 +1076,31 @@ void MainFrame::RunAnalysis()
 		if (normalizedChart) {
 			createDirectoryWithCheck(outputFolderPath / "normalized_chart");
 		}
+		if (wxCBAutomaticBinarizationThreshold->IsChecked()) {
+			createDirectoryWithCheck(outputFolderPath / "auto_binarization_threshold");
+		}
+
+		wxSTStatus->SetLabel("Status: Reading current path");
+		TCHAR buffer[MAX_PATH];
+		DWORD length = GetCurrentDirectory(MAX_PATH, buffer);
+		std::string plotPath = Utils::TCHARToString(buffer);
+		plotPath = plotPath.substr(0, plotPath.size() - 1);
+		wxSTStatus->SetLabel("Status: Calculating path to plot");
+		plotPath = plotPath + "\\plot.exe";
+#ifdef DEBUG
+		{
+			wxMessageDialog dialog(NULL, "LOG: a path to the plot.exe: " + plotPath, wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
+			dialog.ShowModal();
+			wxMessageDialog dialog(NULL, plotPath, wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
+			dialog.ShowModal();
+		}
+#endif
+#ifdef DEBUG
+		{
+			wxMessageDialog dialog(NULL, fileName + " " + normalizedChartsPath + " " + std::to_string(fps), wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
+			dialog.ShowModal();
+		}
+#endif
 
 		TCHAR tempPath[MAX_PATH];
 
@@ -1076,26 +1113,28 @@ void MainFrame::RunAnalysis()
 			return;
 		}
 
-		std::wstring wstr(tempPath);
+		std::wstring tempPathWstr(tempPath);
 
-		std::string str(wstr.begin(), wstr.end());
+		std::string tempPathStr(tempPathWstr.begin(), tempPathWstr.end());
 		{
 			wxSTStatus->SetLabel("Status: Detected appdata folder");
 		}
 
-		std::wstring wstr2 = StringToWString(str + "\\Cammystat");
+		std::wstring cammystatTempPathWstr = StringToWString(tempPathStr + "Cammystat");
 		{
 			wxSTStatus->SetLabel("Status: Cammystat folder located");
 		}
-		if (!FolderExists(wstr2)) {
-			createDirectoryWithCheck(str + "\\Cammystat");
+		if (!FolderExists(cammystatTempPathWstr)) {
+			createDirectoryWithCheck(cammystatTempPathWstr);
 			wxSTStatus->SetLabel("Status: Cammystat appdata folder has been created");
 		}
 
+		std::string cammystatTempPathStr(cammystatTempPathWstr.begin(), cammystatTempPathWstr.end());
+
 		std::string heatmapPath = outputFolderPath.string() + "\\activity_heatmap\\" + fileName + ".png";
 
-		if (FolderExists(wstr2)) {
-			std::string tempPath2 = str + "\\Cammystat\\" + fileName;
+		if (FolderExists(cammystatTempPathWstr)) {
+			std::string tempPath2 = cammystatTempPathStr + "\\" + fileName;
 			createDirectoryWithCheck(tempPath2);
 		}
 
@@ -1123,14 +1162,15 @@ void MainFrame::RunAnalysis()
 			// automatically calculate binarization threshold as per Marcin's algorithm design
 
 			try {
-				threshold = V3::Preprocessing::calculateBinarizationThreshold(
+				std::vector<int> xorScoresForThresholds;
+				std::tie(threshold, xorScoresForThresholds) = V3::Preprocessing::calculateBinarizationThreshold(
 					inputPath,
 					startFrame,
 					endFrame,
 					[this](V3::Preprocessing::BinarizationThresholdCalcProgress stage, std::optional<double> maybeProgress, std::optional<int> maybeRetryNumber)
 					{
 						std::stringstream status;
-						status << "Status: calc. bin. thresh. ";
+						status << "Status: Calc. bin. thresh. ";
 
 						switch(stage){
 							case V3::Preprocessing::BinarizationThresholdCalcProgress::STARTING:
@@ -1159,6 +1199,23 @@ void MainFrame::RunAnalysis()
 				);
 
 				wxTCBinarizationThreshold->SetValue(std::to_string(threshold));
+
+				std::string xorScoresForThresholdsPath = cammystatTempPathStr + "\\" + fileName + "\\autoBinarizationThresholdXOR_" + fileName + ".csv";
+				wxSTStatus->SetLabel("Status: Saving threshold calculation results");
+				Utils::writeVectorToFile(xorScoresForThresholdsPath, xorScoresForThresholds);
+
+				std::string calculatedThresholdPath = cammystatTempPathStr + "\\" + fileName + "\\autoBinarizationThreshold_" + fileName + ".txt";
+				std::ofstream outFile(calculatedThresholdPath);
+				if (outFile.is_open()) {
+					outFile << threshold;
+					outFile.close();
+				}
+				else {
+					std::cerr << "Failed to open file for writing: " << calculatedThresholdPath << std::endl;
+				}
+
+				std::string savePath = outputFolderPath.string() + "\\auto_binarization_threshold";
+				Utils::callPlotExe(plotPath, "auto_binarization_thresh", "\"" + xorScoresForThresholdsPath + "\" \"" + calculatedThresholdPath + "\" \"" + savePath + "\"");
 			}
 			// Error handling
 			catch (const std::exception& e) {
@@ -1229,7 +1286,7 @@ void MainFrame::RunAnalysis()
 #endif
 		}
 
-		std::string valuesB4XORPath = str + "\\Cammystat\\" + fileName + "\\valuesB4XOR" + fileName + ".csv";
+		std::string valuesB4XORPath = cammystatTempPathStr + "\\" + fileName + "\\valuesB4XOR" + fileName + ".csv";
 		wxSTStatus->SetLabel("Status: Saving vectors before xor");
 		Utils::writeVectorToFile(valuesB4XORPath, passedDoubleVector);
 
@@ -1264,7 +1321,7 @@ void MainFrame::RunAnalysis()
 		}
 #endif
 
-		std::string valuesPath = str + "\\Cammystat\\" + fileName + "\\values" + fileName + ".csv";
+		std::string valuesPath = cammystatTempPathStr + "\\" + fileName + "\\values" + fileName + ".csv";
 		wxSTStatus->SetLabel("Status: Saving vectors");
 		Utils::writeVectorToFile(valuesPath, passedDoubleVector);
 
@@ -1329,43 +1386,22 @@ void MainFrame::RunAnalysis()
 			events = Utils::normalizeSecondColumnInCopy(events);
 		}
 		std::string normalizedChartsPath = outputFolderPath.string() + "\\normalized_chart";
-		wxSTStatus->SetLabel("Status: Reading current path");
-		TCHAR buffer[MAX_PATH];
-		DWORD length = GetCurrentDirectory(MAX_PATH, buffer);
-		std::string plotPath = Utils::TCHARToString(buffer);
-		plotPath = plotPath.substr(0, plotPath.size() - 1);
-		wxSTStatus->SetLabel("Status: Calculating path to plot");
-		plotPath = plotPath + "\\plot.exe";
-#ifdef DEBUG
-		{
-			wxMessageDialog dialog(NULL, "LOG: a path to the plot.exe: " + plotPath, wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
-			dialog.ShowModal();
-			wxMessageDialog dialog(NULL, plotPath, wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
-			dialog.ShowModal();
-		}
-#endif
-#ifdef DEBUG
-		{
-			wxMessageDialog dialog(NULL, fileName + " " + normalizedChartsPath + " " + std::to_string(fps), wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
-			dialog.ShowModal();
-		}
-#endif
 
-		std::string eventsPath = str + "\\Cammystat\\" + fileName + "\\events" + fileName + ".csv";
+		std::string eventsPath = cammystatTempPathStr + "\\" + fileName + "\\events" + fileName + ".csv";
 
 		wxSTStatus->SetLabel("Status: Saving vector of vectors");
 		Utils::writeVectorOfVectorsToFile(eventsPath, events);
 
-		std::string pathToRemove = str + "\\Cammystat\\" + fileName;
+		std::string pathToRemove = cammystatTempPathStr + "\\" + fileName;
 
 		if(lineChart || normalizedChart) wxSTStatus->SetLabel("Status: Saving plots");
 
 		if (lineChart) {
-			Utils::callPlotEvents(plotPath, valuesB4XORPath, "", fileName, outputFolderPath.string() + "\\raw_chart", fps, pathToRemove);
+			Utils::callPlotExe(plotPath, "video_events", joinPlotVideoEventsFlags(valuesB4XORPath, "", fileName, outputFolderPath.string() + "\\raw_chart", fps, pathToRemove));
 		}
 
 		if (normalizedChart) {
-			Utils::callPlotEvents(plotPath, valuesPath, eventsPath, fileName, normalizedChartsPath, fps, pathToRemove);
+			Utils::callPlotExe(plotPath, "video_events", joinPlotVideoEventsFlags(valuesPath, eventsPath, fileName, normalizedChartsPath, fps, pathToRemove));
 		}
 
 		wxSTStatus->SetLabel("Status: Finished");
