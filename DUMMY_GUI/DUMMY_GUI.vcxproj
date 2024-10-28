@@ -91,12 +91,12 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)DUMMY_GUI\include\wxwidgets;$(SolutionDir)DUMMY_GUI\include\wxwidgets\msvc;$(SolutionDir)DUMMY_GUI\include\opencv2;$(SolutionDir)DUMMY_GUI\include\python;$(SolutionDir)DUMMY_GUI\include\numpy;$(SolutionDir)DUMMY_GUI\include\matplotlib-cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)DUMMY_GUI\include\wxwidgets;$(SolutionDir)DUMMY_GUI\include\wxwidgets\msvc;$(SolutionDir)DUMMY_GUI\include\opencv2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)DUMMY_GUI\lib\wxwidgets\vc_lib;$(SolutionDir)DUMMY_GUI\lib\opencv2;$(SolutionDir)DUMMY_GUI\lib\numpy;$(SolutionDir)DUMMY_GUI\lib\python311;$(SolutionDir)DUMMY_GUI\lib\python</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)DUMMY_GUI\lib\wxwidgets\vc_lib;$(SolutionDir)DUMMY_GUI\lib\opencv2</AdditionalLibraryDirectories>
       <AdditionalDependencies>wxbase32u.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -108,7 +108,7 @@
       <Optimization>MaxSpeed</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)DUMMY_GUI\include\wxwidgets;$(SolutionDir)DUMMY_GUI\include\wxwidgets\msvc;$(SolutionDir)DUMMY_GUI\include\opencv2;$(SolutionDir)DUMMY_GUI\include\python64;$(SolutionDir)DUMMY_GUI\include\python;$(SolutionDir)DUMMY_GUI\include\numpy;$(SolutionDir)DUMMY_GUI\include\matplotlib-cpp;$(SolutionDir)DUMMY_GUI\include\eigen;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)DUMMY_GUI\include\wxwidgets;$(SolutionDir)DUMMY_GUI\include\wxwidgets\msvc;$(SolutionDir)DUMMY_GUI\include\opencv2;$(SolutionDir)DUMMY_GUI\include\eigen;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <BufferSecurityCheck>true</BufferSecurityCheck>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
@@ -120,8 +120,8 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)DUMMY_GUI\lib\wxwidgets-MT;$(SolutionDir)DUMMY_GUI\lib\opencv2;$(SolutionDir)DUMMY_GUI\lib\numpy;$(SolutionDir)DUMMY_GUI\lib\python64</AdditionalLibraryDirectories>
-      <AdditionalDependencies>python312.lib;opencv_world490.lib;MSVCRT.lib;wxbase32u.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)DUMMY_GUI\lib\wxwidgets-MT;$(SolutionDir)DUMMY_GUI\lib\opencv2</AdditionalLibraryDirectories>
+      <AdditionalDependencies>opencv_world490.lib;MSVCRT.lib;wxbase32u.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -135,14 +135,14 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)DUMMY_GUI\include\wxwidgets;$(SolutionDir)DUMMY_GUI\include\wxwidgets\msvc;$(SolutionDir)DUMMY_GUI\include\opencv2;$(SolutionDir)DUMMY_GUI\include\python;$(SolutionDir)DUMMY_GUI\include\numpy;$(SolutionDir)DUMMY_GUI\include\matplotlib-cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)DUMMY_GUI\include\wxwidgets;$(SolutionDir)DUMMY_GUI\include\wxwidgets\msvc;$(SolutionDir)DUMMY_GUI\include\opencv2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)DUMMY_GUI\lib\wxwidgets\vc_lib;$(SolutionDir)DUMMY_GUI\lib\opencv2;$(SolutionDir)DUMMY_GUI\lib\numpy;$(SolutionDir)DUMMY_GUI\lib\python311;$(SolutionDir)DUMMY_GUI\lib\python</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)DUMMY_GUI\lib\wxwidgets\vc_lib;$(SolutionDir)DUMMY_GUI\lib\opencv2</AdditionalLibraryDirectories>
       <AdditionalDependencies>wxbase32u.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -156,7 +156,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)DUMMY_GUI\include\wxwidgets;$(SolutionDir)DUMMY_GUI\include\wxwidgets\msvc;$(SolutionDir)DUMMY_GUI\include\opencv2;$(SolutionDir)DUMMY_GUI\include\python;$(SolutionDir)DUMMY_GUI\include\numpy;$(SolutionDir)DUMMY_GUI\include\matplotlib-cpp;$(SolutionDir)DUMMY_GUI\include\eigen;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)DUMMY_GUI\include\wxwidgets;$(SolutionDir)DUMMY_GUI\include\wxwidgets\msvc;$(SolutionDir)DUMMY_GUI\include\opencv2;$(SolutionDir)DUMMY_GUI\include\eigen;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <BufferSecurityCheck>true</BufferSecurityCheck>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -174,7 +174,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)DUMMY_GUI\lib\wxwidgets-MT;$(SolutionDir)DUMMY_GUI\lib\opencv2;$(SolutionDir)DUMMY_GUI\lib\numpy;$(SolutionDir)DUMMY_GUI\lib\python64</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)DUMMY_GUI\lib\wxwidgets-MT;$(SolutionDir)DUMMY_GUI\lib\opencv2</AdditionalLibraryDirectories>
       <AdditionalDependencies>opencv_world490.lib;MSVCRT.lib;wxbase32u.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>
       </IgnoreAllDefaultLibraries>

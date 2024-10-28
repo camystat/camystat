@@ -3,19 +3,8 @@ git submodule update --init
 
 Write-Host "Creating symlinks..."
 cd DUMMY_GUI/include
-cmd /c 'mklink /J python "../../python/Include"'
 cmd /c 'mklink /J wxWidgets "../../wxWidgets/include"'
 cd ../..
-
-Write-Host "Copying files..."
-Copy-Item -Path DUMMY_GUI/include/pyconfig.h -Destination DUMMY_GUI/include/python/pyconfig.h
-
-Write-Host "Applying patches..."
-Copy-Item -Path patches/matplotlibcpp.h.patch -Destination DUMMY_GUI/include/matplotlib-cpp/matplotlibcpp.h.patch
-cd DUMMY_GUI/include/matplotlib-cpp
-git apply matplotlibcpp.h.patch
-Remove-Item matplotlibcpp.h.patch
-cd ../../..
 
 $VSWPath = "${Env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe"
 

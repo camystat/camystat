@@ -1222,7 +1222,6 @@ void MainFrame::RunAnalysis()
 			{
 				wxMessageDialog dialog(NULL, "LOG: no coordinates XOR calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 				dialog.ShowModal();
-				Utils::plotVector(passedDoubleVector, "XOR", 1000, 1500);
 			}
 #endif
 		}
@@ -1238,7 +1237,6 @@ void MainFrame::RunAnalysis()
 			{
 				wxMessageDialog dialog(NULL, "LOG: Savgol (Savitzky-Golay) filter has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 				dialog.ShowModal();
-				Utils::plotVector(passedDoubleVector, "Savgol filter", 1000, 1500);
 			}
 #endif
 		}
@@ -1250,7 +1248,6 @@ void MainFrame::RunAnalysis()
 			{
 				wxMessageDialog dialog(NULL, "LOG: Moving Average calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 				dialog.ShowModal();
-				Utils::plotVector(passedDoubleVector, "Moving average", 1000, 1500);
 			}
 #endif
 		}
@@ -1259,7 +1256,6 @@ void MainFrame::RunAnalysis()
 		passedDoubleVector = V3::Smoothing::clone_normalized_values(passedDoubleVector);
 #ifdef DEBUG
 		{
-			Utils::plotVector(passedDoubleVector, "normalize_values", 1000, 1500);
 			wxMessageDialog dialog(NULL, "LOG: Normalize values calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 			dialog.ShowModal();
 		}
@@ -1273,7 +1269,6 @@ void MainFrame::RunAnalysis()
 		wxSTStatus->SetLabel("Status: Replacing zeros");
 		passedDoubleVector = V3::Smoothing::clone_replace_zeros_values_below_threshold(passedDoubleVector, movementThreshold, rawChartPath);
 #ifdef DEBUG
-		Utils::plotVector(passedDoubleVector, "replace_zeros_values_below_threshold", 1000, 1500);
 		{
 			wxMessageDialog dialog(NULL, "LOG: Replace zeros values below threshold calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 			dialog.ShowModal();
@@ -1284,7 +1279,6 @@ void MainFrame::RunAnalysis()
 		passedDoubleVector = V3::Detection::trim_list(passedDoubleVector, leftTrim, rightTrim);
 #ifdef DEBUG
 		{
-			Utils::plotVector(passedDoubleVector, "trim_list", 1000, 1500);
 			wxMessageDialog dialog(NULL, "LOG: Trim_list calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 			dialog.ShowModal();
 		}
@@ -1294,7 +1288,6 @@ void MainFrame::RunAnalysis()
 		wxSTStatus->SetLabel("Status: Zeros has been added to a list.");
 #ifdef DEBUG
 		{
-			Utils::plotVector(passedDoubleVector, "add_zeros_to_list", 1000, 1500);
 			wxMessageDialog dialog(NULL, "LOG: add_zeros_to_list calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 			dialog.ShowModal();
 		}
@@ -1327,7 +1320,6 @@ void MainFrame::RunAnalysis()
 				wxMessageDialog dialog(NULL, "LOG: remove_events calculation has been finished successfully", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 				dialog.ShowModal();
 			}
-			Utils::plot_events(passedDoubleVector, events);
 #endif
 
 			wxSTStatus->SetLabel("Status: Normalizing second column");

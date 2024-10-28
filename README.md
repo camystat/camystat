@@ -2,14 +2,18 @@
 
 Research project.
 
-## Setup
+## Running
+
+### Prerequisites
+
+- OpenCV 4.9.0 installed and on PATH
+
+## Building from source
 
 ### Prerequisites
 
 - MSVC along with Visual Studio
 - GIT
-- OpenCV 4.9.0 installed and on PATH
-- Python 3.12 installed and on PATH (`python312.dll`)
 
 To build the project, first clone it along with submodules:
 

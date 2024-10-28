@@ -1,12 +1,6 @@
 [submodule "DUMMY_GUI/include/eigen"]
 	path = DUMMY_GUI/include/eigen
 	url = https://gitlab.com/libeigen/eigen.git
-[submodule "DUMMY_GUI/include/matplotlib-cpp"]
-	path = DUMMY_GUI/include/matplotlib-cpp
-	url = https://github.com/lava/matplotlib-cpp.git
 [submodule "DUMMY_GUI/wxWidgets"]
 	path = wxWidgets
 	url = https://github.com/wxWidgets/wxWidgets.git
-[submodule "DUMMY_GUI/python"]
-	path = python
-	url = https://github.com/python/cpython.git

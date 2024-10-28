@@ -1,11 +1,8 @@
 #include "Utils.h"
 #include <filesystem>
 #include <fstream>
-#include <matplotlibcpp.h>
 #include <chrono>
 #include <numeric>
-
-namespace plt = matplotlibcpp;
 
 /// <summary>
 /// Creates a trimmed copy of the list <paramref name="lst"/>, by filtering out the first <paramref name="n"/> elements and the last <paramref name="x"/> elements from the input list
@@ -20,37 +17,6 @@ std::vector<double> Utils::clone_trimmed_list(const std::vector<double>& lst, si
 	}
 
 	return std::vector<double>(lst.begin() + n, lst.end() - x);
-}
-
-/// <summary>
-/// Plots the given vector of values with the specified name.
-/// </summary>
-/// <param name="values">The vector of values to plot</param>
-/// <param name="name">The name of the plot</param>
-/// <param name="min">The minimum index to plot</param>
-/// <param name="max">The maximum index to plot</param>
-void Utils::plotVector(const std::vector<double>& values, const std::string& name, size_t min, size_t max) {
-	if (max == 0 || max > values.size()) {
-		max = values.size();
-	}
-
-	if (min >= max) {
-		std::cerr << "Invalid range: min should be < max and within the bounds of the vector size." << std::endl;
-		return;
-	}
-
-	std::vector<size_t> indices(max - min);
-	std::vector<double> subset_values(max - min);
-
-	for (size_t i = min; i < max; ++i) {
-		indices[i - min] = i;
-		subset_values[i - min] = values[i];
-	}
-
-	plt::plot(indices, subset_values);
-	plt::title(name);
-	plt::show();
-	// plt::savefig(name);
 }
 
 /// <summary>
@@ -82,52 +48,6 @@ std::vector<double> Utils::aggregate(const std::string& videoPath, const std::st
 	// Count ones in XOR at coordinates
 	std::vector<double> onesCountOverTime = V3::Preprocessing::countOnesInXorAtCoordinates(videoPath, maxSumCoords, 100, resultPath);
 	return onesCountOverTime;
-	//plotVector(onesCountOverTime, "");
-}
-
-/// <summary>
-/// Plots events on a line plot with the given <paramref name="values"/> and <paramref name="events"/>
-/// </summary>
-/// <param name="values">The values to be plotted</param>
-/// <param name="events">The events to be plotted</param>
-void Utils::plot_events(const std::vector<double>& values, const std::vector<std::vector<double>>& events) {
-	std::vector<double> normalized_values = V3::Smoothing::clone_normalized_values(values);
-
-	plt::figure();
-
-	std::vector<int> x_values(normalized_values.size());
-	std::iota(x_values.begin(), x_values.end(), 0);
-
-	plt::plot(x_values, normalized_values, "b-");
-	plt::named_plot("Values", x_values, normalized_values);
-
-	std::vector<double> event_values;
-	for (const auto& event : events) {
-		event_values.push_back(event[1]);
-	}
-	std::vector<double> normalized_event_values = V3::Smoothing::clone_normalized_values(event_values);
-
-	for (size_t idx = 0; idx < events.size(); ++idx) {
-		const auto& event = events[idx];
-		double ordinal_number = event[0];
-		double value1 = event[1];
-		double time1 = event[2];
-		double time2 = event[3];
-		double event_time = (time1 + time2) / 2;
-
-		plt::plot(std::vector<double>{event_time}, std::vector<double>{normalized_event_values[idx]}, "ro");
-
-		std::vector<double> x_shade = { time1, time1, time2, time2 };
-		std::vector<double> y_shade = { 0, 1, 1, 0 };
-		plt::fill(x_shade, y_shade, { {"color", "red"}, {"alpha", "0.3"} });
-	}
-
-	plt::title("Line Plot with Events");
-	plt::xlabel("Time");
-	plt::ylabel("Normalized Values");
-	plt::legend();
-
-	plt::show();
 }
 
 /// <summary>
