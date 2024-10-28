@@ -1,5 +1,5 @@
 [submodule "DUMMY_GUI/include/eigen"]
-	path = DUMMY_GUI/include/eigen
+	path = eigen
 	url = https://gitlab.com/libeigen/eigen.git
 [submodule "DUMMY_GUI/wxWidgets"]
 	path = wxWidgets
