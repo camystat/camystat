@@ -12,6 +12,8 @@
 
 #include <vector>
 
+#define STRING_STATUS_WAITING_FOR_INPUT "Status: Waiting for input"
+
 class MainFrame : public wxFrame
 {
 public:

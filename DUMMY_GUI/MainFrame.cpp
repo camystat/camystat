@@ -201,10 +201,10 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 
 	wxBAnalyze = new wxButton(panel, wxID_ANY, "Analyze", wxPoint(20, 190), wxSize(280, 20));
 
-	wxSTStatus = new wxStaticText(panel, wxID_ANY, "Status: Waiting for input", wxPoint(20, 220), wxSize(280, 20));
+	wxSTStatus = new wxStaticText(panel, wxID_ANY, STRING_STATUS_WAITING_FOR_INPUT, wxPoint(20, 220), wxSize(280, 20));
 	wxSTStatus->Hide();
 
-	wxSTStatusDisplayed = new wxStaticText(panel, wxID_ANY, "Status: Waiting for input", wxPoint(20, 220), wxSize(280, 20));
+	wxSTStatusDisplayed = new wxStaticText(panel, wxID_ANY, STRING_STATUS_WAITING_FOR_INPUT, wxPoint(20, 220), wxSize(280, 20));
 
 	wxSTStatusVideo = new wxStaticText(panel, wxID_ANY, "Video: Awaiting", wxPoint(20, 245), wxSize(280, 20));
 
@@ -1164,6 +1164,9 @@ void MainFrame::RunAnalysis()
 			catch (const std::exception& e) {
 				wxMessageDialog dialog1(NULL, "ERROR: (calculateBinarizationThreshold) An error occurred during the binarization threshold calculation", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_ERROR | wxDIALOG_NO_PARENT);
 				dialog1.ShowModal();
+
+				wxSTStatus->SetLabel(STRING_STATUS_WAITING_FOR_INPUT);
+
 				return;
 			}
 		}
