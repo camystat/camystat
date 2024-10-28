@@ -75,9 +75,9 @@ public:
 	wxTextCtrl* wxTCFPS;
 	wxStaticText* wxSTFPS;
 
-	wxStaticText* wxSTBinarizationTreshold;
-	wxTextCtrl* wxTCBinarizationTreshold;
-	wxStaticText* wxSTBinarizationTresholdRange;
+	wxStaticText* wxSTBinarizationThreshold;
+	wxTextCtrl* wxTCBinarizationThreshold;
+	wxStaticText* wxSTBinarizationThresholdRange;
 
 	wxStaticText* wxSTAutomaticRecognitionAnalysis;
 
@@ -115,10 +115,10 @@ public:
 	wxTextCtrl* wxTCNumberOfRepetitions;
 	wxStaticText* wxSTNumberOfRepetitions;
 
-	wxStaticText* wxSTAutoMovementTresholdStatic;
+	wxStaticText* wxSTAutoMovementThresholdStatic;
 
-	wxTextCtrl* wxTCAutoMovementTreshold;
-	wxStaticText* wxSTAutoMovementTreshold;
+	wxTextCtrl* wxTCAutoMovementThreshold;
+	wxStaticText* wxSTAutoMovementThreshold;
 
 	wxCheckBox* wxCBAutoMDetectEvents;
 

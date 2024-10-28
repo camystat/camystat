@@ -282,20 +282,20 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 	wxCBAutomaticBinarizationThreshold->SetValue(true);
 	wxCBAutomaticBinarizationThreshold->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent& event)
 		{
-			wxTCBinarizationTreshold->Enable(!event.IsChecked());
+			wxTCBinarizationThreshold->Enable(!event.IsChecked());
 		});
 
 
 	rightSideCoordY += 25;
 
-	wxSTBinarizationTreshold = new wxStaticText(panel, wxID_ANY, "Binarization threshold", wxPoint(320, rightSideCoordY), wxSize(150, 20));
-	wxTCBinarizationTreshold = new wxTextCtrl(panel, wxID_ANY, "100", wxPoint(510, rightSideCoordY), wxSize(40, 20));
-	wxTCBinarizationTreshold->Enable(false);
-	wxTCBinarizationTreshold->Bind(wxEVT_CHAR, &MainFrame::OnCharNoDot, this);
-	wxTCBinarizationTreshold->Bind(wxEVT_KILL_FOCUS, &MainFrame::OnKillFocus, this);
-	wxTCBinarizationTreshold->Bind(wxEVT_TEXT_PASTE, &MainFrame::OnPaste, this);
+	wxSTBinarizationThreshold = new wxStaticText(panel, wxID_ANY, "Binarization threshold", wxPoint(320, rightSideCoordY), wxSize(150, 20));
+	wxTCBinarizationThreshold = new wxTextCtrl(panel, wxID_ANY, "100", wxPoint(510, rightSideCoordY), wxSize(40, 20));
+	wxTCBinarizationThreshold->Enable(false);
+	wxTCBinarizationThreshold->Bind(wxEVT_CHAR, &MainFrame::OnCharNoDot, this);
+	wxTCBinarizationThreshold->Bind(wxEVT_KILL_FOCUS, &MainFrame::OnKillFocus, this);
+	wxTCBinarizationThreshold->Bind(wxEVT_TEXT_PASTE, &MainFrame::OnPaste, this);
 
-	wxSTBinarizationTresholdRange = new wxStaticText(panel, wxID_ANY, "0-255", wxPoint(560, rightSideCoordY), wxSize(40, 20));
+	wxSTBinarizationThresholdRange = new wxStaticText(panel, wxID_ANY, "0-255", wxPoint(560, rightSideCoordY), wxSize(40, 20));
 
 	rightSideCoordY += 25;
 
@@ -426,13 +426,13 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 
 	rightSideCoordY += 25;
 
-	wxSTAutoMovementTresholdStatic = new wxStaticText(panel, wxID_ANY, "Movement treshold", wxPoint(345, rightSideCoordY));
+	wxSTAutoMovementThresholdStatic = new wxStaticText(panel, wxID_ANY, "Movement threshold", wxPoint(345, rightSideCoordY));
 
-	wxTCAutoMovementTreshold = new wxTextCtrl(panel, wxID_ANY, "0.45", wxPoint(510, rightSideCoordY), wxSize(40, 20));
-	wxTCAutoMovementTreshold->Bind(wxEVT_CHAR, &MainFrame::OnChar, this);
-	wxTCAutoMovementTreshold->Bind(wxEVT_KILL_FOCUS, &MainFrame::OnKillFocus, this);
-	wxTCAutoMovementTreshold->Bind(wxEVT_TEXT_PASTE, &MainFrame::OnPaste, this);
-	wxSTAutoMovementTreshold = new wxStaticText(panel, wxID_ANY, "units", wxPoint(560, rightSideCoordY), wxSize(40, 20));
+	wxTCAutoMovementThreshold = new wxTextCtrl(panel, wxID_ANY, "0.45", wxPoint(510, rightSideCoordY), wxSize(40, 20));
+	wxTCAutoMovementThreshold->Bind(wxEVT_CHAR, &MainFrame::OnChar, this);
+	wxTCAutoMovementThreshold->Bind(wxEVT_KILL_FOCUS, &MainFrame::OnKillFocus, this);
+	wxTCAutoMovementThreshold->Bind(wxEVT_TEXT_PASTE, &MainFrame::OnPaste, this);
+	wxSTAutoMovementThreshold = new wxStaticText(panel, wxID_ANY, "units", wxPoint(560, rightSideCoordY), wxSize(40, 20));
 
 	rightSideCoordY += 25;
 
@@ -537,9 +537,9 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 			syncAutomaticRecognitionAnalysisFieldStates();
 
 			if (event.IsChecked()) {
-				wxSTAutoMovementTresholdStatic->Enable(true);
-				wxTCAutoMovementTreshold->Enable(true);
-				wxSTAutoMovementTreshold->Enable(true);
+				wxSTAutoMovementThresholdStatic->Enable(true);
+				wxTCAutoMovementThreshold->Enable(true);
+				wxSTAutoMovementThreshold->Enable(true);
 				wxCBAutoMergeEvents->Enable(true);
 				wxTCAutoMergeEvents->Enable(true);
 				wxSTAutoMergeEvents->Enable(true);
@@ -548,9 +548,9 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 				wxSTAutoSelectEvents->Enable(true);
 			}
 			else {
-				wxSTAutoMovementTresholdStatic->Enable(false);
-				wxTCAutoMovementTreshold->Enable(false);
-				wxSTAutoMovementTreshold->Enable(false);
+				wxSTAutoMovementThresholdStatic->Enable(false);
+				wxTCAutoMovementThreshold->Enable(false);
+				wxSTAutoMovementThreshold->Enable(false);
 				wxCBAutoMergeEvents->Enable(false);
 				wxTCAutoMergeEvents->Enable(false);
 				wxSTAutoMergeEvents->Enable(false);
@@ -565,13 +565,13 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 	allInteractiveControls.push_back(wxBAnalyze);
 	allInteractiveControls.push_back(wxBOutputPath);
 	allInteractiveControls.push_back(wxCTOutputPath);
-	allInteractiveControls.push_back(wxSTBinarizationTreshold);
+	allInteractiveControls.push_back(wxSTBinarizationThreshold);
 	allInteractiveControls.push_back(wxCBCVSStats);
 	allInteractiveControls.push_back(wxCBCVSRaw);
 	allInteractiveControls.push_back(wxCBLineChart);
 	allInteractiveControls.push_back(wxCBNormalizedChart);
 	allInteractiveControls.push_back(wxTCFPS);
-	allInteractiveControls.push_back(wxTCBinarizationTreshold);
+	allInteractiveControls.push_back(wxTCBinarizationThreshold);
 	allInteractiveControls.push_back(wxTCFirstFrame);
 	allInteractiveControls.push_back(wxTCLastFrame);
 	allInteractiveControls.push_back(wxTCSizeOfFocusField);
@@ -582,7 +582,7 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 	allInteractiveControls.push_back(wxCBMovingAverage);
 	allInteractiveControls.push_back(wxTCWindowLengthMA);
 	allInteractiveControls.push_back(wxTCNumberOfRepetitions);
-	allInteractiveControls.push_back(wxTCAutoMovementTreshold);
+	allInteractiveControls.push_back(wxTCAutoMovementThreshold);
 	allInteractiveControls.push_back(wxTCLeftTrim);
 	allInteractiveControls.push_back(wxTCRightTrim);
 	allInteractiveControls.push_back(wxCBAutoMergeEvents);
@@ -590,7 +590,7 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 	allInteractiveControls.push_back(wxCBAutoSelectEvents);
 	allInteractiveControls.push_back(wxTCAutoSelectEvents);
 	allInteractiveControls.push_back(wxSTFPS);
-	allInteractiveControls.push_back(wxSTBinarizationTresholdRange);
+	allInteractiveControls.push_back(wxSTBinarizationThresholdRange);
 	allInteractiveControls.push_back(wxSTFirstFrame);
 	allInteractiveControls.push_back(wxSTLastFrame);
 	allInteractiveControls.push_back(wxCBFocusCoordinatesAnalysis);
@@ -601,8 +601,8 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 	allInteractiveControls.push_back(wxSTWindowLengthMA);
 	allInteractiveControls.push_back(wxCBAutoMDetectEvents);
 	allInteractiveControls.push_back(wxSTNumberOfRepetitions);
-	allInteractiveControls.push_back(wxSTAutoMovementTresholdStatic);
-	allInteractiveControls.push_back(wxSTAutoMovementTreshold);
+	allInteractiveControls.push_back(wxSTAutoMovementThresholdStatic);
+	allInteractiveControls.push_back(wxSTAutoMovementThreshold);
 	allInteractiveControls.push_back(wxSTTrimList);
 	allInteractiveControls.push_back(wxSTLeftTrim);
 	allInteractiveControls.push_back(wxSTRightTrim);
@@ -639,9 +639,9 @@ void MainFrame::wxFPSAutoDetectAnalysisToggle(wxCommandEvent& evt) {
 
 void MainFrame::wxCBAutoMDetectEventsToggle(wxCommandEvent& evt) {
 	if (evt.IsChecked()) {
-		wxSTAutoMovementTresholdStatic->Enable(true);
-		wxTCAutoMovementTreshold->Enable(true);
-		wxSTAutoMovementTreshold->Enable(true);
+		wxSTAutoMovementThresholdStatic->Enable(true);
+		wxTCAutoMovementThreshold->Enable(true);
+		wxSTAutoMovementThreshold->Enable(true);
 		wxCBAutoMergeEvents->Enable(true);
 		wxTCAutoMergeEvents->Enable(true);
 		wxSTAutoMergeEvents->Enable(true);
@@ -650,9 +650,9 @@ void MainFrame::wxCBAutoMDetectEventsToggle(wxCommandEvent& evt) {
 		wxSTAutoSelectEvents->Enable(true);
 	}
 	else {
-		wxSTAutoMovementTresholdStatic->Enable(false);
-		wxTCAutoMovementTreshold->Enable(false);
-		wxSTAutoMovementTreshold->Enable(false);
+		wxSTAutoMovementThresholdStatic->Enable(false);
+		wxTCAutoMovementThreshold->Enable(false);
+		wxSTAutoMovementThreshold->Enable(false);
 		wxCBAutoMergeEvents->Enable(false);
 		wxTCAutoMergeEvents->Enable(false);
 		wxSTAutoMergeEvents->Enable(false);
@@ -799,23 +799,6 @@ void MainFrame::RunAnalysis()
 		errorMessage += "Start and end frame should min. 2 frames apart.\n";
 	}
 
-	strTemp = wxTCBinarizationTreshold->GetValue();
-	int threshold;
-	if (strTemp.ToLong(&longTemp)) {
-		threshold = static_cast<int>(longTemp);
-	}
-	else {
-#ifdef DEBUG
-		wxMessageDialog dialog(NULL, "WARNING: Binarization treshold not specified, it is assumed to be 158", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
-		dialog.ShowModal();
-#endif
-		errorMessage += "Empty or wrong format value of treshold.\n";
-	}
-
-	if (!(threshold >= 0 && threshold <= 255)) {
-		errorMessage += "Treshold value should be (O-255).\n";
-	}
-
 	double squarePercent;
 	double topPercent;
 
@@ -918,20 +901,20 @@ void MainFrame::RunAnalysis()
 		errorMessage += "Number of repetitions value should be higher than zero.\n";
 	}
 
-	strTemp = wxTCAutoMovementTreshold->GetValue();
-	double movementTreshold;
-	if (strTemp.ToDouble(&movementTreshold)) {
+	strTemp = wxTCAutoMovementThreshold->GetValue();
+	double movementThreshold;
+	if (strTemp.ToDouble(&movementThreshold)) {
 	}
 	else {
 #ifdef DEBUG
-		wxMessageDialog dialog(NULL, "WARNING: Auto movement treshold not specified, it is assumed to be 0.45", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
+		wxMessageDialog dialog(NULL, "WARNING: Auto movement threshold not specified, it is assumed to be 0.45", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
 		dialog.ShowModal();
 #endif
-		errorMessage += "Empty or wrong value format in movement treshold field.\n";
+		errorMessage += "Empty or wrong value format in movement threshold field.\n";
 	}
 
-	if (movementTreshold <= 0.0) {
-		errorMessage += "Movement treshold should be higher than zero.\n";
+	if (movementThreshold <= 0.0) {
+		errorMessage += "Movement threshold should be higher than zero.\n";
 	}
 
 	strTemp = wxTCLeftTrim->GetLabel();
@@ -1135,6 +1118,73 @@ void MainFrame::RunAnalysis()
 			inputPaths.push_back(line);
 		}
 
+		int threshold;
+		if (wxCBAutomaticBinarizationThreshold->IsChecked()) {
+			// automatically calculate binarization threshold as per Marcin's algorithm design
+
+			try {
+				threshold = V3::Preprocessing::calculateBinarizationThreshold(
+					inputPath,
+					startFrame,
+					endFrame,
+					[this](V3::Preprocessing::BinarizationThresholdCalcProgress stage, std::optional<double> maybeProgress, std::optional<int> maybeRetryNumber)
+					{
+						std::stringstream status;
+						status << "Status: calc. bin. thresh. ";
+
+						switch(stage){
+							case V3::Preprocessing::BinarizationThresholdCalcProgress::STARTING:
+								status << "starting";
+								break;
+
+							case V3::Preprocessing::BinarizationThresholdCalcProgress::FINDING_MAX_BRIGHTNESS_DIFF_FRAMES:
+								status << "max diff. frames";
+								break;
+
+							case V3::Preprocessing::BinarizationThresholdCalcProgress::CALCULATING_XOR_SCORES:
+								status << "XOR scores";
+								break;
+						}
+
+						if (maybeProgress.has_value()) {
+							status << " " << (int) std::round(maybeProgress.value() * 100) << "%";
+						}
+
+						if (maybeRetryNumber.has_value()) {
+							status << " (retry " << maybeRetryNumber.value() << ")";
+						}
+
+						wxSTStatus->SetLabel(status.str());
+					}
+				);
+
+				wxTCBinarizationThreshold->SetValue(std::to_string(threshold));
+			}
+			// Error handling
+			catch (const std::exception& e) {
+				wxMessageDialog dialog1(NULL, "ERROR: (calculateBinarizationThreshold) An error occurred during the binarization threshold calculation", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_ERROR | wxDIALOG_NO_PARENT);
+				dialog1.ShowModal();
+				return;
+			}
+		}
+		else {
+			strTemp = wxTCBinarizationThreshold->GetValue();
+			if (strTemp.ToLong(&longTemp)) {
+				threshold = static_cast<int>(longTemp);
+			}
+			else {
+		#ifdef DEBUG
+				wxMessageDialog dialog(NULL, "WARNING: Binarization threshold not specified, it is assumed to be 158", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
+				dialog.ShowModal();
+		#endif
+				errorMessage += "Empty or wrong format value of threshold.\n";
+			}
+		}
+
+		if (!(threshold >= 0 && threshold <= 255)) {
+			errorMessage += "Threshold value should be (O-255).\n";
+		}
+
 		// Create heatmap
 		std::vector<std::pair<int, int>> maxSumCoords12;
 		if (isAnyAutomaticAnalysisOptionActive) {
@@ -1221,7 +1271,7 @@ void MainFrame::RunAnalysis()
 
 		std::string rawChartPath = outputFolderPath.string() + "\\csv_stats\\" + fileName + ".csv";
 		wxSTStatus->SetLabel("Status: Replacing zeros");
-		passedDoubleVector = V3::Smoothing::clone_replace_zeros_values_below_threshold(passedDoubleVector, movementTreshold, rawChartPath);
+		passedDoubleVector = V3::Smoothing::clone_replace_zeros_values_below_threshold(passedDoubleVector, movementThreshold, rawChartPath);
 #ifdef DEBUG
 		Utils::plotVector(passedDoubleVector, "replace_zeros_values_below_threshold", 1000, 1500);
 		{

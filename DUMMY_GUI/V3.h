@@ -6,6 +6,9 @@
 #include <fstream>
 #include <numeric>
 #include <opencv2/opencv.hpp>
+#include <optional>
+#include <set>
+#include "Utils.h"
 
 // Klasa funkcjonujaca jako przestrzen nazw V2 -- implementujaca metody z kodu Pythona w jezyku C++
 class V3
@@ -34,6 +37,20 @@ public:
 
     class Preprocessing {
     public:
+
+        enum BinarizationThresholdCalcProgress {
+            STARTING,
+            FINDING_MAX_BRIGHTNESS_DIFF_FRAMES,
+            CALCULATING_XOR_SCORES
+        };
+
+        using BinarizationThresholdCalcProgressCallback = std::function<void(V3::Preprocessing::BinarizationThresholdCalcProgress, std::optional<double>, std::optional<int>)>;
+
+        // Binarization threshold
+        // 
+        // Calculates an automatic binarization threshold for the given video file using frames from the specified range, based on Marcin's algorithm design.
+
+        static int calculateBinarizationThreshold(std::string videoPath, int startFrame, int endFrame, BinarizationThresholdCalcProgressCallback progressCallback);
         
         // 1.1 Heatmapa aktywności na filmie
         // 

@@ -63,6 +63,151 @@ void V3::Compression::resizeVideo(const std::string inputPath, std::string outpu
 }
 
 /// <summary>
+/// Calculates a binarization threshold as per Marcin's algorithm design
+/// </summary>
+/// <param name="videoPath">The path to the video file</param>
+/// <param name="startFrame">The starting frame</param>
+/// <param name="endFrame">The ending frame</param>
+/// <param name="threshold">The threshold value for binarization</param>
+/// <param name="resultPath">The path to the file where the result will be saved</param>
+/// <returns>The matrix with pixel counts</returns>
+int V3::Preprocessing::calculateBinarizationThreshold(std::string videoPath, int startFrame, int endFrame, V3::Preprocessing::BinarizationThresholdCalcProgressCallback progressCallback) {
+	progressCallback(V3::Preprocessing::BinarizationThresholdCalcProgress::STARTING, std::nullopt, std::nullopt);
+
+	// For handling edge case when XOR operation returns 0s for the selected given pair of frames to retry with a next-in-turn pair of frames
+	std::set<int> retryFrameIndicesBlacklist;
+
+	// Open the video
+	cv::VideoCapture cap(videoPath);
+
+	// Check whether the video has been loaded correctly
+	if (!cap.isOpened()) {
+		wxMessageDialog dialog1(NULL, "ERROR: (calculateBinarizationThreshold) Could not open a file for calculating binarization threshold ", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_ERROR | wxDIALOG_NO_PARENT);
+		dialog1.ShowModal();
+		throw std::runtime_error("calculateBinarizationThreshold: Could not open a file.");
+	}
+
+	// Load the video's dimentions
+	int width = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_WIDTH));
+	int height = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_HEIGHT));
+
+	cap.set(cv::CAP_PROP_POS_FRAMES, startFrame);
+
+	cv::Mat currentFrame(height, width, CV_8UC1);
+	cv::Mat currentFrameGray(height, width, CV_8UC1);
+	cv::Mat prevFrameGray(height, width, CV_8UC1);
+
+	if (!cap.read(currentFrame)) {
+		wxMessageDialog dialog1(NULL, "ERROR: (calculateBinarizationThreshold) Could not open a frame", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_ERROR | wxDIALOG_NO_PARENT);
+		dialog1.ShowModal();
+		throw std::runtime_error("calculateBinarizationThreshold: Could not open a frame" + std::to_string(startFrame));
+	}
+	cv::cvtColor(currentFrame, prevFrameGray, cv::COLOR_BGR2GRAY);
+
+	int prevAvgBrightness = cv::mean(prevFrameGray)[0];
+
+	int frameIndex;
+	std::optional<std::pair<cv::Mat, cv::Mat>> maxAvgBrightnessDiffFramesPair;
+	std::optional<std::pair<int, int>> maxAvgBrightnessDiffFramesPairIndices;
+	int maxAvgBrightnessDiff;
+	std::vector<double> xorScores; // stored in a vector for debug & visualization purposes
+	xorScores.reserve(256);
+	int maxXorThreshold;
+
+	std::optional<int> maybeRetryNumber = std::nullopt;
+
+	// Below: retry (including first try) loop
+	while (true)
+	{
+		maxAvgBrightnessDiffFramesPair = std::nullopt;
+		maxAvgBrightnessDiffFramesPairIndices = std::nullopt;
+		maxAvgBrightnessDiff = -1;
+		xorScores.clear();
+		maxXorThreshold = 0;
+		frameIndex = startFrame + 1; // since the frame at index 0 had already been read
+
+		// Move through the next frames and find pair of consecutive frames that has the max avg. brightness diff
+		while (true)
+		{
+			progressCallback(V3::Preprocessing::BinarizationThresholdCalcProgress::FINDING_MAX_BRIGHTNESS_DIFF_FRAMES, (double)frameIndex / (double)endFrame, maybeRetryNumber);
+
+			// Load next frame
+			if (!cap.read(currentFrame) || (endFrame != -1 && frameIndex > endFrame)) {
+				break;
+			}
+			cv::cvtColor(currentFrame, currentFrameGray, cv::COLOR_BGR2GRAY);
+
+			// Calculate current avg. brightness
+			int currentAvgBrightness = cv::mean(currentFrameGray)[0];
+
+			// Store the result if applicable
+			int diff = currentAvgBrightness - prevAvgBrightness;
+			if (diff > maxAvgBrightnessDiff && retryFrameIndicesBlacklist.find(frameIndex - 1) == retryFrameIndicesBlacklist.end() && retryFrameIndicesBlacklist.find(frameIndex) == retryFrameIndicesBlacklist.end())
+			{
+				maxAvgBrightnessDiff = diff;
+				maxAvgBrightnessDiffFramesPair.emplace(std::pair<cv::Mat, cv::Mat>({ prevFrameGray.clone(), currentFrameGray.clone()}));
+				maxAvgBrightnessDiffFramesPairIndices.emplace(std::pair<int, int>({ frameIndex - 1, frameIndex }));
+			}
+
+			// Before advancing iteration, assign 'current' values to 'previous' vars
+			prevFrameGray = currentFrameGray;
+			prevAvgBrightness = currentAvgBrightness;
+
+			frameIndex++;
+		}
+		
+		if (!maxAvgBrightnessDiffFramesPair.has_value()){
+			throw std::runtime_error("calculateBinarizationThreshold: Could not find any consecutive frames with a non-zero brightness difference. Please input the binarization threshold manually.");
+		}
+
+		cv::Mat frame1, frame2;
+		std::tie(frame1, frame2) = maxAvgBrightnessDiffFramesPair.value();
+
+		// Find binarization threshold that maximizes the XOR score
+		cv::Mat xorResult(height, width, CV_8UC1);
+		for (int t = 0; t <= 255; t++)
+		{
+			progressCallback(V3::Preprocessing::BinarizationThresholdCalcProgress::CALCULATING_XOR_SCORES, (double)t / 255.0, std::nullopt);
+			cv::Mat frame1Binary, frame2Binary;
+			cv::threshold(frame1, frame1Binary, t, 255, cv::THRESH_BINARY);
+			cv::threshold(frame2, frame2Binary, t, 255, cv::THRESH_BINARY);
+
+			cv::bitwise_xor(frame1Binary, frame2Binary, xorResult);
+			xorScores.push_back(cv::countNonZero(xorResult));
+		}
+
+		std::vector<double>::iterator maxXorScore = std::max_element(xorScores.begin(), xorScores.end());
+		// Since thresholds range from 0-255, the index of the max value is the threshold itself
+		maxXorThreshold = std::distance(xorScores.begin(), maxXorScore);
+
+		// Edge case: all binarized frame per pair were identical & all XOR scores are thus 0 -> retry with other frames, blacklist this pair
+		if (maxXorThreshold == 0)
+		{
+			int frameIndex1, frameIndex2;
+			std::tie(frameIndex1, frameIndex2) = maxAvgBrightnessDiffFramesPairIndices.value();
+
+			retryFrameIndicesBlacklist.insert(frameIndex1);
+			retryFrameIndicesBlacklist.insert(frameIndex2);
+
+			std::cout << "calculateBinarizationThreshold: (WARNING) calculated binarization threshold is 0, retrying with blacklisted frames " << frameIndex1 << " & " << frameIndex2 << std::endl;
+			
+			maybeRetryNumber.emplace(maybeRetryNumber.value_or(0) + 1);
+
+			continue;
+		}
+		else
+		{
+			// Release resources
+			cap.release();
+
+			std::cout << "calculateBinarizationThreshold: calculated binarization threshold is " << maxXorThreshold << std::endl;
+
+			return maxXorThreshold;
+		}
+	}
+}
+
+/// <summary>
 /// 1.1 Create heatmap of activity
 /// </summary>
 /// <param name="videoPath">The path to the video file</param>
