@@ -1249,7 +1249,21 @@ void MainFrame::RunAnalysis()
 		std::vector<std::pair<int, int>> maxSumCoords12;
 		if (isAnyAutomaticAnalysisOptionActive) {
 			wxSTStatus->SetLabel("Status: Creating heatmaps");
-			cv::Mat heatmap11 = V3::Preprocessing::createHeatmap(inputPath, startFrame, endFrame, threshold, heatmapPath);
+
+			cv::Mat heatmap11;
+			try
+			{
+				heatmap11 = V3::Preprocessing::createHeatmap(inputPath, startFrame, endFrame, threshold, heatmapPath);
+			}
+			// Error handling
+			catch (const std::exception& e) {
+				wxMessageDialog dialog1(NULL, "ERROR: (createHeatmap) An error occurred during heatmap creation", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_ERROR | wxDIALOG_NO_PARENT);
+				dialog1.ShowModal();
+
+				wxSTStatus->SetLabel(STRING_STATUS_WAITING_FOR_INPUT);
+				
+				continue; // process the next image
+			}
 
 			std::string heatmapCoordinatesPath = outputFolderPath.string() + "\\heatmap_coordinates\\" + fileName + ".png";
 
@@ -1257,33 +1271,44 @@ void MainFrame::RunAnalysis()
 			maxSumCoords12 = V3::Preprocessing::findMaxSumSquareCoordinatesWithPercent(
 				heatmap11, squarePercent, topPercent, heatmapCoordinatesPath, heatmapPath
 			);
-
 		}
 
 		std::string rawCSVPath = outputFolderPath.string() + "\\csv_raw\\" + fileName + ".csv";
 
 		// Count ones in XOR at coordinates
 		std::vector<double> passedDoubleVector;
-		if (isAnyAutomaticAnalysisOptionActive) {
-			wxSTStatus->SetLabel("Status: Couting ones in xor");
-			passedDoubleVector = V3::Preprocessing::countOnesInXorAtCoordinates(inputPath, maxSumCoords12, threshold, rawCSVPath);
-#ifdef DEBUG
-			{
-				wxMessageDialog dialog(NULL, "LOG: XOR (with coords) calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
-				dialog.ShowModal();
+		try
+		{
+			if (isAnyAutomaticAnalysisOptionActive) {
+				wxSTStatus->SetLabel("Status: Couting ones in xor");
+				passedDoubleVector = V3::Preprocessing::countOnesInXorAtCoordinates(inputPath, maxSumCoords12, threshold, rawCSVPath);
+	#ifdef DEBUG
+				{
+					wxMessageDialog dialog(NULL, "LOG: XOR (with coords) calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
+					dialog.ShowModal();
+				}
+	#endif
 			}
-#endif
+			else {
+				std::vector<std::pair<int, int>> coordinates;
+				wxSTStatus->SetLabel("Status: Couting ones in xor without coords");
+				passedDoubleVector = V3::Preprocessing::countOnesInXorAtCoordinates(inputPath, coordinates, threshold, rawCSVPath);
+	#ifdef DEBUG
+				{
+					wxMessageDialog dialog(NULL, "LOG: no coordinates XOR calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
+					dialog.ShowModal();
+				}
+	#endif
+			}
 		}
-		else {
-			std::vector<std::pair<int, int>> coordinates;
-			wxSTStatus->SetLabel("Status: Couting ones in xor without coords");
-			passedDoubleVector = V3::Preprocessing::countOnesInXorAtCoordinates(inputPath, coordinates, threshold, rawCSVPath);
-#ifdef DEBUG
-			{
-				wxMessageDialog dialog(NULL, "LOG: no coordinates XOR calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
-				dialog.ShowModal();
-			}
-#endif
+		// Error handling
+		catch (const std::exception& e) {
+			wxMessageDialog dialog1(NULL, "ERROR: (countOnesInXorAtCoordinates) An error occurred during counting ones in XOR at coordinates", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_ERROR | wxDIALOG_NO_PARENT);
+			dialog1.ShowModal();
+
+			wxSTStatus->SetLabel(STRING_STATUS_WAITING_FOR_INPUT);
+			
+			continue; // process the next image
 		}
 
 		std::string valuesB4XORPath = cammystatTempPathStr + "\\" + fileName + "\\valuesB4XOR" + fileName + ".csv";

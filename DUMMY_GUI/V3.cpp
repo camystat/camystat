@@ -239,92 +239,85 @@ std::pair<int, std::vector<int>> V3::Preprocessing::calculateBinarizationThresho
 /// <param name="resultPath">The path to the file where the result will be saved</param>
 /// <returns>The matrix with pixel counts</returns>
 cv::Mat V3::Preprocessing::createHeatmap(std::string videoPath, int startFrame, int endFrame, int threshold, std::string resultPath) {
-	try {
-		// Open the video
-		cv::VideoCapture cap(videoPath);
+	// Open the video
+	cv::VideoCapture cap(videoPath);
 
-		// Check whether the video has been loaded correctly
-		if (!cap.isOpened()) {
-			wxMessageDialog dialog1(NULL, "ERROR: (createHeatmap) Could not open a file for heatmap ", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_ERROR | wxDIALOG_NO_PARENT);
-			dialog1.ShowModal();
-			throw std::runtime_error("createHeatmap: Could not open a file.");
-		}
-
-		// Load the video's dimentions
-		int width = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_WIDTH));
-		int height = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_HEIGHT));
-
-		// Initialize matrix
-		cv::Mat pixelCount = cv::Mat::zeros(height, width, CV_32SC1);
-
-		// Move on to the next frame
-		cap.set(cv::CAP_PROP_POS_FRAMES, startFrame);
-
-		// Load the first frame
-		cv::Mat prevFrame, prevFrameGray, prevBinary;
-		if (!cap.read(prevFrame)) {
-			wxMessageDialog dialog1(NULL, "ERROR: (createHeatmap) Could not open a frame", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_ERROR | wxDIALOG_NO_PARENT);
-			dialog1.ShowModal();
-			throw std::runtime_error("createHeatmap: Could not open a frame" + std::to_string(startFrame));
-		}
-
-		// Convert a frame to a grayscale
-		cv::cvtColor(prevFrame, prevFrameGray, cv::COLOR_BGR2GRAY);
-		cv::threshold(prevFrameGray, prevBinary, threshold, 1, cv::THRESH_BINARY);
-
-		int frameIndex = startFrame + 1;
-
-		// Move through the next frames
-		while (true) {
-			// Load next frames
-			cv::Mat currentFrame, currentFrameGray, currentBinary;
-			if (!cap.read(currentFrame) || (endFrame != -1 && frameIndex > endFrame)) {
-				break;
-			}
-
-			// Convert a given frame
-			cv::cvtColor(currentFrame, currentFrameGray, cv::COLOR_BGR2GRAY);
-			cv::threshold(currentFrameGray, currentBinary, threshold, 1, cv::THRESH_BINARY);
-
-			// Do the XOR operation over the frames
-			cv::Mat xorResult;
-			cv::bitwise_xor(prevBinary, currentBinary, xorResult);
-
-			// Update the pixel matrix
-			pixelCount += xorResult;
-
-			// Save the pixel matrix before new iteration starts
-			prevBinary = currentBinary;
-
-			frameIndex++;
-		}
-
-		// Release resources
-		cap.release();
-
-		if (!pixelCount.empty()) {
-			// Normalize the heatmap
-			cv::normalize(pixelCount, pixelCount, 0, 255, cv::NORM_MINMAX);
-
-			cv::Mat pixelCountU8;
-
-			pixelCount.convertTo(pixelCountU8, CV_8UC1);
-
-			// Apply color palette to the heatmap
-			cv::Mat heatmapColor;
-			cv::applyColorMap(pixelCountU8, heatmapColor, cv::COLORMAP_JET);
-
-			// Save the heatmap
-			cv::imwrite(resultPath, heatmapColor);
-		}
-
-		return pixelCount;
-
+	// Check whether the video has been loaded correctly
+	if (!cap.isOpened()) {
+		wxMessageDialog dialog1(NULL, "ERROR: (createHeatmap) Could not open a file for heatmap ", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_ERROR | wxDIALOG_NO_PARENT);
+		dialog1.ShowModal();
+		throw std::runtime_error("createHeatmap: Could not open a file.");
 	}
-	// Error handling
-	catch (const std::exception& e) {
-		return cv::Mat();
+
+	// Load the video's dimentions
+	int width = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_WIDTH));
+	int height = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_HEIGHT));
+
+	// Initialize matrix
+	cv::Mat pixelCount = cv::Mat::zeros(height, width, CV_32SC1);
+
+	// Move on to the next frame
+	cap.set(cv::CAP_PROP_POS_FRAMES, startFrame);
+
+	// Load the first frame
+	cv::Mat prevFrame, prevFrameGray, prevBinary;
+	if (!cap.read(prevFrame)) {
+		wxMessageDialog dialog1(NULL, "ERROR: (createHeatmap) Could not open a frame", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_ERROR | wxDIALOG_NO_PARENT);
+		dialog1.ShowModal();
+		throw std::runtime_error("createHeatmap: Could not open a frame" + std::to_string(startFrame));
 	}
+
+	// Convert a frame to a grayscale
+	cv::cvtColor(prevFrame, prevFrameGray, cv::COLOR_BGR2GRAY);
+	cv::threshold(prevFrameGray, prevBinary, threshold, 1, cv::THRESH_BINARY);
+
+	int frameIndex = startFrame + 1;
+
+	// Move through the next frames
+	while (true) {
+		// Load next frames
+		cv::Mat currentFrame, currentFrameGray, currentBinary;
+		if (!cap.read(currentFrame) || (endFrame != -1 && frameIndex > endFrame)) {
+			break;
+		}
+
+		// Convert a given frame
+		cv::cvtColor(currentFrame, currentFrameGray, cv::COLOR_BGR2GRAY);
+		cv::threshold(currentFrameGray, currentBinary, threshold, 1, cv::THRESH_BINARY);
+
+		// Do the XOR operation over the frames
+		cv::Mat xorResult;
+		cv::bitwise_xor(prevBinary, currentBinary, xorResult);
+
+		// Update the pixel matrix
+		pixelCount += xorResult;
+
+		// Save the pixel matrix before new iteration starts
+		prevBinary = currentBinary;
+
+		frameIndex++;
+	}
+
+	// Release resources
+	cap.release();
+
+	if (!pixelCount.empty()) {
+		// Normalize the heatmap
+		cv::normalize(pixelCount, pixelCount, 0, 255, cv::NORM_MINMAX);
+
+		cv::Mat pixelCountU8;
+
+		pixelCount.convertTo(pixelCountU8, CV_8UC1);
+
+		// Apply color palette to the heatmap
+		cv::Mat heatmapColor;
+		cv::applyColorMap(pixelCountU8, heatmapColor, cv::COLORMAP_JET);
+
+		// Save the heatmap
+		cv::imwrite(resultPath, heatmapColor);
+	}
+
+	return pixelCount;
 }
 
 /// <summary>
@@ -436,105 +429,98 @@ std::vector<double> V3::Preprocessing::countOnesInXorAtCoordinates(
 	int threshold,
 	std::string resultPath
 ) {
-	try {
-		// Open the video file
-		std::cout << "countOnesInXorAtCoordinates: rozpoczeto" << std::endl;
+	// Open the video file
+	std::cout << "countOnesInXorAtCoordinates: rozpoczeto" << std::endl;
 
-		cv::VideoCapture cap(videoPath);
+	cv::VideoCapture cap(videoPath);
 
-		// Check whether the video has been loaded correctly
-		if (!cap.isOpened()) {
-			throw std::runtime_error("countOnesInXorAtCoordinates: blad, nie udalo sie otworzyc pliku.");
-		}
+	// Check whether the video has been loaded correctly
+	if (!cap.isOpened()) {
+		throw std::runtime_error("countOnesInXorAtCoordinates: blad, nie udalo sie otworzyc pliku.");
+	}
 
-		// Initialize a list for saving XOR comparisons to
-		std::vector<double> ones_count_over_time;
+	// Initialize a list for saving XOR comparisons to
+	std::vector<double> ones_count_over_time;
 
-		// Read the first frame
-		cv::Mat prev_frame;
-		bool ret = cap.read(prev_frame);
+	// Read the first frame
+	cv::Mat prev_frame;
+	bool ret = cap.read(prev_frame);
 
+	if (!ret) {
+		throw std::runtime_error("countOnesInXorAtCoordinates: blad, nie udalo sie otworzyc ramki.");
+	}
+
+	// Convert the first frame to grayscale
+	cv::Mat prev_frame_gray, prev_binary;
+	cv::cvtColor(prev_frame, prev_frame_gray, cv::COLOR_BGR2GRAY);
+	cv::threshold(prev_frame_gray, prev_binary, threshold, 1, cv::THRESH_BINARY);
+
+	int frame_index = 1;
+
+	// Calculate the exact number of cells in the matrix
+	int total_cells;
+	if (coordinates.empty()) {
+		total_cells = prev_binary.total();
+	}
+	else {
+		total_cells = coordinates.size();
+	}
+
+	// Loop through all frames
+	while (true) {
+		// Read the current frame
+		cv::Mat current_frame;
+		ret = cap.read(current_frame);
+
+		// Break the loop if end of video is reached
 		if (!ret) {
-			throw std::runtime_error("countOnesInXorAtCoordinates: blad, nie udalo sie otworzyc ramki.");
+			break;
 		}
 
-		// Convert the first frame to grayscale
-		cv::Mat prev_frame_gray, prev_binary;
-		cv::cvtColor(prev_frame, prev_frame_gray, cv::COLOR_BGR2GRAY);
-		cv::threshold(prev_frame_gray, prev_binary, threshold, 1, cv::THRESH_BINARY);
+		// Convert the current frame to grayscale
+		cv::Mat current_frame_gray, current_binary;
+		cv::cvtColor(current_frame, current_frame_gray, cv::COLOR_BGR2GRAY);
+		cv::threshold(current_frame_gray, current_binary, threshold, 1, cv::THRESH_BINARY);
 
-		int frame_index = 1;
+		// Calculate the XOR difference between frames
+		cv::Mat xor_result;
+		cv::bitwise_xor(prev_binary, current_binary, xor_result);
 
-		// Calculate the exact number of cells in the matrix
-		int total_cells;
+		int ones_count = 0;
 		if (coordinates.empty()) {
-			total_cells = prev_binary.total();
+
+			// If the coordinates are empty, analyze the XOR matrix
+			ones_count = cv::countNonZero(xor_result);
 		}
 		else {
-			total_cells = coordinates.size();
+			// Calculate the number of ones in the XOR matrix
+			for (const auto& coord : coordinates) {
+				ones_count += xor_result.at<uchar>(coord.second, coord.first);
+			}
 		}
 
-		// Loop through all frames
-		while (true) {
-			// Read the current frame
-			cv::Mat current_frame;
-			ret = cap.read(current_frame);
+		// Calculate the percentage based on the number of cells
+		double percentage_count = (static_cast<double>(ones_count) / total_cells) * 100.0;
 
-			// Break the loop if end of video is reached
-			if (!ret) {
-				break;
-			}
+		ones_count_over_time.push_back(percentage_count);
 
-			// Convert the current frame to grayscale
-			cv::Mat current_frame_gray, current_binary;
-			cv::cvtColor(current_frame, current_frame_gray, cv::COLOR_BGR2GRAY);
-			cv::threshold(current_frame_gray, current_binary, threshold, 1, cv::THRESH_BINARY);
+		// Update the current frame for the next iteration
+		prev_binary = current_binary;
 
-			// Calculate the XOR difference between frames
-			cv::Mat xor_result;
-			cv::bitwise_xor(prev_binary, current_binary, xor_result);
-
-			int ones_count = 0;
-			if (coordinates.empty()) {
-
-				// If the coordinates are empty, analyze the XOR matrix
-				ones_count = cv::countNonZero(xor_result);
-			}
-			else {
-				// Calculate the number of ones in the XOR matrix
-				for (const auto& coord : coordinates) {
-					ones_count += xor_result.at<uchar>(coord.second, coord.first);
-				}
-			}
-
-			// Calculate the percentage based on the number of cells
-			double percentage_count = (static_cast<double>(ones_count) / total_cells) * 100.0;
-
-			ones_count_over_time.push_back(percentage_count);
-
-			// Update the current frame for the next iteration
-			prev_binary = current_binary;
-
-			frame_index++;
-		}
-
-		// Release resources
-		cap.release();
-
-		// Save the result to a file
-		std::ofstream resultFile(resultPath);
-		for (const double& count : ones_count_over_time) {
-			resultFile << count << "\n";
-		}
-		resultFile.close();
-
-		return ones_count_over_time;
-
+		frame_index++;
 	}
-	// Error handling
-	catch (const std::exception& e) {
-		return {};
+
+	// Release resources
+	cap.release();
+
+	// Save the result to a file
+	std::ofstream resultFile(resultPath);
+	for (const double& count : ones_count_over_time) {
+		resultFile << count << "\n";
 	}
+	resultFile.close();
+
+	return ones_count_over_time;
 }
 
 /// <summary>
