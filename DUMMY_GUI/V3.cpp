@@ -1,7 +1,6 @@
 #include "V3.h"
 #include <wx/wx.h>
 #include "wx/setup.h"
-#define _CRT_SECURE_NO_WARNINGS
 #include <Eigen/Dense>
 
 /// <summary>
@@ -62,6 +61,27 @@ void V3::Compression::resizeVideo(const std::string inputPath, std::string outpu
 	out.release();
 }
 
+long double calcU8MatAvgBrightness(cv::Mat& mat, std::map<int, long double>& frameAvgBrightnessCache, int frameIndex){
+	auto cacheIt = frameAvgBrightnessCache.find(frameIndex);
+	if (cacheIt != frameAvgBrightnessCache.end()) {
+		return cacheIt->second;
+	}
+
+	long int sum = 0;
+
+	for(int i = 0; i < mat.rows; i++){
+		for(int j = 0; j < mat.cols; j++){
+			sum += mat.at<uint8_t>(i, j);
+		}
+	}
+
+	long double average = sum / (long double)(mat.rows * mat.cols);
+
+	frameAvgBrightnessCache.insert({ frameIndex, average });
+
+	return average;
+}
+
 /// <summary>
 /// Calculates a binarization threshold as per Marcin's algorithm design
 /// </summary>
@@ -90,30 +110,21 @@ std::pair<int, std::vector<int>> V3::Preprocessing::calculateBinarizationThresho
 	int width = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_WIDTH));
 	int height = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_HEIGHT));
 
-	cap.set(cv::CAP_PROP_POS_FRAMES, startFrame);
-
 	cv::Mat currentFrame(height, width, CV_8UC1);
 	cv::Mat currentFrameGray(height, width, CV_8UC1);
 	cv::Mat prevFrameGray(height, width, CV_8UC1);
 
-	if (!cap.read(currentFrame)) {
-		wxMessageDialog dialog1(NULL, "ERROR: (calculateBinarizationThreshold) Could not open a frame", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_ERROR | wxDIALOG_NO_PARENT);
-		dialog1.ShowModal();
-		throw std::runtime_error("calculateBinarizationThreshold: Could not open a frame" + std::to_string(startFrame));
-	}
-	cv::cvtColor(currentFrame, prevFrameGray, cv::COLOR_BGR2GRAY);
-
-	int prevAvgBrightness = cv::mean(prevFrameGray)[0];
-
 	int frameIndex;
 	std::optional<std::pair<cv::Mat, cv::Mat>> maxAvgBrightnessDiffFramesPair;
 	std::optional<std::pair<int, int>> maxAvgBrightnessDiffFramesPairIndices;
-	int maxAvgBrightnessDiff;
+	long double maxAvgBrightnessDiff;
 	std::vector<int> xorScores; // stored in a vector for debug & visualization purposes
 	xorScores.reserve(256);
 	int maxXorThreshold;
 
 	std::optional<int> maybeRetryNumber = std::nullopt;
+
+	std::map<int, long double> frameAvgBrightnessCache;
 
 	// Below: retry (including first try) loop
 	while (true)
@@ -123,6 +134,18 @@ std::pair<int, std::vector<int>> V3::Preprocessing::calculateBinarizationThresho
 		maxAvgBrightnessDiff = -1;
 		xorScores.clear();
 		maxXorThreshold = 0;
+
+		cap.set(cv::CAP_PROP_POS_FRAMES, startFrame);
+
+		if (!cap.read(currentFrame)) {
+			wxMessageDialog dialog1(NULL, "ERROR: (calculateBinarizationThreshold) Could not open a frame", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_ERROR | wxDIALOG_NO_PARENT);
+			dialog1.ShowModal();
+			throw std::runtime_error("calculateBinarizationThreshold: Could not open a frame" + std::to_string(startFrame));
+		}
+		cv::cvtColor(currentFrame, prevFrameGray, cv::COLOR_BGR2GRAY);
+
+		long double prevAvgBrightness = calcU8MatAvgBrightness(prevFrameGray, frameAvgBrightnessCache, startFrame);
+
 		frameIndex = startFrame + 1; // since the frame at index 0 had already been read
 
 		// Move through the next frames and find pair of consecutive frames that has the max avg. brightness diff
@@ -137,12 +160,13 @@ std::pair<int, std::vector<int>> V3::Preprocessing::calculateBinarizationThresho
 			cv::cvtColor(currentFrame, currentFrameGray, cv::COLOR_BGR2GRAY);
 
 			// Calculate current avg. brightness
-			int currentAvgBrightness = cv::mean(currentFrameGray)[0];
+			long double currentAvgBrightness = calcU8MatAvgBrightness(currentFrameGray, frameAvgBrightnessCache, frameIndex);
 
 			// Store the result if applicable
-			int diff = currentAvgBrightness - prevAvgBrightness;
-			if (diff > maxAvgBrightnessDiff && retryFrameIndicesBlacklist.find(frameIndex - 1) == retryFrameIndicesBlacklist.end() && retryFrameIndicesBlacklist.find(frameIndex) == retryFrameIndicesBlacklist.end())
+			long double diff = abs(currentAvgBrightness - prevAvgBrightness);
+			if (diff > maxAvgBrightnessDiff && retryFrameIndicesBlacklist.find(frameIndex - 1) == retryFrameIndicesBlacklist.end())
 			{
+				std::cout << "calculateBinarizationThreshold: Candidate frame pair " << frameIndex - 1 << " & " << frameIndex << " with diff " << diff << std::endl;
 				maxAvgBrightnessDiff = diff;
 				maxAvgBrightnessDiffFramesPair.emplace(std::pair<cv::Mat, cv::Mat>({ prevFrameGray.clone(), currentFrameGray.clone()}));
 				maxAvgBrightnessDiffFramesPairIndices.emplace(std::pair<int, int>({ frameIndex - 1, frameIndex }));
@@ -186,9 +210,8 @@ std::pair<int, std::vector<int>> V3::Preprocessing::calculateBinarizationThresho
 			std::tie(frameIndex1, frameIndex2) = maxAvgBrightnessDiffFramesPairIndices.value();
 
 			retryFrameIndicesBlacklist.insert(frameIndex1);
-			retryFrameIndicesBlacklist.insert(frameIndex2);
 
-			std::cout << "calculateBinarizationThreshold: (WARNING) calculated binarization threshold is 0, retrying with blacklisted frames " << frameIndex1 << " & " << frameIndex2 << std::endl;
+			std::cout << "calculateBinarizationThreshold: (WARNING) calculated binarization threshold using frames " << frameIndex1 << " & " << frameIndex2 << " is 0, retrying with blacklisted start frame " << frameIndex1 << std::endl;
 			
 			maybeRetryNumber.emplace(maybeRetryNumber.value_or(0) + 1);
 

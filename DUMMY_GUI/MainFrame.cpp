@@ -1223,8 +1223,8 @@ void MainFrame::RunAnalysis()
 				dialog1.ShowModal();
 
 				wxSTStatus->SetLabel(STRING_STATUS_WAITING_FOR_INPUT);
-
-				return;
+				
+				continue; // process the next image
 			}
 		}
 		else {
