@@ -1,12 +1,31 @@
 Write-Host "Pulling submodules..."
-git submodule update --init
+# git submodule update --init
 
 Write-Host "Creating symlinks..."
-cd DUMMY_GUI/include
+cd cammystat/include
 cmd /c 'mklink /J wxWidgets "../../wxWidgets/include"'
 cmd /c 'mklink /J matplotlib-cpp "../../matplotlib-cpp"'
 cmd /c 'mklink /J eigen "../../eigen"'
 cd ../..
+
+Write-Host "Downloading & extracting OpenCV binaries for development (this may take a while)..."
+$wc = New-Object net.webclient
+$wc.Downloadfile("https://github.com/opencv/opencv/releases/download/4.9.0/opencv-4.9.0-windows.exe", "opencv.exe")
+
+.\opencv.exe -o"./opencv-tmp" -y | Out-Null
+Copy-Item -Path opencv-tmp/opencv/build/include/opencv2 -Destination cammystat/include/opencv2/opencv2 -Recurse -Force
+New-Item -ItemType Directory -Path cammystat/lib/opencv2 -Force | Out-Null
+Copy-Item -Path opencv-tmp/opencv/build/x64/vc16/lib/* -Destination cammystat/lib/opencv2 -Recurse -Force
+Copy-Item -Path opencv-tmp/opencv/build/x64/vc16/bin/opencv_world490.dll -Destination cammystat/lib/opencv2/opencv_world490.dll -Recurse -Force
+Copy-Item -Path opencv-tmp/opencv/build/x64/vc16/bin/opencv_world490.pdb -Destination cammystat/lib/opencv2/opencv_world490.pdb -Recurse -Force
+
+Copy-Item -Path opencv-tmp/opencv/LICENSE* -Destination cammystat/lib/opencv2 -Recurse -Force
+Copy-Item -Path opencv-tmp/opencv/LICENSE.txt -Destination cammystat/lib/opencv2/OPENCV_LICENSE.txt -Recurse -Force
+Copy-Item -Path opencv-tmp/opencv/LICENSE_FFMPEG.txt -Destination cammystat/lib/opencv2/OPENCV_LICENSE_FFMPEG.txt -Recurse -Force
+Copy-Item -Path opencv-tmp/opencv/LICENSE* -Destination cammystat/include/opencv2/opencv2 -Recurse -Force
+
+Remove-Item -Path opencv-tmp -Recurse -Force
+Remove-Item -Path opencv.exe
 
 $VSWPath = "${Env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe"
 
@@ -36,7 +55,7 @@ msbuild wx_vc17.sln /p:Configuration=Release /property:MultiProcessorCompilation
 
 cd ../..
 Write-Host "Copying wxWidgets lib files..."
-Copy-Item -Path lib/vc_x64_lib/* -Destination ../DUMMY_GUI/lib/wxwidgets-MT -Force
+Copy-Item -Path lib/vc_x64_lib/* -Destination ../cammystat/lib/wxwidgets-MT -Force
 cd ..
 
 Write-Host "Installing pyinstaller & build dependencies with pip..."
@@ -46,7 +65,7 @@ Write-Host "Building plot.exe (this may take a while)..."
 cd plot
 pyinstaller --onefile plot.py
 cd dist
-Copy-Item -Path plot.exe -Destination ../../DUMMY_GUI/plot.exe -Force
+Copy-Item -Path plot.exe -Destination ../../cammystat/plot.exe -Force
 cd ../..
 
 Write-Host "Done"

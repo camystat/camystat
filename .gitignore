@@ -398,9 +398,11 @@ FodyWeavers.xsd
 *.sln.iml
 
 # GUI
-DUMMY_GUI/sandbox
-DUMMY_GUI/include/wxWidgets
-DUMMY_GUI/include/matplotlib-cpp
-DUMMY_GUI/include/eigen
-DUMMY_GUI/command.txt
-DUMMY_GUI/plot.exe
+cammystat/sandbox
+cammystat/include/wxWidgets
+cammystat/include/matplotlib-cpp
+cammystat/include/eigen
+cammystat/include/opencv2
+cammystat/lib/opencv2
+cammystat/command.txt
+cammystat/plot.exe

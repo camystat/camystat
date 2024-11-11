@@ -24,5 +24,5 @@ And run the setup script:
 
 `powershell.exe -noprofile -executionpolicy bypass -file setup.ps1`
 
-Finally, open `DUMMY_GUI.sln` with Visual Studio, select a configuration (Debug with console window or Release without it) and build / run the program.
+Finally, open `cammystat.sln` with Visual Studio, select a configuration (Debug with console window or Release without it) and build / run the program.
 You will then be able to find the outputs in `x64/{Debug,Release}`.
