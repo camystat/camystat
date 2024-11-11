@@ -36,7 +36,7 @@ msbuild wx_vc17.sln /p:Configuration=Release /property:MultiProcessorCompilation
 
 cd ../..
 Write-Host "Copying wxWidgets lib files..."
-Copy-Item -Path lib/vc_x64_lib/* -Destination ../DUMMY_GUI/lib/wxwidgets-MT
+Copy-Item -Path lib/vc_x64_lib/* -Destination ../DUMMY_GUI/lib/wxwidgets-MT -Force
 cd ..
 
 Write-Host "Installing pyinstaller & build dependencies with pip..."
@@ -46,7 +46,7 @@ Write-Host "Building plot.exe (this may take a while)..."
 cd plot
 pyinstaller --onefile plot.py
 cd dist
-Copy-Item -Path plot.exe -Destination ../../DUMMY_GUI/plot.exe
+Copy-Item -Path plot.exe -Destination ../../DUMMY_GUI/plot.exe -Force
 cd ../..
 
 Write-Host "Done"

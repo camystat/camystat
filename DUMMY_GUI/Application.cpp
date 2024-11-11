@@ -16,7 +16,6 @@ Application::Application() {
 
 bool Application::OnInit() {
 	MainFrame* mainFrame = new MainFrame("CamMyStat");
-	mainFrame->SetSizeHints(640, 600, 640, 800);
 
 	mainFrame->SetTitle("CamMyStat");
 	wxIcon icon(wxICON(IDI_APP_ICON));

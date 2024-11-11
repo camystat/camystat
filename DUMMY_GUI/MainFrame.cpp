@@ -143,14 +143,11 @@ enum IDs {
 	ID_MERGE_EVENTS,
 	ID_AUTO_SELECT_EVENTS,
 	ID_Timer,
-	ID_AUTO_DETECT_EVENTS,
-	ID_AUTOMATIC_BINARIZATION_THRESHOLD,
-	ID_FOCUS_FIELD
+	ID_AUTOMATIC_BINARIZATION_THRESHOLD
 };
 
 wxBEGIN_EVENT_TABLE(MainFrame, wxFrame)
 EVT_CHECKBOX(ID_FPS_AUTO_DETECT_ANALYSIS, MainFrame::wxFPSAutoDetectAnalysisToggle)
-EVT_CHECKBOX(ID_FOCUS_FIELD, MainFrame::wxAutomaticRecognitionAnalysis)
 EVT_CHECKBOX(ID_SAVITZKY_GOLAY_FILTER, MainFrame::wxSavitzkyGolayFilter)
 EVT_CHECKBOX(ID_MOVING_AVERAGE, MainFrame::wxMovingAverage)
 EVT_CHECKBOX(ID_MERGE_EVENTS, MainFrame::wxMergeEvents)
@@ -159,26 +156,25 @@ EVT_TIMER(ID_Timer, MainFrame::OnTimer)
 EVT_CHAR(MainFrame::OnChar)
 EVT_KILL_FOCUS(MainFrame::OnKillFocus)
 EVT_TEXT_PASTE(wxID_ANY, MainFrame::OnPaste)
-EVT_CHECKBOX(ID_AUTO_DETECT_EVENTS, MainFrame::wxCBAutoMDetectEventsToggle)
 EVT_MENU(wxID_ANY, MainFrame::OnCiteMe)
 EVT_THREAD(wxEVT_CREATE_NEW_WINDOW, MainFrame::OnCreateNewWindow)
 wxEND_EVENT_TABLE()
 
 void MainFrame::syncAutomaticRecognitionAnalysisFieldStates() {
-	isAnyAutomaticAnalysisOptionActive = wxCBSavitzkyGolayFilter->IsEnabled() || wxCBMovingAverage->IsEnabled() || wxCBAutoMDetectEvents->IsEnabled();
+	isAnyAutomaticAnalysisOptionActive = wxCBFocusField->IsChecked() || wxCBAutomaticBinarizationThreshold->IsChecked();
 
-	wxTCFirstFrame->Enable(isAnyAutomaticAnalysisOptionActive);
-	wxTCLastFrame->Enable(isAnyAutomaticAnalysisOptionActive);
+	controlEnabledState[wxTCFirstFrame] = isAnyAutomaticAnalysisOptionActive;
+	controlEnabledState[wxTCLastFrame] = isAnyAutomaticAnalysisOptionActive;
 }
 
-MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) {
+MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title, wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE & ~wxMAXIMIZE_BOX) {
 
 	numberOfFiles = 0;
 	panel = new wxPanel(this);
 
-	//Left side of the GUI
+	// Left side of the GUI
 
-	wxSTListOfFiles = new wxStaticText(panel, wxID_ANY, "List of files .mov for analysis", wxPoint(20, 20), wxSize(280, 20));
+	wxSTListOfFiles = new wxStaticText(panel, wxID_ANY, "List of .mov files for analysis", wxPoint(20, 20), wxSize(280, 20));
 	{
 		wxFont font = wxSTListOfFiles->GetFont();
 		font.SetWeight(wxFONTWEIGHT_BOLD);
@@ -282,7 +278,11 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 	wxCBAutomaticBinarizationThreshold->SetValue(true);
 	wxCBAutomaticBinarizationThreshold->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent& event)
 		{
-			wxTCBinarizationThreshold->Enable(!event.IsChecked());
+			controlEnabledState[wxTCBinarizationThreshold] = !event.IsChecked();
+			
+			syncAutomaticRecognitionAnalysisFieldStates();
+
+			UpdateUI();
 		});
 
 
@@ -290,7 +290,7 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 
 	wxSTBinarizationThreshold = new wxStaticText(panel, wxID_ANY, "Binarization threshold", wxPoint(320, rightSideCoordY), wxSize(150, 20));
 	wxTCBinarizationThreshold = new wxTextCtrl(panel, wxID_ANY, "100", wxPoint(510, rightSideCoordY), wxSize(40, 20));
-	wxTCBinarizationThreshold->Enable(false);
+	controlEnabledState[wxTCBinarizationThreshold] = false;
 	wxTCBinarizationThreshold->Bind(wxEVT_CHAR, &MainFrame::OnCharNoDot, this);
 	wxTCBinarizationThreshold->Bind(wxEVT_KILL_FOCUS, &MainFrame::OnKillFocus, this);
 	wxTCBinarizationThreshold->Bind(wxEVT_TEXT_PASTE, &MainFrame::OnPaste, this);
@@ -299,8 +299,18 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 
 	rightSideCoordY += 25;
 
-	wxCBFocusField = new wxCheckBox(panel, ID_FOCUS_FIELD, "Focus field", wxPoint(320, rightSideCoordY));
+	wxCBFocusField = new wxCheckBox(panel, wxID_ANY, "Focus field", wxPoint(320, rightSideCoordY));
 	wxCBFocusField->SetValue(true);
+	wxCBFocusField->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent& event) {
+		bool isCBFocusFieldEnabled = event.IsChecked();
+		
+		controlEnabledState[wxTCSizeOfFocusField] = isCBFocusFieldEnabled;
+		controlEnabledState[wxTCPercentileOfTheHighestValues] = isCBFocusFieldEnabled;
+
+		syncAutomaticRecognitionAnalysisFieldStates();
+
+		UpdateUI();
+	});
 
 	rightSideCoordY += 25;
 
@@ -308,13 +318,13 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 
 	rightSideCoordY += 25;
 
-	wxTCSizeOfFocusField = new wxTextCtrl(panel, wxID_ANY, "25", wxPoint(320, rightSideCoordY), wxSize(40, 20));
+	wxTCSizeOfFocusField = new wxTextCtrl(panel, wxID_ANY, std::to_string(DEFAULT_SIZE_OF_FOCUS_FIELD), wxPoint(320, rightSideCoordY), wxSize(40, 20));
 	wxTCSizeOfFocusField->Bind(wxEVT_CHAR, &MainFrame::OnCharNoDot, this);
 	wxTCSizeOfFocusField->Bind(wxEVT_KILL_FOCUS, &MainFrame::OnKillFocus, this);
 	wxTCSizeOfFocusField->Bind(wxEVT_TEXT_PASTE, &MainFrame::OnPaste, this);
 	wxSTSizeOfFocusField = new wxStaticText(panel, wxID_ANY, "Size of the focus field", wxPoint(370, rightSideCoordY), wxSize(80, 30));
-
-	wxTCPercentileOfTheHighestValues = new wxTextCtrl(panel, wxID_ANY, "90", wxPoint(460, rightSideCoordY), wxSize(40, 20));
+	
+	wxTCPercentileOfTheHighestValues = new wxTextCtrl(panel, wxID_ANY, std::to_string(DEFAULT_PERCENTILE_OF_HIGHEST_VALUES), wxPoint(460, rightSideCoordY), wxSize(40, 20));
 	wxTCPercentileOfTheHighestValues->Bind(wxEVT_CHAR, &MainFrame::OnCharNoDot, this);
 	wxTCPercentileOfTheHighestValues->Bind(wxEVT_KILL_FOCUS, &MainFrame::OnKillFocus, this);
 	wxTCPercentileOfTheHighestValues->Bind(wxEVT_TEXT_PASTE, &MainFrame::OnPaste, this);
@@ -365,7 +375,6 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 
 	wxCBSavitzkyGolayFilter = new wxCheckBox(panel, ID_SAVITZKY_GOLAY_FILTER, "Savitzky-Golay filter", wxPoint(320, rightSideCoordY));
 	wxCBSavitzkyGolayFilter->SetValue(true);
-	wxCBSavitzkyGolayFilter->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent &event) { syncAutomaticRecognitionAnalysisFieldStates(); });
 
 	rightSideCoordY += 25;
 
@@ -385,7 +394,6 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 
 	wxCBMovingAverage = new wxCheckBox(panel, ID_MOVING_AVERAGE, "Moving average", wxPoint(320, rightSideCoordY));
 	wxCBMovingAverage->SetValue(true);
-	wxCBMovingAverage->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent &event) { syncAutomaticRecognitionAnalysisFieldStates(); });
 
 	rightSideCoordY += 25;
 
@@ -421,7 +429,7 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 
 	rightSideCoordY += 30;
 
-	wxCBAutoMDetectEvents = new wxCheckBox(panel, ID_AUTO_DETECT_EVENTS, "Auto detect events", wxPoint(320, rightSideCoordY));
+	wxCBAutoMDetectEvents = new wxCheckBox(panel, wxID_ANY, "Auto detect events", wxPoint(320, rightSideCoordY));
 	wxCBAutoMDetectEvents->SetValue(true);
 
 	rightSideCoordY += 25;
@@ -468,7 +476,10 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 	Bind(wxEVT_CREATE_NEW_WINDOW, &MainFrame::OnCreateNewWindow, this);
 	Bind(wxEVT_CLOSE_WINDOW, &MainFrame::OnClose, this);
 
-	SetSize(640, rightSideCoordY + 90);
+	{
+		int windowHeight = rightSideCoordY + 90;
+		SetSizeHints(MAIN_WINDOW_WIDTH, windowHeight, MAIN_WINDOW_WIDTH, windowHeight);
+	}
 
 	wxBOutputPath->Bind(wxEVT_BUTTON, [this](wxCommandEvent& event)
 		{
@@ -516,48 +527,41 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 
 	wxBAnalyze->Bind(wxEVT_BUTTON, [this](wxCommandEvent& event)
 		{
+			processingRunning = true;
+			UpdateUI();
 			timer->Start(1300);
-			DisableUI();
 
 			std::thread([this]() {
 				RunAnalysis();
 
-				UpdateUIAfterProcessing();
-				wxBAnalyze->Enable(true);
+				controlEnabledState[wxBAnalyze] = true;
 				timer->Stop();
 				wxSTStatusDisplayed->SetLabel(wxSTStatus->GetLabel());
 				m_dotCount = 0;
 
 				wxSTStatus->SetLabel("Status: Processing complete!");
-				}).detach();
+				processingRunning = false;
+				UpdateUI();
+			}).detach();
 		});
 
 	wxCBAutoMDetectEvents->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent& event)
 		{
-			syncAutomaticRecognitionAnalysisFieldStates();
+			for (wxControl* ctrl : std::initializer_list<wxControl*>{
+				wxSTAutoMovementThresholdStatic,
+				wxTCAutoMovementThreshold,
+				wxSTAutoMovementThreshold,
+				wxCBAutoMergeEvents,
+				wxTCAutoMergeEvents,
+				wxSTAutoMergeEvents,
+				wxCBAutoSelectEvents,
+				wxTCAutoSelectEvents,
+				wxSTAutoSelectEvents
+			}) {
+				controlEnabledState[ctrl] = event.IsChecked();
+			}
 
-			if (event.IsChecked()) {
-				wxSTAutoMovementThresholdStatic->Enable(true);
-				wxTCAutoMovementThreshold->Enable(true);
-				wxSTAutoMovementThreshold->Enable(true);
-				wxCBAutoMergeEvents->Enable(true);
-				wxTCAutoMergeEvents->Enable(true);
-				wxSTAutoMergeEvents->Enable(true);
-				wxCBAutoSelectEvents->Enable(true);
-				wxTCAutoSelectEvents->Enable(true);
-				wxSTAutoSelectEvents->Enable(true);
-			}
-			else {
-				wxSTAutoMovementThresholdStatic->Enable(false);
-				wxTCAutoMovementThreshold->Enable(false);
-				wxSTAutoMovementThreshold->Enable(false);
-				wxCBAutoMergeEvents->Enable(false);
-				wxTCAutoMergeEvents->Enable(false);
-				wxSTAutoMergeEvents->Enable(false);
-				wxCBAutoSelectEvents->Enable(false);
-				wxTCAutoSelectEvents->Enable(false);
-				wxSTAutoSelectEvents->Enable(false);
-			}
+			UpdateUI();
 		});
 
 	allInteractiveControls.push_back(wxCTFileList);
@@ -612,109 +616,63 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title) 
 	allInteractiveControls.push_back(wxCBFocusField);
 
 	syncAutomaticRecognitionAnalysisFieldStates();
+	UpdateUI();
 }
 
-void MainFrame::DisableUI()
+void MainFrame::UpdateUI()
 {
 	for (wxControl*& ctrl : allInteractiveControls) {
-		ctrl->Enable(false);
-	}
-}
+		bool isNormallyEnabled = !processingRunning; // default value
 
-void MainFrame::UpdateUIAfterProcessing()
-{
-	for (wxControl*& ctrl : allInteractiveControls) {
-		ctrl->Enable(true);
+		if (!processingRunning) {
+			auto isNormallyEnabledIt = controlEnabledState.find(ctrl);
+
+			if (isNormallyEnabledIt != controlEnabledState.end()) {
+				isNormallyEnabled = isNormallyEnabledIt->second;
+			}
+		}
+
+		ctrl->Enable(isNormallyEnabled);
 	}
 }
 
 void MainFrame::wxFPSAutoDetectAnalysisToggle(wxCommandEvent& evt) {
-	if (evt.IsChecked()) {
-		wxTCFPS->Disable();
-	}
-	else {
-		wxTCFPS->Enable();
-	}
-}
-
-void MainFrame::wxCBAutoMDetectEventsToggle(wxCommandEvent& evt) {
-	if (evt.IsChecked()) {
-		wxSTAutoMovementThresholdStatic->Enable(true);
-		wxTCAutoMovementThreshold->Enable(true);
-		wxSTAutoMovementThreshold->Enable(true);
-		wxCBAutoMergeEvents->Enable(true);
-		wxTCAutoMergeEvents->Enable(true);
-		wxSTAutoMergeEvents->Enable(true);
-		wxCBAutoSelectEvents->Enable(true);
-		wxTCAutoSelectEvents->Enable(true);
-		wxSTAutoSelectEvents->Enable(true);
-	}
-	else {
-		wxSTAutoMovementThresholdStatic->Enable(false);
-		wxTCAutoMovementThreshold->Enable(false);
-		wxSTAutoMovementThreshold->Enable(false);
-		wxCBAutoMergeEvents->Enable(false);
-		wxTCAutoMergeEvents->Enable(false);
-		wxSTAutoMergeEvents->Enable(false);
-		wxCBAutoSelectEvents->Enable(false);
-		wxTCAutoSelectEvents->Enable(false);
-		wxSTAutoSelectEvents->Enable(false);
-	}
-}
-
-void MainFrame::wxAutomaticRecognitionAnalysis(wxCommandEvent & evt) {
-	if (evt.IsChecked()) {
-		wxTCFirstFrame->Enable();
-		wxTCLastFrame->Enable();
-		wxTCSizeOfFocusField->Enable();
-		wxTCPercentileOfTheHighestValues->Enable();
-	}
-	else {
-		wxTCFirstFrame->Disable();
-		wxTCLastFrame->Disable();
-		wxTCSizeOfFocusField->Disable();
-		wxTCPercentileOfTheHighestValues->Disable();
-	}
+	controlEnabledState[wxTCFPS] = !evt.IsChecked();
+	UpdateUI();
 }
 
 void MainFrame::wxSavitzkyGolayFilter(wxCommandEvent& evt) {
-	if (evt.IsChecked()) {
-		wxTCWindowLengthSGF->Enable();
-		wxTCPolyorder->Enable();
+	for (wxControl* ctrl : std::initializer_list<wxControl*>{
+		wxTCWindowLengthSGF,
+		wxTCPolyorder
+	}) {
+		controlEnabledState[ctrl] = evt.IsChecked();
 	}
-	else {
-		wxTCWindowLengthSGF->Disable();
-		wxTCPolyorder->Disable();
-	}
+
+	UpdateUI();
 }
 
 void MainFrame::wxMovingAverage(wxCommandEvent& evt) {
-	if (evt.IsChecked()) {
-		wxTCWindowLengthMA->Enable();
-		wxTCNumberOfRepetitions->Enable();
+	for (wxControl* ctrl : std::initializer_list<wxControl*>{
+		wxTCWindowLengthMA,
+		wxTCNumberOfRepetitions
+	}) {
+		controlEnabledState[ctrl] = evt.IsChecked();
 	}
-	else {
-		wxTCWindowLengthMA->Disable();
-		wxTCNumberOfRepetitions->Disable();
-	}
+
+	UpdateUI();
 }
 
 void MainFrame::wxMergeEvents(wxCommandEvent& evt) {
-	if (evt.IsChecked()) {
-		wxTCAutoMergeEvents->Enable();
-	}
-	else {
-		wxTCAutoMergeEvents->Disable();
-	}
+	controlEnabledState[wxTCAutoMergeEvents] = evt.IsChecked();
+
+	UpdateUI();
 }
 
 void MainFrame::wxAutoSelectEvents(wxCommandEvent& evt) {
-	if (evt.IsChecked()) {
-		wxTCAutoSelectEvents->Enable();
-	}
-	else {
-		wxTCAutoSelectEvents->Disable();
-	}
+	controlEnabledState[wxTCAutoSelectEvents] = evt.IsChecked();
+
+	UpdateUI();
 }
 
 void MainFrame::SetTaskBarIcon()
@@ -815,7 +773,7 @@ void MainFrame::RunAnalysis()
 	double topPercent;
 
 	// Find max sum square coordinates
-	strTemp = wxTCSizeOfFocusField->GetValue();
+	strTemp = wxTCSizeOfFocusField->IsEnabled() ? wxTCSizeOfFocusField->GetValue() : std::to_string(DEFAULT_SIZE_OF_FOCUS_FIELD);
 	if (strTemp.ToDouble(&squarePercent)) {
 	}
 	else {
@@ -830,7 +788,7 @@ void MainFrame::RunAnalysis()
 		errorMessage += "Square percent value should be (1-100).\n";
 	}
 
-	strTemp = wxTCPercentileOfTheHighestValues->GetValue();
+	strTemp = wxTCPercentileOfTheHighestValues->IsEnabled() ? wxTCPercentileOfTheHighestValues->GetValue() : std::to_string(DEFAULT_PERCENTILE_OF_HIGHEST_VALUES);
 	if (strTemp.ToDouble(&topPercent)) {
 	}
 	else {

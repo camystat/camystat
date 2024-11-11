@@ -11,8 +11,13 @@
 #include <string>
 
 #include <vector>
+#include <map>
 
 #define STRING_STATUS_WAITING_FOR_INPUT "Status: Waiting for input"
+#define MAIN_WINDOW_WIDTH 640
+
+#define DEFAULT_PERCENTILE_OF_HIGHEST_VALUES 90
+#define DEFAULT_SIZE_OF_FOCUS_FIELD 25
 
 class MainFrame : public wxFrame
 {
@@ -26,9 +31,8 @@ public:
 	void wxAutoSelectEvents(wxCommandEvent& evt);
 	void SetTaskBarIcon();
 	void RunAnalysis();
-	void UpdateUIAfterProcessing();
+	void UpdateUI();
 	void OnTimer(wxTimerEvent& event);
-	void DisableUI();
 	void OnChar(wxKeyEvent& event);
 	void OnKillFocus(wxFocusEvent& event);
 	void OnPaste(wxClipboardTextEvent& event);
@@ -44,6 +48,8 @@ public:
 	bool isAnyAutomaticAnalysisOptionActive;
 
 	std::vector<wxControl*> allInteractiveControls;
+	std::map<wxControl*, bool> controlEnabledState;
+	bool processingRunning = false;
 
 	wxDECLARE_EVENT_TABLE();
 
