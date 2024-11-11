@@ -4,6 +4,7 @@ git submodule update --init
 Write-Host "Creating symlinks..."
 cd DUMMY_GUI/include
 cmd /c 'mklink /J wxWidgets "../../wxWidgets/include"'
+cmd /c 'mklink /J matplotlib-cpp "../../matplotlib-cpp"'
 cmd /c 'mklink /J eigen "../../eigen"'
 cd ../..
 
