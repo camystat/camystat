@@ -406,7 +406,7 @@ std::vector<std::pair<int, int>> V3::Preprocessing::findMaxSumSquareCoordinatesW
 
 	// Draw points on the image
 	for (const auto& coord : selected_coordinates) {
-		cv::circle(image, cv::Point(coord.first, coord.second), 3, cv::Scalar(0, 255, 0), -1); // Zielony punkt
+		image.at<cv::Vec3b>(cv::Point(coord.first, coord.second)) = cv::Vec3b(0, 0, 255); // Red single-pixel marker
 	}
 
 	// Save the image as PNG with the points overlaid
