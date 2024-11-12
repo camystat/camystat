@@ -2,12 +2,6 @@
 
 Research project.
 
-## Running
-
-### Prerequisites
-
-- OpenCV 4.9.0 installed and on PATH
-
 ## Building from source
 
 ### Prerequisites
