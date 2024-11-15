@@ -66,13 +66,16 @@
     <CopyFileToFolders Include="plot.exe">
       <Filter>Pliki zasobów</Filter>
     </CopyFileToFolders>
-    <CopyFileToFolders Include="lib\opencv2\opencv_world490.dll">
-      <Filter>Pliki zasobów</Filter>
-    </CopyFileToFolders>
     <CopyFileToFolders Include="lib\opencv2\OPENCV_LICENSE.txt">
       <Filter>Pliki zasobów</Filter>
     </CopyFileToFolders>
     <CopyFileToFolders Include="lib\opencv2\OPENCV_LICENSE_FFMPEG.txt">
+      <Filter>Pliki zasobów</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="lib\opencv2\opencv_world4100.dll">
+      <Filter>Pliki zasobów</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="lib\opencv2\opencv_videoio_ffmpeg4100_64.dll">
       <Filter>Pliki zasobów</Filter>
     </CopyFileToFolders>
   </ItemGroup>

@@ -1,5 +1,5 @@
 Write-Host "Pulling submodules..."
-# git submodule update --init
+git submodule update --init
 
 Write-Host "Creating symlinks..."
 cd cammystat/include
@@ -10,14 +10,15 @@ cd ../..
 
 Write-Host "Downloading & extracting OpenCV binaries for development (this may take a while)..."
 $wc = New-Object net.webclient
-$wc.Downloadfile("https://github.com/opencv/opencv/releases/download/4.9.0/opencv-4.9.0-windows.exe", "opencv.exe")
+$wc.Downloadfile("https://github.com/opencv/opencv/releases/download/4.10.0/opencv-4.10.0-windows.exe", "opencv.exe")
 
 .\opencv.exe -o"./opencv-tmp" -y | Out-Null
 Copy-Item -Path opencv-tmp/opencv/build/include/opencv2 -Destination cammystat/include/opencv2/opencv2 -Recurse -Force
 New-Item -ItemType Directory -Path cammystat/lib/opencv2 -Force | Out-Null
 Copy-Item -Path opencv-tmp/opencv/build/x64/vc16/lib/* -Destination cammystat/lib/opencv2 -Recurse -Force
-Copy-Item -Path opencv-tmp/opencv/build/x64/vc16/bin/opencv_world490.dll -Destination cammystat/lib/opencv2/opencv_world490.dll -Recurse -Force
-Copy-Item -Path opencv-tmp/opencv/build/x64/vc16/bin/opencv_world490.pdb -Destination cammystat/lib/opencv2/opencv_world490.pdb -Recurse -Force
+Copy-Item -Path opencv-tmp/opencv/build/bin/opencv_videoio_ffmpeg4100_64.dll -Destination cammystat/lib/opencv2/opencv_videoio_ffmpeg4100_64.dll -Recurse -Force
+Copy-Item -Path opencv-tmp/opencv/build/x64/vc16/bin/opencv_world4100.dll -Destination cammystat/lib/opencv2/opencv_world4100.dll -Recurse -Force
+Copy-Item -Path opencv-tmp/opencv/build/x64/vc16/bin/opencv_world4100.pdb -Destination cammystat/lib/opencv2/opencv_world4100.pdb -Recurse -Force
 
 Copy-Item -Path opencv-tmp/opencv/LICENSE* -Destination cammystat/lib/opencv2 -Recurse -Force
 Copy-Item -Path opencv-tmp/opencv/LICENSE.txt -Destination cammystat/lib/opencv2/OPENCV_LICENSE.txt -Recurse -Force

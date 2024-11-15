@@ -61,7 +61,7 @@ void V3::Compression::resizeVideo(const std::string inputPath, std::string outpu
 	out.release();
 }
 
-long double calcU8MatAvgBrightness(cv::Mat& mat, std::map<int, long double>& frameAvgBrightnessCache, int frameIndex){
+long double calcU8MatAvgBrightness(const cv::Mat& mat, std::map<int, long double>& frameAvgBrightnessCache, int frameIndex){
 	auto cacheIt = frameAvgBrightnessCache.find(frameIndex);
 	if (cacheIt != frameAvgBrightnessCache.end()) {
 		return cacheIt->second;
@@ -115,9 +115,8 @@ std::pair<int, std::vector<int>> V3::Preprocessing::calculateBinarizationThresho
 	cv::Mat prevFrameGray(height, width, CV_8UC1);
 
 	int frameIndex;
-	std::optional<std::pair<cv::Mat, cv::Mat>> maxAvgBrightnessDiffFramesPair;
-	std::optional<std::pair<int, int>> maxAvgBrightnessDiffFramesPairIndices;
-	long double maxAvgBrightnessDiff;
+	std::optional<int> maxAvgBrightnessDiffStartFrameIdx;
+	long double maxAvgBrightnessDiff = -1;
 	std::vector<int> xorScores; // stored in a vector for debug & visualization purposes
 	xorScores.reserve(256);
 	int maxXorThreshold;
@@ -129,8 +128,7 @@ std::pair<int, std::vector<int>> V3::Preprocessing::calculateBinarizationThresho
 	// Below: retry (including first try) loop
 	while (true)
 	{
-		maxAvgBrightnessDiffFramesPair = std::nullopt;
-		maxAvgBrightnessDiffFramesPairIndices = std::nullopt;
+		maxAvgBrightnessDiffStartFrameIdx = std::nullopt;
 		maxAvgBrightnessDiff = -1;
 		xorScores.clear();
 		maxXorThreshold = 0;
@@ -152,7 +150,7 @@ std::pair<int, std::vector<int>> V3::Preprocessing::calculateBinarizationThresho
 		while (true)
 		{
 			progressCallback(V3::Preprocessing::BinarizationThresholdCalcProgress::FINDING_MAX_BRIGHTNESS_DIFF_FRAMES, (double)frameIndex / (double)endFrame, maybeRetryNumber);
-
+			
 			// Load next frame
 			if (!cap.read(currentFrame) || (endFrame != -1 && frameIndex > endFrame)) {
 				break;
@@ -168,8 +166,7 @@ std::pair<int, std::vector<int>> V3::Preprocessing::calculateBinarizationThresho
 			{
 				std::cout << "calculateBinarizationThreshold: Candidate frame pair " << frameIndex - 1 << " & " << frameIndex << " with diff " << diff << std::endl;
 				maxAvgBrightnessDiff = diff;
-				maxAvgBrightnessDiffFramesPair.emplace(std::pair<cv::Mat, cv::Mat>({ prevFrameGray.clone(), currentFrameGray.clone()}));
-				maxAvgBrightnessDiffFramesPairIndices.emplace(std::pair<int, int>({ frameIndex - 1, frameIndex }));
+				maxAvgBrightnessDiffStartFrameIdx.emplace(frameIndex - 1);
 			}
 
 			// Before advancing iteration, assign 'current' values to 'previous' vars
@@ -179,24 +176,33 @@ std::pair<int, std::vector<int>> V3::Preprocessing::calculateBinarizationThresho
 			frameIndex++;
 		}
 		
-		if (!maxAvgBrightnessDiffFramesPair.has_value()){
+		if (!maxAvgBrightnessDiffStartFrameIdx.has_value()){
 			throw std::runtime_error("calculateBinarizationThreshold: Could not find any consecutive frames with a non-zero brightness difference. Please input the binarization threshold manually.");
 		}
 
-		cv::Mat frame1, frame2;
-		std::tie(frame1, frame2) = maxAvgBrightnessDiffFramesPair.value();
+		cap.set(cv::CAP_PROP_POS_FRAMES, maxAvgBrightnessDiffStartFrameIdx.value());
+
+		cv::Mat frame1Gray, frame2Gray;
+		cv::Mat frame1Binary, frame2Binary;
+		cv::Mat tempFrame;
+		cap.read(tempFrame);
+		cv::cvtColor(tempFrame, frame1Gray, cv::COLOR_BGR2GRAY);
+		cap.read(tempFrame);
+		cv::cvtColor(tempFrame, frame2Gray, cv::COLOR_BGR2GRAY);
+		tempFrame.release();
 
 		// Find binarization threshold that maximizes the XOR score
 		cv::Mat xorResult(height, width, CV_8UC1);
 		for (int t = 0; t <= 255; t++)
 		{
 			progressCallback(V3::Preprocessing::BinarizationThresholdCalcProgress::CALCULATING_XOR_SCORES, (double)t / 255.0, std::nullopt);
-			cv::Mat frame1Binary, frame2Binary;
-			cv::threshold(frame1, frame1Binary, t, 255, cv::THRESH_BINARY);
-			cv::threshold(frame2, frame2Binary, t, 255, cv::THRESH_BINARY);
-
+			
+			cv::threshold(frame1Gray, frame1Binary, t, 255, cv::THRESH_BINARY);
+			cv::threshold(frame2Gray, frame2Binary, t, 255, cv::THRESH_BINARY);
+			
 			cv::bitwise_xor(frame1Binary, frame2Binary, xorResult);
-			xorScores.push_back(cv::countNonZero(xorResult));
+			
+			xorScores.push_back(cv::sum(xorResult)[0]);
 		}
 
 		std::vector<int>::iterator maxXorScore = std::max_element(xorScores.begin(), xorScores.end());
@@ -206,8 +212,7 @@ std::pair<int, std::vector<int>> V3::Preprocessing::calculateBinarizationThresho
 		// Edge case: all binarized frame per pair were identical & all XOR scores are thus 0 -> retry with other frames, blacklist this pair
 		if (maxXorThreshold == 0)
 		{
-			int frameIndex1, frameIndex2;
-			std::tie(frameIndex1, frameIndex2) = maxAvgBrightnessDiffFramesPairIndices.value();
+			int frameIndex1 = maxAvgBrightnessDiffStartFrameIdx.value(), frameIndex2 = frameIndex1 + 1;
 
 			retryFrameIndicesBlacklist.insert(frameIndex1);
 

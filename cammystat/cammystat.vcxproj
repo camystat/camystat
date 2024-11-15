@@ -121,7 +121,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)cammystat\lib\wxwidgets-MT;$(SolutionDir)cammystat\lib\opencv2</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opencv_world490.lib;MSVCRT.lib;wxbase32u.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opencv_world4100.lib;MSVCRT.lib;wxbase32u.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>LIBCMT</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
@@ -176,7 +176,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)cammystat\lib\wxwidgets-MT;$(SolutionDir)cammystat\lib\opencv2</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opencv_world490.lib;MSVCRT.lib;wxbase32u.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opencv_world4100.lib;MSVCRT.lib;wxbase32u.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>
       </IgnoreAllDefaultLibraries>
       <IgnoreSpecificDefaultLibraries>LIBCMT</IgnoreSpecificDefaultLibraries>
@@ -216,7 +216,12 @@
     <CopyFileToFolders Include="lib\opencv2\OPENCV_LICENSE_FFMPEG.txt" />
   </ItemGroup>
   <ItemGroup>
-    <CopyFileToFolders Include="lib\opencv2\opencv_world490.dll">
+    <CopyFileToFolders Include="lib\opencv2\opencv_world4100.dll">
+      <FileType>Document</FileType>
+    </CopyFileToFolders>
+  </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="lib\opencv2\opencv_videoio_ffmpeg4100_64.dll">
       <FileType>Document</FileType>
     </CopyFileToFolders>
   </ItemGroup>

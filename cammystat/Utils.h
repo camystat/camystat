@@ -1,20 +1,20 @@
 #pragma once
 #include <vector>
 #include <iostream>
-#include "V3.h"
-#include "MainFrame.h"
 #include <wx/wx.h>
 #include "wx/setup.h"
-#include "Utils.h"
 #include <shlobj.h>
 #include <filesystem>
 #include <chrono>
 #include <iomanip>
 #include <sstream>
 #include <cmath>
-#include "Savgol.h"
 #include <Windows.h>
 #include <string>
+#include "Savgol.h"
+#include "Utils.h"
+#include "V3.h"
+#include "MainFrame.h"
 
 namespace fs = std::filesystem;
 
