@@ -40,6 +40,7 @@ public:
 	void OnFocus(wxFocusEvent& event);
 	void wxCBAutoMDetectEventsToggle(wxCommandEvent& evt);
 	void OnCiteMe(wxCommandEvent& event);
+	void OpenLicensesFolder(wxCommandEvent& event);
 	void OnCreateNewWindow(wxThreadEvent& event);
 	void OnClose(wxCloseEvent& event);
 	void OnCharNoDot(wxKeyEvent& event);
@@ -151,6 +152,7 @@ public:
 	wxMenuBar* menuBar;
 	wxMenu* fileMenu;
 	wxMenuItem* citeMeMenuItem;
+	wxMenuItem* openLicensesFolderMenuItem;
 
 	std::vector<wxString> directories;
 	int numberOfFiles;

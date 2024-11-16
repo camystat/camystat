@@ -35,3 +35,7 @@
 
     Your citation helps recognize our work and supports further research.
     
+
+    ---------------------------------------------------------------------
+
+    This project uses the Eigen library (https://gitlab.com/libeigen/eigen).

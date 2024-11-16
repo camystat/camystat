@@ -400,7 +400,6 @@ FodyWeavers.xsd
 # GUI
 cammystat/sandbox
 cammystat/include/wxWidgets
-cammystat/include/matplotlib-cpp
 cammystat/include/eigen
 cammystat/include/opencv2
 cammystat/lib/opencv2

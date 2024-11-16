@@ -4,10 +4,10 @@ git submodule update --init
 Write-Host "Creating symlinks..."
 cd cammystat/include
 cmd /c 'mklink /J wxWidgets "../../wxWidgets/include"'
-cmd /c 'mklink /J matplotlib-cpp "../../matplotlib-cpp"'
 cmd /c 'mklink /J eigen "../../eigen"'
 cd ../..
 
+# prepare opencv
 Write-Host "Downloading & extracting OpenCV binaries for development (this may take a while)..."
 $wc = New-Object net.webclient
 $wc.Downloadfile("https://github.com/opencv/opencv/releases/download/4.10.0/opencv-4.10.0-windows.exe", "opencv.exe")
@@ -28,6 +28,62 @@ Copy-Item -Path opencv-tmp/opencv/LICENSE* -Destination cammystat/include/opencv
 Remove-Item -Path opencv-tmp -Recurse -Force
 Remove-Item -Path opencv.exe
 
+# copy eigen license files
+$directory = "eigen/"
+$outputFile = "cammystat/misc/EIGEN_LICENSE.txt"
+
+$files = Get-ChildItem -Path $directory -Filter "COPYING.*" -File | Where-Object { $_.Name -ne "COPYING.README" }
+
+Set-Content -Path $outputFile -Value ""
+
+foreach ($file in $files) {
+    Add-Content -Path $outputFile -Value "`n====== $file ======`n"
+    Get-Content -Path $file.FullName | Add-Content -Path $outputFile
+    Add-Content -Path $outputFile -Value "`n=============`n"
+}
+
+# download wxWidgets license
+$wc = New-Object net.webclient
+$wc.Downloadfile("https://raw.githubusercontent.com/wxWidgets/wxWidgets/master/docs/licence.txt", "cammystat/misc/WXWIDGETS_LICENSE.txt")
+
+# compile licenses of plot dependencies
+cd plot
+
+& pip install third-party-license-file-generator
+
+$pythonPath = (Get-Command python).Source
+
+& python -m third_party_license_file_generator -r requirements.txt -p $pythonPath
+
+$outputFile = "../cammystat/misc/PLOT_EXE_LICENSES.txt"
+
+Set-Content -Path $outputFile -Value ""
+
+Copy-Item -Path THIRDPARTYLICENSES -Destination $outputFile -Force
+
+foreach ($filename in @(
+  "LICENSE",
+  "LICENSE_AMSFONTS",
+  "LICENSE_BAKOMA",
+  "LICENSE_CARLOGO",
+  "LICENSE_COLORBREWER",
+  "LICENSE_COURIERTEN",
+  "LICENSE_JSXTOOLS_RESIZE_OBSERVER",
+  "LICENSE_QT4_EDITOR",
+  "LICENSE_SOLARIZED",
+  "LICENSE_STIX",
+  "LICENSE_YORICK"
+)) {
+    $response = Invoke-WebRequest -Uri "https://raw.githubusercontent.com/matplotlib/matplotlib/refs/heads/main/LICENSE/$filename"
+
+    Add-Content -Path $outputFile -Value "`n====== $filename ======`n"
+    $response.Content | Add-Content -Path $outputFile
+    Add-Content -Path $outputFile -Value "`n=============`n"
+}
+
+cd ..
+
+# build wxWidgets
 $VSWPath = "${Env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe"
 
 $installationPath = & $VSWPath -prerelease -latest -property installationPath

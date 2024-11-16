@@ -15,9 +15,8 @@
 #include <string>
 #include <tchar.h>
 #include <wx/app.h>
+#include <wx/stdpaths.h>
 #include "resource.h"
-
-#include "Utils.h"
 
 //UNCOMMENT BELOW LINE WITH DEFINE TO INTRODUCE DEBUG MODE
 //IN DEBUG MODE EVERY STEP IS BEING LOGGED
@@ -471,8 +470,13 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title, 
 	citeMeMenuItem = new wxMenuItem(fileMenu, wxID_ANY, "About the authors");
 	fileMenu->Append(citeMeMenuItem);
 	menuBar->Append(fileMenu, "Cite me");
+	wxMenu* licensesMenu = new wxMenu;
+	openLicensesFolderMenuItem = new wxMenuItem(licensesMenu, wxID_ANY, "Open licenses folder");
+	licensesMenu->Append(openLicensesFolderMenuItem);
+	menuBar->Append(licensesMenu, "Licenses");
 	SetMenuBar(menuBar);
 	Bind(wxEVT_MENU, &MainFrame::OnCiteMe, this, citeMeMenuItem->GetId());
+	Bind(wxEVT_MENU, &MainFrame::OpenLicensesFolder, this, openLicensesFolderMenuItem->GetId());
 	Bind(wxEVT_CREATE_NEW_WINDOW, &MainFrame::OnCreateNewWindow, this);
 	Bind(wxEVT_CLOSE_WINDOW, &MainFrame::OnClose, this);
 
@@ -804,9 +808,9 @@ void MainFrame::RunAnalysis()
 	}
 
 	strTemp = wxTCWindowLengthSGF->GetLabel();
-	int windowLength;
+	int savitzkyGolayWindowLength;
 	if (strTemp.ToLong(&longTemp)) {
-		windowLength = static_cast<int>(longTemp);
+		savitzkyGolayWindowLength = static_cast<int>(longTemp);
 	}
 	else {
 #ifdef DEBUG
@@ -816,7 +820,7 @@ void MainFrame::RunAnalysis()
 		errorMessage += "Empty or wrong format value of window length (savitzky-golay filter).\n";
 	}
 
-	if (windowLength % 2 == 0) {
+	if (savitzkyGolayWindowLength % 2 == 0) {
 		errorMessage += "Window length value should be odd.\n";
 	}
 
@@ -833,14 +837,14 @@ void MainFrame::RunAnalysis()
 		errorMessage += "Empty or wrong format value in polyorder field.\n";
 	}
 
-	if (polyorder >= windowLength) {
+	if (polyorder >= savitzkyGolayWindowLength) {
 		errorMessage += "Polyorder value should be lower than window length.\n";
 	}
 
 	strTemp = wxTCWindowLengthMA->GetLabel();
-	int windowLength2;
+	int movingAverageWindowLength;
 	if (strTemp.ToLong(&longTemp)) {
-		windowLength2 = static_cast<int>(longTemp);
+		movingAverageWindowLength = static_cast<int>(longTemp);
 	}
 	else {
 #ifdef DEBUG
@@ -850,7 +854,7 @@ void MainFrame::RunAnalysis()
 		errorMessage += "Empty or wrong format value in window length (moving average) field.\n";
 	}
 
-	if (windowLength2 < 2) {
+	if (movingAverageWindowLength < 2) {
 		errorMessage += "Window length (moving average) should be higher than two.\n";
 	}
 
@@ -873,9 +877,7 @@ void MainFrame::RunAnalysis()
 
 	strTemp = wxTCAutoMovementThreshold->GetValue();
 	double movementThreshold;
-	if (strTemp.ToDouble(&movementThreshold)) {
-	}
-	else {
+	if (!strTemp.ToDouble(&movementThreshold)) {
 #ifdef DEBUG
 		wxMessageDialog dialog(NULL, "WARNING: Auto movement threshold not specified, it is assumed to be 0.45", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
 		dialog.ShowModal();
@@ -924,9 +926,7 @@ void MainFrame::RunAnalysis()
 
 	strTemp = wxTCAutoMergeEvents->GetValue();
 	double autoMergedEvents;
-	if (strTemp.ToDouble(&autoMergedEvents)) {
-	}
-	else {
+	if (!strTemp.ToDouble(&autoMergedEvents)) {
 #ifdef DEBUG
 		wxMessageDialog dialog(NULL, "WARNING: Auto merged events not specified, it is assumed to be 0", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
 		dialog.ShowModal();
@@ -940,9 +940,7 @@ void MainFrame::RunAnalysis()
 
 	strTemp = wxTCAutoSelectEvents->GetValue();
 	double autoSelectEvents;
-	if (strTemp.ToDouble(&autoSelectEvents)) {
-	}
-	else {
+	if (!strTemp.ToDouble(&autoSelectEvents)) {
 #ifdef DEBUG
 		wxMessageDialog dialog(NULL, "WARNING: Auto merged events not specified, it is assumed to be 0", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
 		dialog.ShowModal();
@@ -971,14 +969,32 @@ void MainFrame::RunAnalysis()
 		return;
 	}
 
-	wxCommandEvent dummyEvent;
-	OnCiteMe(dummyEvent);
+	wxCommandEvent citeMeEvent;
+	OnCiteMe(citeMeEvent);
 
 	std::string dateTime = getCurrentDateTime();
 	std::string outputFolderName = "camystat_output_" + dateTime;
 	fs::path outputFolderPath = fs::path(outputPath) / outputFolderName;
 
 	createDirectoryWithCheck(outputFolderPath);
+
+	// write out parameters
+	std::cout << "Frames per second (fps): " << fps << std::endl;
+	std::cout << "Start frame: " << startFrame << std::endl;
+	std::cout << "End frame: " << endFrame << std::endl;
+	std::cout << "Focus field square percent: " << squarePercent << "%" << std::endl;
+	std::cout << "Percentile of the highest values (top percent): " << topPercent << "%" << std::endl;
+	std::cout << "Savitzky-Golay window length: " << savitzkyGolayWindowLength << std::endl;
+	std::cout << "Polynomial order (polyorder): " << polyorder << std::endl;
+	std::cout << "Moving Average window length: " << movingAverageWindowLength << std::endl;
+	std::cout << "Moving Average number of repetitions: " << numberOfRepetitions << std::endl;
+	std::cout << "Movement threshold: " << movementThreshold << std::endl;
+	std::cout << "Left trim: " << leftTrim << std::endl;
+	std::cout << "Right trim: " << rightTrim << std::endl;
+	std::cout << "Automatically merged events (autoMergedEvents): " << (autoMergedEvents ? "true" : "false") << std::endl;
+	std::cout << "Automatically select events (autoSelectEvents): " << (autoSelectEvents ? "true" : "false") << std::endl;
+	std::cout << "Output file path base: " << outputPath << std::endl;
+	std::cout << "Output folder path: " << outputFolderPath << std::endl;
 
 	for (wxString strTemp : directories) {
 		std::string inputPath = std::string(strTemp.mb_str());
@@ -1275,7 +1291,7 @@ void MainFrame::RunAnalysis()
 
 		if (wxCBSavitzkyGolayFilter->IsChecked()) {
 			wxSTStatus->SetLabel("Status: Filtering (Savgol)");
-			passedDoubleVector = Savgol::savgol_filter(passedDoubleVector, windowLength, polyorder);
+			passedDoubleVector = Savgol::savgol_filter(passedDoubleVector, savitzkyGolayWindowLength, polyorder);
 #ifdef DEBUG
 			{
 				wxMessageDialog dialog(NULL, "LOG: Savgol (Savitzky-Golay) filter has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
@@ -1286,7 +1302,7 @@ void MainFrame::RunAnalysis()
 
 		if (wxCBMovingAverage->IsChecked()) {
 			wxSTStatus->SetLabel("Status: Modifying means");
-			passedDoubleVector = V3::Smoothing::modify_means(passedDoubleVector, windowLength2, numberOfRepetitions);
+			passedDoubleVector = V3::Smoothing::modify_means(passedDoubleVector, movingAverageWindowLength, numberOfRepetitions);
 #ifdef DEBUG
 			{
 				wxMessageDialog dialog(NULL, "LOG: Moving Average calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
@@ -1486,6 +1502,16 @@ void MainFrame::OnCiteMe(wxCommandEvent& WXUNUSED(event)) {
 		wxLogError("Could not start thread!");
 		delete thread;
 	}
+}
+
+void MainFrame::OpenLicensesFolder(wxCommandEvent& WXUNUSED(event)) {
+	wxString exePath = wxStandardPaths::Get().GetExecutablePath();
+	wxFileName exeFilePath(exePath);
+
+	wxString exeDirPath = exeFilePath.GetPath();
+
+	wxString command = wxString::Format("explorer \"%s\"", exeDirPath);
+	system(command.c_str());
 }
 
 void MainFrame::OnCreateNewWindow(wxThreadEvent& event) {

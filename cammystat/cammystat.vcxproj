@@ -225,6 +225,11 @@
       <FileType>Document</FileType>
     </CopyFileToFolders>
   </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="misc\EIGEN_LICENSE.txt" />
+    <CopyFileToFolders Include="misc\PLOT_EXE_LICENSES.txt" />
+    <CopyFileToFolders Include="misc\WXWIDGETS_LICENSE.txt" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

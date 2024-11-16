@@ -78,5 +78,16 @@
     <CopyFileToFolders Include="lib\opencv2\opencv_videoio_ffmpeg4100_64.dll">
       <Filter>Pliki zasobów</Filter>
     </CopyFileToFolders>
+    <CopyFileToFolders Include="misc\EIGEN_LICENSE.txt">
+      <Filter>Pliki zasobów</Filter>
+    </CopyFileToFolders>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="misc\PLOT_EXE_LICENSES.txt">
+      <Filter>Pliki zasobów</Filter>
+    </Text>
+    <Text Include="misc\WXWIDGETS_LICENSE.txt">
+      <Filter>Pliki zasobów</Filter>
+    </Text>
   </ItemGroup>
 </Project>
