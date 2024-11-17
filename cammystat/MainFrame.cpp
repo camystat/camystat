@@ -246,10 +246,10 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title, 
 		wxSTOutputOptions->Refresh();
 	}
 
-	wxCBCVSStats = new wxCheckBox(panel, wxID_ANY, "CSV with stats", wxPoint(20, 385));
-	wxCBCVSStats->SetValue(true);
-	wxCBCVSRaw = new wxCheckBox(panel, wxID_ANY, "CSV with raw data", wxPoint(20, 410));
-	wxCBCVSRaw->SetValue(true);
+	wxCBCsvStats = new wxCheckBox(panel, wxID_ANY, "CSV with stats", wxPoint(20, 385));
+	wxCBCsvStats->SetValue(true);
+	wxCBCsvRaw = new wxCheckBox(panel, wxID_ANY, "CSV with raw data", wxPoint(20, 410));
+	wxCBCsvRaw->SetValue(true);
 	wxCBLineChart = new wxCheckBox(panel, wxID_ANY, "Generate line chart", wxPoint(20, 435));
 	wxCBLineChart->SetValue(true);
 	wxCBNormalizedChart = new wxCheckBox(panel, wxID_ANY, "Generate normalized chart", wxPoint(20, 460));
@@ -428,8 +428,8 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title, 
 
 	rightSideCoordY += 30;
 
-	wxCBAutoMDetectEvents = new wxCheckBox(panel, wxID_ANY, "Auto detect events", wxPoint(320, rightSideCoordY));
-	wxCBAutoMDetectEvents->SetValue(true);
+	wxCBAutoDetectEvents = new wxCheckBox(panel, wxID_ANY, "Auto detect events", wxPoint(320, rightSideCoordY));
+	wxCBAutoDetectEvents->SetValue(true);
 
 	rightSideCoordY += 25;
 
@@ -531,8 +531,6 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title, 
 
 	wxBAnalyze->Bind(wxEVT_BUTTON, [this](wxCommandEvent& event)
 		{
-			processingRunning = true;
-			UpdateUI();
 			timer->Start(1300);
 
 			std::thread([this]() {
@@ -544,12 +542,13 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title, 
 				m_dotCount = 0;
 
 				wxSTStatus->SetLabel("Status: Processing complete!");
+
 				processingRunning = false;
 				UpdateUI();
 			}).detach();
 		});
 
-	wxCBAutoMDetectEvents->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent& event)
+	wxCBAutoDetectEvents->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent& event)
 		{
 			for (wxControl* ctrl : std::initializer_list<wxControl*>{
 				wxSTAutoMovementThresholdStatic,
@@ -574,8 +573,8 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title, 
 	allInteractiveControls.push_back(wxBOutputPath);
 	allInteractiveControls.push_back(wxCTOutputPath);
 	allInteractiveControls.push_back(wxSTBinarizationThreshold);
-	allInteractiveControls.push_back(wxCBCVSStats);
-	allInteractiveControls.push_back(wxCBCVSRaw);
+	allInteractiveControls.push_back(wxCBCsvStats);
+	allInteractiveControls.push_back(wxCBCsvRaw);
 	allInteractiveControls.push_back(wxCBLineChart);
 	allInteractiveControls.push_back(wxCBNormalizedChart);
 	allInteractiveControls.push_back(wxTCFPS);
@@ -607,7 +606,7 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title, 
 	allInteractiveControls.push_back(wxSTWindowLengthSGF);
 	allInteractiveControls.push_back(wxSTPolyorder);
 	allInteractiveControls.push_back(wxSTWindowLengthMA);
-	allInteractiveControls.push_back(wxCBAutoMDetectEvents);
+	allInteractiveControls.push_back(wxCBAutoDetectEvents);
 	allInteractiveControls.push_back(wxSTNumberOfRepetitions);
 	allInteractiveControls.push_back(wxSTAutoMovementThresholdStatic);
 	allInteractiveControls.push_back(wxSTAutoMovementThreshold);
@@ -778,9 +777,7 @@ void MainFrame::RunAnalysis()
 
 	// Find max sum square coordinates
 	strTemp = wxTCSizeOfFocusField->IsEnabled() ? wxTCSizeOfFocusField->GetValue() : std::to_string(DEFAULT_SIZE_OF_FOCUS_FIELD);
-	if (strTemp.ToDouble(&squarePercent)) {
-	}
-	else {
+	if (!strTemp.ToDouble(&squarePercent)) {
 #ifdef DEBUG
 		wxMessageDialog dialog(NULL, "WARNING: Focus field not specified, it is assumed to be 25", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
 		dialog.ShowModal();
@@ -793,9 +790,7 @@ void MainFrame::RunAnalysis()
 	}
 
 	strTemp = wxTCPercentileOfTheHighestValues->IsEnabled() ? wxTCPercentileOfTheHighestValues->GetValue() : std::to_string(DEFAULT_PERCENTILE_OF_HIGHEST_VALUES);
-	if (strTemp.ToDouble(&topPercent)) {
-	}
-	else {
+	if (!strTemp.ToDouble(&topPercent)) {
 #ifdef DEBUG
 		wxMessageDialog dialog(NULL, "WARNING: Percentile of the highest values, it is assumed to be 90", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
 		dialog.ShowModal();
@@ -807,7 +802,7 @@ void MainFrame::RunAnalysis()
 		errorMessage += "Top percent value should be (0-100) excluding zero.\n";
 	}
 
-	strTemp = wxTCWindowLengthSGF->GetLabel();
+	strTemp = wxTCWindowLengthSGF->GetValue();
 	int savitzkyGolayWindowLength;
 	if (strTemp.ToLong(&longTemp)) {
 		savitzkyGolayWindowLength = static_cast<int>(longTemp);
@@ -824,7 +819,7 @@ void MainFrame::RunAnalysis()
 		errorMessage += "Window length value should be odd.\n";
 	}
 
-	strTemp = wxTCPolyorder->GetLabel();
+	strTemp = wxTCPolyorder->GetValue();
 	int polyorder;
 	if (strTemp.ToLong(&longTemp)) {
 		polyorder = static_cast<int>(longTemp);
@@ -841,7 +836,7 @@ void MainFrame::RunAnalysis()
 		errorMessage += "Polyorder value should be lower than window length.\n";
 	}
 
-	strTemp = wxTCWindowLengthMA->GetLabel();
+	strTemp = wxTCWindowLengthMA->GetValue();
 	int movingAverageWindowLength;
 	if (strTemp.ToLong(&longTemp)) {
 		movingAverageWindowLength = static_cast<int>(longTemp);
@@ -858,7 +853,7 @@ void MainFrame::RunAnalysis()
 		errorMessage += "Window length (moving average) should be higher than two.\n";
 	}
 
-	strTemp = wxTCNumberOfRepetitions->GetLabel();
+	strTemp = wxTCNumberOfRepetitions->GetValue();
 	int numberOfRepetitions;
 	if (strTemp.ToLong(&longTemp)) {
 		numberOfRepetitions = static_cast<int>(longTemp);
@@ -889,7 +884,7 @@ void MainFrame::RunAnalysis()
 		errorMessage += "Movement threshold should be higher than zero.\n";
 	}
 
-	strTemp = wxTCLeftTrim->GetLabel();
+	strTemp = wxTCLeftTrim->GetValue();
 	int leftTrim;
 	if (strTemp.ToLong(&longTemp)) {
 		leftTrim = static_cast<int>(longTemp);
@@ -906,7 +901,7 @@ void MainFrame::RunAnalysis()
 		errorMessage += "Left trim value should be non-negative.\n";
 	}
 
-	strTemp = wxTCRightTrim->GetLabel();
+	strTemp = wxTCRightTrim->GetValue();
 	int rightTrim;
 	if (strTemp.ToLong(&longTemp)) {
 		rightTrim = static_cast<int>(longTemp);
@@ -925,8 +920,8 @@ void MainFrame::RunAnalysis()
 	}
 
 	strTemp = wxTCAutoMergeEvents->GetValue();
-	double autoMergedEvents;
-	if (!strTemp.ToDouble(&autoMergedEvents)) {
+	double autoMergeEvents;
+	if (!strTemp.ToDouble(&autoMergeEvents)) {
 #ifdef DEBUG
 		wxMessageDialog dialog(NULL, "WARNING: Auto merged events not specified, it is assumed to be 0", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
 		dialog.ShowModal();
@@ -934,7 +929,7 @@ void MainFrame::RunAnalysis()
 		errorMessage += "Empty or wrong format value in auto merged events field.\n";
 	}
 
-	if (autoMergedEvents < 0.0) {
+	if (autoMergeEvents < 0.0) {
 		errorMessage += "Right trim value should be non-negative.\n";
 	}
 
@@ -969,6 +964,9 @@ void MainFrame::RunAnalysis()
 		return;
 	}
 
+	processingRunning = true;
+	UpdateUI();
+
 	wxCommandEvent citeMeEvent;
 	OnCiteMe(citeMeEvent);
 
@@ -979,22 +977,50 @@ void MainFrame::RunAnalysis()
 	createDirectoryWithCheck(outputFolderPath);
 
 	// write out parameters
+	std::cout << std::endl << "---------------------------------------------------------" << std::endl;
+	std::cout << "Program parameters:" << std::endl << std::endl;
+	std::cout << "Auto binarization threshold: " << (wxCBAutomaticBinarizationThreshold->IsChecked() ? "true" : "false") << std::endl;
+	
+	if (isAnyAutomaticAnalysisOptionActive) {
+		std::cout << "Focus field square percent: " << squarePercent << "%" << std::endl;
+		std::cout << "Percentile of the highest values (top percent): " << topPercent << "%" << std::endl;
+	}
+	else {
+		std::cout << "Automatic analysis (focus field or auto binarization threshold) disabled" << std::endl;
+	}
+
+	std::cout << "First frame: " << startFrame << std::endl;
+	std::cout << "Last frame: " << endFrame << std::endl;
 	std::cout << "Frames per second (fps): " << fps << std::endl;
-	std::cout << "Start frame: " << startFrame << std::endl;
-	std::cout << "End frame: " << endFrame << std::endl;
-	std::cout << "Focus field square percent: " << squarePercent << "%" << std::endl;
-	std::cout << "Percentile of the highest values (top percent): " << topPercent << "%" << std::endl;
-	std::cout << "Savitzky-Golay window length: " << savitzkyGolayWindowLength << std::endl;
-	std::cout << "Polynomial order (polyorder): " << polyorder << std::endl;
-	std::cout << "Moving Average window length: " << movingAverageWindowLength << std::endl;
-	std::cout << "Moving Average number of repetitions: " << numberOfRepetitions << std::endl;
-	std::cout << "Movement threshold: " << movementThreshold << std::endl;
+	
+	if (wxCBSavitzkyGolayFilter->IsChecked()) {
+		std::cout << "Savitzky-Golay window length: " << savitzkyGolayWindowLength << std::endl;
+		std::cout << "Savitzky-Golay polynomial order (polyorder): " << polyorder << std::endl;
+	}
+	else {
+		std::cout << "Savitzky-Golay filter disabled" << std::endl;
+	}
+
+	if (wxCBMovingAverage->IsChecked()) {
+		std::cout << "Moving Average window length: " << movingAverageWindowLength << std::endl;
+		std::cout << "Moving Average number of repetitions: " << numberOfRepetitions << std::endl;
+	}
+	else {
+		std::cout << "Moving Average filter disabled" << std::endl;
+	}
+
 	std::cout << "Left trim: " << leftTrim << std::endl;
 	std::cout << "Right trim: " << rightTrim << std::endl;
-	std::cout << "Automatically merged events (autoMergedEvents): " << (autoMergedEvents ? "true" : "false") << std::endl;
-	std::cout << "Automatically select events (autoSelectEvents): " << (autoSelectEvents ? "true" : "false") << std::endl;
-	std::cout << "Output file path base: " << outputPath << std::endl;
+
+	if (wxCBAutoDetectEvents->IsChecked()) {
+		std::cout << "Movement threshold: " << movementThreshold << std::endl;
+		std::cout << "Automatically merge events (autoMergeEvents): " << autoMergeEvents << std::endl;
+		std::cout << "Automatically select events (autoSelectEvents): " << autoSelectEvents << std::endl;
+	}
+
+	std::cout << "Output path base: " << outputPath << std::endl;
 	std::cout << "Output folder path: " << outputFolderPath << std::endl;
+	std::cout << "---------------------------------------------------------" << std::endl << std::endl;
 
 	for (wxString strTemp : directories) {
 		std::string inputPath = std::string(strTemp.mb_str());
@@ -1023,8 +1049,8 @@ void MainFrame::RunAnalysis()
 		wxSTStatusVideo->SetLabel("Video: " + fileName);
 		fs::path outputFolderPath = fs::path(outputPath) / outputFolderName / outputFolderName2;
 
-		bool cvsstats = wxCBCVSStats->IsChecked();
-		bool cVSRaw = wxCBCVSRaw->IsChecked();
+		bool csvStats = wxCBCsvStats->IsChecked();
+		bool csvRaw = wxCBCsvRaw->IsChecked();
 		bool lineChart = wxCBLineChart->IsChecked();
 		bool normalizedChart = wxCBNormalizedChart->IsChecked();
 
@@ -1038,10 +1064,10 @@ void MainFrame::RunAnalysis()
 			createDirectoryWithCheck(outputFolderPath / "activity_heatmap");
 			createDirectoryWithCheck(outputFolderPath / "heatmap_coordinates");
 		}
-		if (cvsstats) {
+		if (csvStats) {
 			createDirectoryWithCheck(outputFolderPath / "csv_stats");
 		}
-		if (cVSRaw) {
+		if (csvRaw) {
 			createDirectoryWithCheck(outputFolderPath / "csv_raw");
 		}
 		if (lineChart) {
@@ -1353,7 +1379,7 @@ void MainFrame::RunAnalysis()
 #endif
 
 		std::vector<std::vector<double>> events;
-		if (wxCBAutoMDetectEvents->GetValue()) {
+		if (wxCBAutoDetectEvents->GetValue()) {
 			wxSTStatus->SetLabel("Status: Calculating integrals");
 			events = V3::Detection::calculate_integrals_with_reference_points(passedDoubleVector);
 #ifdef DEBUG
@@ -1364,7 +1390,7 @@ void MainFrame::RunAnalysis()
 #endif
 
 			wxSTStatus->SetLabel("Status: Merging events");
-			events = V3::Detection::merge_events(events, autoMergedEvents);
+			events = V3::Detection::merge_events(events, autoMergeEvents);
 #ifdef DEBUG
 			{
 				wxMessageDialog dialog(NULL, "LOG: merge_events calculation has been finished successfully", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
@@ -1554,9 +1580,7 @@ void MainFrame::OnClose(wxCloseEvent& event)
 {
 	TCHAR tempPath[MAX_PATH];
 
-	if (GetTempPath(MAX_PATH, tempPath) != 0) {
-	}
-	else {
+	if (GetTempPath(MAX_PATH, tempPath) == 0) {
 		wxMessageDialog dialog(NULL, "ERROR: Could not locate the appdata folder.", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 		dialog.ShowModal();
 		return;

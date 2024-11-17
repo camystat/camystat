@@ -76,7 +76,7 @@ foreach ($filename in @(
 )) {
     $response = Invoke-WebRequest -Uri "https://raw.githubusercontent.com/matplotlib/matplotlib/refs/heads/main/LICENSE/$filename"
 
-    Add-Content -Path $outputFile -Value "`n====== $filename ======`n"
+    Add-Content -Path $outputFile -Value "`n====== matplotlib/LICENSE/$filename ======`n"
     $response.Content | Add-Content -Path $outputFile
     Add-Content -Path $outputFile -Value "`n=============`n"
 }

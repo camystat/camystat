@@ -24,7 +24,6 @@ class MainFrame : public wxFrame
 public:
 	MainFrame(const wxString &title);
 	void wxFPSAutoDetectAnalysisToggle(wxCommandEvent& evt);
-	void wxAutomaticRecognitionAnalysis(wxCommandEvent& evt);
 	void wxSavitzkyGolayFilter(wxCommandEvent& evt);
 	void wxMovingAverage(wxCommandEvent& evt);
 	void wxMergeEvents(wxCommandEvent& evt);
@@ -38,7 +37,6 @@ public:
 	void OnPaste(wxClipboardTextEvent& event);
 	void OnMouseClick(wxMouseEvent& event);
 	void OnFocus(wxFocusEvent& event);
-	void wxCBAutoMDetectEventsToggle(wxCommandEvent& evt);
 	void OnCiteMe(wxCommandEvent& event);
 	void OpenLicensesFolder(wxCommandEvent& event);
 	void OnCreateNewWindow(wxThreadEvent& event);
@@ -72,8 +70,8 @@ public:
 	wxTextCtrl* wxCTOutputPath;
 
 	wxStaticText* wxSTOutputOptions;
-	wxCheckBox* wxCBCVSStats;
-	wxCheckBox* wxCBCVSRaw;
+	wxCheckBox* wxCBCsvStats;
+	wxCheckBox* wxCBCsvRaw;
 	wxCheckBox* wxCBLineChart;
 	wxCheckBox* wxCBNormalizedChart;
 
@@ -129,7 +127,7 @@ public:
 	wxTextCtrl* wxTCAutoMovementThreshold;
 	wxStaticText* wxSTAutoMovementThreshold;
 
-	wxCheckBox* wxCBAutoMDetectEvents;
+	wxCheckBox* wxCBAutoDetectEvents;
 
 	wxCheckBox* wxCBAutoMergeEvents;
 
