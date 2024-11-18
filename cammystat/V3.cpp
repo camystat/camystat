@@ -149,12 +149,13 @@ std::pair<int, std::vector<int>> V3::Preprocessing::calculateBinarizationThresho
 		// Move through the next frames and find pair of consecutive frames that has the max avg. brightness diff
 		while (true)
 		{
-			progressCallback(V3::Preprocessing::BinarizationThresholdCalcProgress::FINDING_MAX_BRIGHTNESS_DIFF_FRAMES, (double)frameIndex / (double)endFrame, maybeRetryNumber);
-			
 			// Load next frame
 			if (!cap.read(currentFrame) || (endFrame != -1 && frameIndex > endFrame)) {
 				break;
 			}
+
+			progressCallback(V3::Preprocessing::BinarizationThresholdCalcProgress::FINDING_MAX_BRIGHTNESS_DIFF_FRAMES, (double)frameIndex / (double)endFrame, maybeRetryNumber);
+
 			cv::cvtColor(currentFrame, currentFrameGray, cv::COLOR_BGR2GRAY);
 
 			// Calculate current avg. brightness

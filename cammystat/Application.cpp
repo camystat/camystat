@@ -6,12 +6,27 @@
 wxIMPLEMENT_APP(Application);
 
 Application::Application() {
-#if GUI_SHOW_CONSOLE
 	AllocConsole();
-	freopen("conin$","r",stdin);
-	freopen("conout$","w",stdout);
-	freopen("conout$","w",stderr);
-#endif
+	SetConsoleTitleA(("Debug console"));
+	freopen("conin$", "r", stdin);
+	freopen("conout$", "w", stdout);
+	freopen("conout$", "w", stderr);
+
+	bool consoleCloseDisabled = false;
+
+	HWND consoleHwnd = GetConsoleWindow();
+	if (consoleHwnd != NULL)
+	{
+		HMENU consoleHMenu = GetSystemMenu(consoleHwnd, FALSE);
+		if (consoleHMenu != NULL) {
+			DeleteMenu(consoleHMenu, SC_CLOSE, MF_BYCOMMAND);
+			consoleCloseDisabled = true;
+		}
+	}
+
+	if (!consoleCloseDisabled) {
+		std::cerr << "Failed to disable the debug console window close button. Clicking it will close the whole application." << std::endl;
+	}
 }
 
 bool Application::OnInit() {

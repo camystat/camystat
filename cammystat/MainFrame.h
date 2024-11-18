@@ -19,6 +19,9 @@
 #define DEFAULT_PERCENTILE_OF_HIGHEST_VALUES 90
 #define DEFAULT_SIZE_OF_FOCUS_FIELD 25
 
+// note: the below variable controls legacy debug windows informing of errors for validation / information about paths or read values
+#define SHOW_DEBUG_DIALOGS false
+
 class MainFrame : public wxFrame
 {
 public:
@@ -42,6 +45,12 @@ public:
 	void OnCreateNewWindow(wxThreadEvent& event);
 	void OnClose(wxCloseEvent& event);
 	void OnCharNoDot(wxKeyEvent& event);
+
+	void ShowConsole();
+	void HideConsole();
+	void ToggleConsole(wxCommandEvent& event);
+	bool IsConsoleShown();
+	void SyncToggleDebugWindowMenuItemLabel();
 
 	void syncAutomaticRecognitionAnalysisFieldStates();
 	bool isAnyAutomaticAnalysisOptionActive;
@@ -151,6 +160,7 @@ public:
 	wxMenu* fileMenu;
 	wxMenuItem* citeMeMenuItem;
 	wxMenuItem* openLicensesFolderMenuItem;
+	wxMenuItem* toggleDebugWindowMenuItem;
 
 	std::vector<wxString> directories;
 	int numberOfFiles;

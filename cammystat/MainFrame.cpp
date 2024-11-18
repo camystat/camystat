@@ -159,6 +159,31 @@ EVT_MENU(wxID_ANY, MainFrame::OnCiteMe)
 EVT_THREAD(wxEVT_CREATE_NEW_WINDOW, MainFrame::OnCreateNewWindow)
 wxEND_EVENT_TABLE()
 
+void MainFrame::ShowConsole()
+{
+	HWND debugConsoleWindowHwnd = GetConsoleWindow();
+
+    ShowWindow(debugConsoleWindowHwnd, SW_SHOW);
+	SetActiveWindow(debugConsoleWindowHwnd);
+
+	this->SyncToggleDebugWindowMenuItemLabel();
+}
+
+void MainFrame::HideConsole()
+{
+	ShowWindow(GetConsoleWindow(), SW_HIDE);
+
+	this->SyncToggleDebugWindowMenuItemLabel();
+}
+
+bool MainFrame::IsConsoleShown() {
+	return IsWindowVisible(GetConsoleWindow());
+}
+
+void MainFrame::SyncToggleDebugWindowMenuItemLabel() {
+	toggleDebugWindowMenuItem->SetItemLabel(MainFrame::IsConsoleShown() ? "Hide debug console" : "Show debug console");
+}
+
 void MainFrame::syncAutomaticRecognitionAnalysisFieldStates() {
 	isAnyAutomaticAnalysisOptionActive = wxCBFocusField->IsChecked() || wxCBAutomaticBinarizationThreshold->IsChecked();
 
@@ -466,17 +491,27 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title, 
 	rightSideCoordY += 25;
 
 	wxMenuBar* menuBar = new wxMenuBar;
-	wxMenu* fileMenu = new wxMenu;
-	citeMeMenuItem = new wxMenuItem(fileMenu, wxID_ANY, "About the authors");
-	fileMenu->Append(citeMeMenuItem);
-	menuBar->Append(fileMenu, "Cite me");
+
+	wxMenu* debugWindowMenu = new wxMenu;
+	toggleDebugWindowMenuItem = new wxMenuItem(debugWindowMenu, wxID_ANY, "Show debug console");
+	debugWindowMenu->Append(toggleDebugWindowMenuItem);
+	menuBar->Append(debugWindowMenu, "Debug console");
+
+	wxMenu* aboutAuthorsMenu = new wxMenu;
+	citeMeMenuItem = new wxMenuItem(aboutAuthorsMenu, wxID_ANY, "About the authors");
+	aboutAuthorsMenu->Append(citeMeMenuItem);
+	menuBar->Append(aboutAuthorsMenu, "Cite me");
+
 	wxMenu* licensesMenu = new wxMenu;
 	openLicensesFolderMenuItem = new wxMenuItem(licensesMenu, wxID_ANY, "Open licenses folder");
 	licensesMenu->Append(openLicensesFolderMenuItem);
 	menuBar->Append(licensesMenu, "Licenses");
+
 	SetMenuBar(menuBar);
+
 	Bind(wxEVT_MENU, &MainFrame::OnCiteMe, this, citeMeMenuItem->GetId());
 	Bind(wxEVT_MENU, &MainFrame::OpenLicensesFolder, this, openLicensesFolderMenuItem->GetId());
+	Bind(wxEVT_MENU, &MainFrame::ToggleConsole, this, toggleDebugWindowMenuItem->GetId());
 	Bind(wxEVT_CREATE_NEW_WINDOW, &MainFrame::OnCreateNewWindow, this);
 	Bind(wxEVT_CLOSE_WINDOW, &MainFrame::OnClose, this);
 
@@ -620,6 +655,12 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title, 
 
 	syncAutomaticRecognitionAnalysisFieldStates();
 	UpdateUI();
+
+#ifdef DEBUG
+	ShowConsole();
+#else
+	HideConsole();
+#endif
 }
 
 void MainFrame::UpdateUI()
@@ -723,7 +764,7 @@ void MainFrame::RunAnalysis()
 		fps = static_cast<int>(longTemp);
 	}
 	else {
-#ifdef DEBUG
+#if SHOW_DEBUG_DIALOGS
 		wxMessageDialog dialog(NULL, "WARNING: FPS has not been specified by the user, assumed to be 30.", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT | wxICON_WARNING);
 		dialog.ShowModal();
 #endif
@@ -740,7 +781,7 @@ void MainFrame::RunAnalysis()
 		startFrame = static_cast<int>(longTemp);
 	}
 	else {
-#ifdef DEBUG
+#if SHOW_DEBUG_DIALOGS
 		wxMessageDialog dialog(NULL, "WARNING: Index of the start frame was not specified by the user, it is assumed to be FPS times two", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
 		dialog.ShowModal();
 #endif
@@ -757,7 +798,7 @@ void MainFrame::RunAnalysis()
 		endFrame = static_cast<int>(longTemp);
 	}
 	else {
-#ifdef DEBUG
+#if SHOW_DEBUG_DIALOGS
 		wxMessageDialog dialog(NULL, "WARNING: Index of the end frame was not specified, it is assumed to be FPS times twelve", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
 		dialog.ShowModal();
 #endif
@@ -778,7 +819,7 @@ void MainFrame::RunAnalysis()
 	// Find max sum square coordinates
 	strTemp = wxTCSizeOfFocusField->IsEnabled() ? wxTCSizeOfFocusField->GetValue() : std::to_string(DEFAULT_SIZE_OF_FOCUS_FIELD);
 	if (!strTemp.ToDouble(&squarePercent)) {
-#ifdef DEBUG
+#if SHOW_DEBUG_DIALOGS
 		wxMessageDialog dialog(NULL, "WARNING: Focus field not specified, it is assumed to be 25", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
 		dialog.ShowModal();
 #endif
@@ -791,7 +832,7 @@ void MainFrame::RunAnalysis()
 
 	strTemp = wxTCPercentileOfTheHighestValues->IsEnabled() ? wxTCPercentileOfTheHighestValues->GetValue() : std::to_string(DEFAULT_PERCENTILE_OF_HIGHEST_VALUES);
 	if (!strTemp.ToDouble(&topPercent)) {
-#ifdef DEBUG
+#if SHOW_DEBUG_DIALOGS
 		wxMessageDialog dialog(NULL, "WARNING: Percentile of the highest values, it is assumed to be 90", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
 		dialog.ShowModal();
 #endif
@@ -808,7 +849,7 @@ void MainFrame::RunAnalysis()
 		savitzkyGolayWindowLength = static_cast<int>(longTemp);
 	}
 	else {
-#ifdef DEBUG
+#if SHOW_DEBUG_DIALOGS
 		wxMessageDialog dialog(NULL, "WARNING: Window length (savitzky-golay filter) not specified, it is assumed to be 7", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
 		dialog.ShowModal();
 #endif
@@ -825,7 +866,7 @@ void MainFrame::RunAnalysis()
 		polyorder = static_cast<int>(longTemp);
 	}
 	else {
-#ifdef DEBUG
+#if SHOW_DEBUG_DIALOGS
 		wxMessageDialog dialog(NULL, "WARNING: Polyorder (savitzky-golay filter) not specified, it is assumed to be 5", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
 		dialog.ShowModal();
 #endif
@@ -842,9 +883,9 @@ void MainFrame::RunAnalysis()
 		movingAverageWindowLength = static_cast<int>(longTemp);
 	}
 	else {
-#ifdef DEBUG
+#if SHOW_DEBUG_DIALOGS
 		wxMessageDialog dialog(NULL, "WARNING: Window length (Moving Average) not specified, it is assumed to be FPS times 0.1", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
-		dialog.ShowModal()
+		dialog.ShowModal();
 #endif
 		errorMessage += "Empty or wrong format value in window length (moving average) field.\n";
 	}
@@ -859,7 +900,7 @@ void MainFrame::RunAnalysis()
 		numberOfRepetitions = static_cast<int>(longTemp);
 	}
 	else {
-#ifdef DEBUG
+#if SHOW_DEBUG_DIALOGS
 		wxMessageDialog dialog(NULL, "WARNING: Number of repetitions (Moving Average) not specified, it is assumed to be 10", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
 		dialog.ShowModal();
 #endif
@@ -873,7 +914,7 @@ void MainFrame::RunAnalysis()
 	strTemp = wxTCAutoMovementThreshold->GetValue();
 	double movementThreshold;
 	if (!strTemp.ToDouble(&movementThreshold)) {
-#ifdef DEBUG
+#if SHOW_DEBUG_DIALOGS
 		wxMessageDialog dialog(NULL, "WARNING: Auto movement threshold not specified, it is assumed to be 0.45", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
 		dialog.ShowModal();
 #endif
@@ -890,7 +931,7 @@ void MainFrame::RunAnalysis()
 		leftTrim = static_cast<int>(longTemp);
 	}
 	else {
-#ifdef DEBUG
+#if SHOW_DEBUG_DIALOGS
 		wxMessageDialog dialog(NULL, "WARNING: Left trim not specified, it is assumed to be 0", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
 		dialog.ShowModal();
 #endif
@@ -907,7 +948,7 @@ void MainFrame::RunAnalysis()
 		rightTrim = static_cast<int>(longTemp);
 	}
 	else {
-#ifdef DEBUG
+#if SHOW_DEBUG_DIALOGS
 		wxMessageDialog dialog(NULL, "WARNING: Right trim not specified, it is assumed to be 0", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
 		dialog.ShowModal();
 #endif
@@ -922,7 +963,7 @@ void MainFrame::RunAnalysis()
 	strTemp = wxTCAutoMergeEvents->GetValue();
 	double autoMergeEvents;
 	if (!strTemp.ToDouble(&autoMergeEvents)) {
-#ifdef DEBUG
+#if SHOW_DEBUG_DIALOGS
 		wxMessageDialog dialog(NULL, "WARNING: Auto merged events not specified, it is assumed to be 0", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
 		dialog.ShowModal();
 #endif
@@ -936,7 +977,7 @@ void MainFrame::RunAnalysis()
 	strTemp = wxTCAutoSelectEvents->GetValue();
 	double autoSelectEvents;
 	if (!strTemp.ToDouble(&autoSelectEvents)) {
-#ifdef DEBUG
+#if SHOW_DEBUG_DIALOGS
 		wxMessageDialog dialog(NULL, "WARNING: Auto merged events not specified, it is assumed to be 0", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
 		dialog.ShowModal();
 #endif
@@ -1087,26 +1128,18 @@ void MainFrame::RunAnalysis()
 		plotPath = plotPath.substr(0, plotPath.size() - 1);
 		wxSTStatus->SetLabel("Status: Calculating path to plot");
 		plotPath = plotPath + "\\plot.exe";
-#ifdef DEBUG
+#if SHOW_DEBUG_DIALOGS
 		{
-			wxMessageDialog dialog(NULL, "LOG: a path to the plot.exe: " + plotPath, wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
+			wxMessageDialog dialog(NULL, "LOG: apath to the plot.exe: " + plotPath, wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 			dialog.ShowModal();
 			wxMessageDialog dialog(NULL, plotPath, wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
-			dialog.ShowModal();
-		}
-#endif
-#ifdef DEBUG
-		{
-			wxMessageDialog dialog(NULL, fileName + " " + normalizedChartsPath + " " + std::to_string(fps), wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 			dialog.ShowModal();
 		}
 #endif
 
 		TCHAR tempPath[MAX_PATH];
 
-		if (GetTempPath(MAX_PATH, tempPath) != 0) {
-		}
-		else {
+		if (GetTempPath(MAX_PATH, tempPath) == 0) {
 			wxSTStatus->SetLabel("Status: ERROR: Could not locate appdata folder!");
 			wxMessageDialog dialog(NULL, "ERROR: Could not locate the appdata folder.", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 			dialog.ShowModal();
@@ -1233,10 +1266,10 @@ void MainFrame::RunAnalysis()
 				threshold = static_cast<int>(longTemp);
 			}
 			else {
-		#ifdef DEBUG
+#if SHOW_DEBUG_DIALOGS
 				wxMessageDialog dialog(NULL, "WARNING: Binarization threshold not specified, it is assumed to be 158", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
 				dialog.ShowModal();
-		#endif
+#endif
 				errorMessage += "Empty or wrong format value of threshold.\n";
 			}
 		}
@@ -1282,23 +1315,23 @@ void MainFrame::RunAnalysis()
 			if (isAnyAutomaticAnalysisOptionActive) {
 				wxSTStatus->SetLabel("Status: Couting ones in xor");
 				passedDoubleVector = V3::Preprocessing::countOnesInXorAtCoordinates(inputPath, maxSumCoords12, threshold, rawCSVPath);
-	#ifdef DEBUG
+#if SHOW_DEBUG_DIALOGS
 				{
 					wxMessageDialog dialog(NULL, "LOG: XOR (with coords) calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 					dialog.ShowModal();
 				}
-	#endif
+#endif
 			}
 			else {
 				std::vector<std::pair<int, int>> coordinates;
 				wxSTStatus->SetLabel("Status: Couting ones in xor without coords");
 				passedDoubleVector = V3::Preprocessing::countOnesInXorAtCoordinates(inputPath, coordinates, threshold, rawCSVPath);
-	#ifdef DEBUG
+#if SHOW_DEBUG_DIALOGS
 				{
 					wxMessageDialog dialog(NULL, "LOG: no coordinates XOR calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 					dialog.ShowModal();
 				}
-	#endif
+#endif
 			}
 		}
 		// Error handling
@@ -1318,7 +1351,7 @@ void MainFrame::RunAnalysis()
 		if (wxCBSavitzkyGolayFilter->IsChecked()) {
 			wxSTStatus->SetLabel("Status: Filtering (Savgol)");
 			passedDoubleVector = Savgol::savgol_filter(passedDoubleVector, savitzkyGolayWindowLength, polyorder);
-#ifdef DEBUG
+#if SHOW_DEBUG_DIALOGS
 			{
 				wxMessageDialog dialog(NULL, "LOG: Savgol (Savitzky-Golay) filter has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 				dialog.ShowModal();
@@ -1329,7 +1362,7 @@ void MainFrame::RunAnalysis()
 		if (wxCBMovingAverage->IsChecked()) {
 			wxSTStatus->SetLabel("Status: Modifying means");
 			passedDoubleVector = V3::Smoothing::modify_means(passedDoubleVector, movingAverageWindowLength, numberOfRepetitions);
-#ifdef DEBUG
+#if SHOW_DEBUG_DIALOGS
 			{
 				wxMessageDialog dialog(NULL, "LOG: Moving Average calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 				dialog.ShowModal();
@@ -1339,7 +1372,7 @@ void MainFrame::RunAnalysis()
 
 		wxSTStatus->SetLabel("Status: Normalizing values");
 		passedDoubleVector = V3::Smoothing::clone_normalized_values(passedDoubleVector);
-#ifdef DEBUG
+#if SHOW_DEBUG_DIALOGS
 		{
 			wxMessageDialog dialog(NULL, "LOG: Normalize values calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 			dialog.ShowModal();
@@ -1353,7 +1386,7 @@ void MainFrame::RunAnalysis()
 		std::string rawChartPath = outputFolderPath.string() + "\\csv_stats\\" + fileName + ".csv";
 		wxSTStatus->SetLabel("Status: Replacing zeros");
 		passedDoubleVector = V3::Smoothing::clone_replace_zeros_values_below_threshold(passedDoubleVector, movementThreshold, rawChartPath);
-#ifdef DEBUG
+#if SHOW_DEBUG_DIALOGS
 		{
 			wxMessageDialog dialog(NULL, "LOG: Replace zeros values below threshold calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 			dialog.ShowModal();
@@ -1362,7 +1395,7 @@ void MainFrame::RunAnalysis()
 
 		wxSTStatus->SetLabel("Status: Trimming");
 		passedDoubleVector = V3::Detection::trim_list(passedDoubleVector, leftTrim, rightTrim);
-#ifdef DEBUG
+#if SHOW_DEBUG_DIALOGS
 		{
 			wxMessageDialog dialog(NULL, "LOG: Trim_list calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 			dialog.ShowModal();
@@ -1371,7 +1404,7 @@ void MainFrame::RunAnalysis()
 		wxSTStatus->SetLabel("Status: Adding zeros");
 		passedDoubleVector = V3::Detection::clone_padded_with_zeros(passedDoubleVector);
 		wxSTStatus->SetLabel("Status: Zeros has been added to a list.");
-#ifdef DEBUG
+#if SHOW_DEBUG_DIALOGS
 		{
 			wxMessageDialog dialog(NULL, "LOG: add_zeros_to_list calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 			dialog.ShowModal();
@@ -1382,7 +1415,7 @@ void MainFrame::RunAnalysis()
 		if (wxCBAutoDetectEvents->GetValue()) {
 			wxSTStatus->SetLabel("Status: Calculating integrals");
 			events = V3::Detection::calculate_integrals_with_reference_points(passedDoubleVector);
-#ifdef DEBUG
+#if SHOW_DEBUG_DIALOGS
 			{
 				wxMessageDialog dialog(NULL, "LOG: calculate_integrals_with_reference_points calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 				dialog.ShowModal();
@@ -1391,7 +1424,7 @@ void MainFrame::RunAnalysis()
 
 			wxSTStatus->SetLabel("Status: Merging events");
 			events = V3::Detection::merge_events(events, autoMergeEvents);
-#ifdef DEBUG
+#if SHOW_DEBUG_DIALOGS
 			{
 				wxMessageDialog dialog(NULL, "LOG: merge_events calculation has been finished successfully", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
 				dialog.ShowModal();
@@ -1400,7 +1433,7 @@ void MainFrame::RunAnalysis()
 
 			wxSTStatus->SetLabel("Status: Removing events");
 			events = V3::Detection::remove_events(events, autoSelectEvents);
-#ifdef DEBUG
+#if SHOW_DEBUG_DIALOGS
 			{
 				wxMessageDialog dialog(NULL, "LOG: remove_events calculation has been finished successfully", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 				dialog.ShowModal();
@@ -1411,6 +1444,12 @@ void MainFrame::RunAnalysis()
 			events = Utils::normalizeSecondColumnInCopy(events);
 		}
 		std::string normalizedChartsPath = outputFolderPath.string() + "\\normalized_chart";
+#if SHOW_DEBUG_DIALOGS
+		{
+			wxMessageDialog dialog(NULL, fileName + " " + normalizedChartsPath + " " + std::to_string(fps), wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
+			dialog.ShowModal();
+		}
+#endif
 
 		std::string eventsPath = cammystatTempPathStr + "\\" + fileName + "\\events" + fileName + ".csv";
 
@@ -1538,6 +1577,19 @@ void MainFrame::OpenLicensesFolder(wxCommandEvent& WXUNUSED(event)) {
 
 	wxString command = wxString::Format("explorer \"%s\"", exeDirPath);
 	system(command.c_str());
+}
+
+void MainFrame::ToggleConsole(wxCommandEvent& WXUNUSED(event)) {
+	bool oldIsDebugWindowOpen = this->IsConsoleShown();
+
+	if (oldIsDebugWindowOpen) {
+		this->HideConsole();
+	}
+	else {
+		this->ShowConsole();
+	}
+
+	this->SyncToggleDebugWindowMenuItemLabel();
 }
 
 void MainFrame::OnCreateNewWindow(wxThreadEvent& event) {
