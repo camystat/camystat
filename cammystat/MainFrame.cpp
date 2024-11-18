@@ -1278,6 +1278,8 @@ void MainFrame::RunAnalysis()
 			errorMessage += "Threshold value should be (O-255).\n";
 		}
 
+		std::cout << "Using binarization threshold: " << threshold << std::endl;
+
 		// Create heatmap
 		std::vector<std::pair<int, int>> maxSumCoords12;
 		if (isAnyAutomaticAnalysisOptionActive) {
@@ -1379,6 +1381,15 @@ void MainFrame::RunAnalysis()
 		}
 #endif
 
+		wxSTStatus->SetLabel("Status: Trimming");
+		passedDoubleVector = V3::Detection::trim_list(passedDoubleVector, leftTrim, rightTrim);
+#if SHOW_DEBUG_DIALOGS
+		{
+			wxMessageDialog dialog(NULL, "LOG: Trim_list calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
+			dialog.ShowModal();
+		}
+#endif
+
 		std::string valuesPath = cammystatTempPathStr + "\\" + fileName + "\\values" + fileName + ".csv";
 		wxSTStatus->SetLabel("Status: Saving vectors");
 		Utils::writeVectorToFile(valuesPath, passedDoubleVector);
@@ -1393,14 +1404,6 @@ void MainFrame::RunAnalysis()
 		}
 #endif
 
-		wxSTStatus->SetLabel("Status: Trimming");
-		passedDoubleVector = V3::Detection::trim_list(passedDoubleVector, leftTrim, rightTrim);
-#if SHOW_DEBUG_DIALOGS
-		{
-			wxMessageDialog dialog(NULL, "LOG: Trim_list calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
-			dialog.ShowModal();
-		}
-#endif
 		wxSTStatus->SetLabel("Status: Adding zeros");
 		passedDoubleVector = V3::Detection::clone_padded_with_zeros(passedDoubleVector);
 		wxSTStatus->SetLabel("Status: Zeros has been added to a list.");
