@@ -151,7 +151,7 @@ def plot_video_events(
 
     # Update layout
     fig.update_layout(
-        title=f'Plot for {video_name}{f" - {len(events)} events" if events is not None else ""}',
+        title=f'Plot for {video_name}{f" - {len(events)} event{'' if len(events) == 1 else 's'}" if events is not None else ""}',
         xaxis_title="Time (seconds)",
         yaxis_title="Normalized Values" if normalize_flag else "XOR Values",
         showlegend=True,
