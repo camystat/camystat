@@ -124,19 +124,15 @@ def plot_video_events(values_path, events_path, video_name, save_path, fps, path
 			
 			remove_folder(path_to_remove)
 
-	# Update layout
-	if(normalize_flag):
-		fig.update_layout(title=f'Plot for {video_name} - {len(events)} events',
-						xaxis_title='Time (seconds)',
-						yaxis_title='Normalized Values',
-						showlegend=True)
-	else:
-		fig.update_layout(title=f'Plot for {video_name}',
-						xaxis_title='Time (seconds)',
-						yaxis_title='XOR Values',
-						showlegend=True)
-	
-	print("log: update_layout")
+    # Update layout
+    fig.update_layout(
+        title=f'Plot for {video_name}{f" - {len(events)} events" if events is not None else ""}',
+        xaxis_title="Time (seconds)",
+        yaxis_title="Normalized Values" if normalize_flag else "XOR Values",
+        showlegend=True,
+    )
+
+    print("log: update_layout")
 
 	# Save plot as HTML file
 	full_save_path = os.path.join(save_path, f'{video_name}_plot.html')
