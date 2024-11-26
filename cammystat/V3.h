@@ -17,6 +17,11 @@
 class V3
 {
 public:
+    class ProcessingAbortedException : public std::runtime_error
+    {
+    public:
+        ProcessingAbortedException() : std::runtime_error("Processing aborted") {}
+    };
 
     // Klasa odpowiedzialna za kompresje danych (etap zero)
 
@@ -53,7 +58,7 @@ public:
         // 
         // Calculates an automatic binarization threshold for the given video file using frames from the specified range, based on Marcin's algorithm design.
 
-        static std::pair<int, std::vector<int>> calculateBinarizationThreshold(std::string videoPath, int startFrame, int endFrame, BinarizationThresholdCalcProgressCallback progressCallback);
+        static std::pair<int, std::vector<int>> calculateBinarizationThreshold(const std::string& videoPath, const int startFrame, const int endFrame, const BinarizationThresholdCalcProgressCallback& progressCallback, const std::atomic<bool>& abortFlag);
         
         // 1.1 Heatmapa aktywności na filmie
         // 
@@ -73,7 +78,7 @@ public:
         // odpowiednim pikselom.Funkcja zlicza te zmiany dla każdego piksela i zwraca macierz odpowiadającą kształtem 
         // wideo z liczbą odnotowanych zmian dla każdego piksela.
 
-        static cv::Mat createHeatmap(std::string videoPath, int startFrame = 0, int endFrame = -1, int threshold = 128, std::string resultPath = "");
+        static cv::Mat createHeatmap(const std::string& videoPath, const int startFrame = 0, const int endFrame = -1, const int threshold = 128, const std::string& resultPath = "", const std::atomic<bool>& abortFlag = false);
 
         // 1.2 Wyznaczanie obszaru zainteresowania
         // 
@@ -89,10 +94,11 @@ public:
 
         static std::vector<std::pair<int, int>> findMaxSumSquareCoordinatesWithPercent(
             const cv::Mat& pixel_count_array,
-            double square_percent,
-            double top_percent,
-            std::string resultPath,
-            std::string imagePath
+            const double square_percent,
+            const double top_percent,
+            const std::string& resultPath,
+            const std::string& imagePath,
+            const std::atomic<bool>& abortFlag = false
         );
 
         // 1.3 Analiza aktywności na nagraniu
@@ -120,10 +126,11 @@ public:
         // odpowiadające aktywności na kolejnych klatkach filmu.
 
         static std::vector<double> countOnesInXorAtCoordinates(
-            std::string videoPath,
-            std::vector<std::pair<int, int>> coordinates = {},
-            int threshold = 128,
-            std::string resultPath = ""
+            const std::string& videoPath,
+            const std::vector<std::pair<int, int>>& coordinates = {},
+            const int threshold = 128,
+            const std::string& resultPath = "",
+            const std::atomic<bool>& abortFlag = false
         );
     };
 
@@ -132,9 +139,9 @@ public:
 
         static std::vector<double> applySavgolFilter(const std::vector<double>& data, size_t window_length = 7, size_t polyorder = 5);
         static std::vector<double> smoothValues(const std::vector<double>&, float percentile);
-        static std::vector<double> modify_means(const std::vector<double>& input_list, size_t n = 2, size_t x = 1);
-        static std::vector<double> clone_normalized_values(const std::vector<double>& values);
-        static std::vector<double> clone_replace_zeros_values_below_threshold(const std::vector<double>& lst, double threshold, std::string resultPath);
+        static std::vector<double> modifyMeans(const std::vector<double>& input_list, size_t n = 2, size_t x = 1, const std::atomic<bool>& abortFlag = false);
+        static std::vector<double> cloneNormalizedValues(const std::vector<double>& values);
+        static std::vector<double> cloneReplaceZerosValuesBelowThreshold(const std::vector<double>& lst, double threshold, std::string resultPath);
     };
 
     class Detection {
@@ -194,10 +201,10 @@ public:
             return trimmed_list;
         }
         static std::vector<double> clone_padded_with_zeros(const std::vector<double>& input_list);
-        static std::vector<std::vector<double>> calculate_integrals_with_reference_points(const std::vector<double>& values);
+        static std::vector<std::vector<double>> calculate_integrals_with_reference_points(const std::vector<double>& values, const std::atomic<bool>& abortFlag);
         static std::vector<std::vector<double>> merge_events(const std::vector<std::vector<double>>& event_list, double distance_threshold);
         static std::vector<std::vector<double>> remove_events(const std::vector<std::vector<double>>& event_list, double threshold_value);
 
-        static std::vector<V3::Detection::Phase> locate_contractions_and_relaxations(const std::vector<double>& values, const std::vector<std::vector<double>>& integrals_results);
+        static std::vector<V3::Detection::Phase> locate_contractions_and_relaxations(const std::vector<double>& values, const std::vector<std::vector<double>>& integrals_results, const std::atomic<bool>& abortFlag);
     };
 };

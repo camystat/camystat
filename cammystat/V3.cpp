@@ -86,8 +86,9 @@ long double calcU8MatAvgBrightness(const cv::Mat& mat, std::map<int, long double
 /// <param name="startFrame">The starting frame</param>
 /// <param name="endFrame">The ending frame</param>
 /// <param name="progressCallback">Callback invoked when progress changes.</param>
+/// <param name="abortFlag">Flag that indicates whether to abort processing</param>
 /// <returns>The threshold & XOR scores vector for all tested threshold values (0-255).</returns>
-std::pair<int, std::vector<int>> V3::Preprocessing::calculateBinarizationThreshold(std::string videoPath, int startFrame, int endFrame, V3::Preprocessing::BinarizationThresholdCalcProgressCallback progressCallback) {
+std::pair<int, std::vector<int>> V3::Preprocessing::calculateBinarizationThreshold(const std::string& videoPath, const int startFrame, const int endFrame, const V3::Preprocessing::BinarizationThresholdCalcProgressCallback& progressCallback, const std::atomic<bool>& abortFlag) {
 	progressCallback(V3::Preprocessing::BinarizationThresholdCalcProgress::STARTING, std::nullopt, std::nullopt);
 
 	// For handling edge case when XOR operation returns 0s for the selected given pair of frames to retry with a next-in-turn pair of frames
@@ -122,113 +123,132 @@ std::pair<int, std::vector<int>> V3::Preprocessing::calculateBinarizationThresho
 
 	std::map<int, long double> frameAvgBrightnessCache;
 
-	// Below: retry (including first try) loop
-	while (true)
+	cv::Mat frame1Gray(height, width, CV_8UC1), frame2Gray(height, width, CV_8UC1);
+	cv::Mat frame1Binary(height, width, CV_8UC1), frame2Binary(height, width, CV_8UC1);
+	cv::Mat tempFrame(height, width, CV_8UC1);
+	cv::Mat xorResult(height, width, CV_8UC1);
+
+	try
 	{
-		maxAvgBrightnessDiffStartFrameIdx = std::nullopt;
-		maxAvgBrightnessDiff = -1;
-		xorScores.clear();
-		maxXorThreshold = 0;
-
-		cap.set(cv::CAP_PROP_POS_FRAMES, startFrame);
-
-		if (!cap.read(currentFrame)) {
-			wxMessageDialog dialog1(NULL, "ERROR: (calculateBinarizationThreshold) Could not open a frame", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_ERROR | wxDIALOG_NO_PARENT);
-			dialog1.ShowModal();
-			throw std::runtime_error("calculateBinarizationThreshold: Could not open a frame" + std::to_string(startFrame));
-		}
-		cv::cvtColor(currentFrame, prevFrameGray, cv::COLOR_BGR2GRAY);
-
-		long double prevAvgBrightness = calcU8MatAvgBrightness(prevFrameGray, frameAvgBrightnessCache, startFrame);
-
-		frameIndex = startFrame + 1; // since the frame at index 0 had already been read
-
-		// Move through the next frames and find pair of consecutive frames that has the max avg. brightness diff
+		// Below: retry (including first try) loop
 		while (true)
 		{
-			// Load next frame
-			if (!cap.read(currentFrame) || (endFrame != -1 && frameIndex > endFrame)) {
-				break;
+			if (abortFlag) {
+				throw V3::ProcessingAbortedException();
 			}
 
-			progressCallback(V3::Preprocessing::BinarizationThresholdCalcProgress::FINDING_MAX_BRIGHTNESS_DIFF_FRAMES, (double)frameIndex / (double)endFrame, maybeRetryNumber);
+			maxAvgBrightnessDiffStartFrameIdx = std::nullopt;
+			maxAvgBrightnessDiff = -1;
+			xorScores.clear();
+			maxXorThreshold = 0;
 
-			cv::cvtColor(currentFrame, currentFrameGray, cv::COLOR_BGR2GRAY);
+			cap.set(cv::CAP_PROP_POS_FRAMES, startFrame);
 
-			// Calculate current avg. brightness
-			long double currentAvgBrightness = calcU8MatAvgBrightness(currentFrameGray, frameAvgBrightnessCache, frameIndex);
+			if (!cap.read(currentFrame)) {
+				wxMessageDialog dialog1(NULL, "ERROR: (calculateBinarizationThreshold) Could not open a frame", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_ERROR | wxDIALOG_NO_PARENT);
+				dialog1.ShowModal();
+				throw std::runtime_error("calculateBinarizationThreshold: Could not open a frame" + std::to_string(startFrame));
+			}
+			cv::cvtColor(currentFrame, prevFrameGray, cv::COLOR_BGR2GRAY);
 
-			// Store the result if applicable
-			long double diff = abs(currentAvgBrightness - prevAvgBrightness);
-			if (diff > maxAvgBrightnessDiff && retryFrameIndicesBlacklist.find(frameIndex - 1) == retryFrameIndicesBlacklist.end())
+			long double prevAvgBrightness = calcU8MatAvgBrightness(prevFrameGray, frameAvgBrightnessCache, startFrame);
+
+			frameIndex = startFrame + 1; // since the frame at index 0 had already been read
+
+			// Move through the next frames and find pair of consecutive frames that has the max avg. brightness diff
+			while (true)
 			{
-				std::cout << "calculateBinarizationThreshold: Candidate frame pair " << frameIndex - 1 << " & " << frameIndex << " with diff " << diff << std::endl;
-				maxAvgBrightnessDiff = diff;
-				maxAvgBrightnessDiffStartFrameIdx.emplace(frameIndex - 1);
+				if (abortFlag) {
+					throw V3::ProcessingAbortedException();
+				}
+
+				// Load next frame
+				if (!cap.read(currentFrame) || (endFrame != -1 && frameIndex > endFrame)) {
+					break;
+				}
+
+				progressCallback(V3::Preprocessing::BinarizationThresholdCalcProgress::FINDING_MAX_BRIGHTNESS_DIFF_FRAMES, (double)frameIndex / (double)endFrame, maybeRetryNumber);
+
+				cv::cvtColor(currentFrame, currentFrameGray, cv::COLOR_BGR2GRAY);
+
+				// Calculate current avg. brightness
+				long double currentAvgBrightness = calcU8MatAvgBrightness(currentFrameGray, frameAvgBrightnessCache, frameIndex);
+
+				// Store the result if applicable
+				long double diff = abs(currentAvgBrightness - prevAvgBrightness);
+				if (diff > maxAvgBrightnessDiff && retryFrameIndicesBlacklist.find(frameIndex - 1) == retryFrameIndicesBlacklist.end())
+				{
+					std::cout << "calculateBinarizationThreshold: Candidate frame pair " << frameIndex - 1 << " & " << frameIndex << " with diff " << diff << std::endl;
+					maxAvgBrightnessDiff = diff;
+					maxAvgBrightnessDiffStartFrameIdx.emplace(frameIndex - 1);
+				}
+
+				// Before advancing iteration, assign 'current' values to 'previous' vars
+				prevFrameGray = currentFrameGray;
+				prevAvgBrightness = currentAvgBrightness;
+
+				frameIndex++;
+			}
+			
+			if (!maxAvgBrightnessDiffStartFrameIdx.has_value()){
+				throw std::runtime_error("calculateBinarizationThreshold: Could not find any consecutive frames with a non-zero brightness difference. Please input the binarization threshold manually.");
 			}
 
-			// Before advancing iteration, assign 'current' values to 'previous' vars
-			prevFrameGray = currentFrameGray;
-			prevAvgBrightness = currentAvgBrightness;
+			cap.set(cv::CAP_PROP_POS_FRAMES, maxAvgBrightnessDiffStartFrameIdx.value());
 
-			frameIndex++;
+			cap.read(tempFrame);
+			cv::cvtColor(tempFrame, frame1Gray, cv::COLOR_BGR2GRAY);
+			cap.read(tempFrame);
+			cv::cvtColor(tempFrame, frame2Gray, cv::COLOR_BGR2GRAY);
+
+			// Find binarization threshold that maximizes the XOR score
+			for (int t = 0; t <= 255; t++)
+			{
+				if (abortFlag) {
+					throw V3::ProcessingAbortedException();
+				}
+
+				progressCallback(V3::Preprocessing::BinarizationThresholdCalcProgress::CALCULATING_XOR_SCORES, (double)t / 255.0, std::nullopt);
+				
+				cv::threshold(frame1Gray, frame1Binary, t, 255, cv::THRESH_BINARY);
+				cv::threshold(frame2Gray, frame2Binary, t, 255, cv::THRESH_BINARY);
+				
+				cv::bitwise_xor(frame1Binary, frame2Binary, xorResult);
+				
+				xorScores.push_back(cv::sum(xorResult)[0]);
+			}
+
+			std::vector<int>::iterator maxXorScore = std::max_element(xorScores.begin(), xorScores.end());
+			// Since thresholds range from 0-255, the index of the max value is the threshold itself
+			maxXorThreshold = std::distance(xorScores.begin(), maxXorScore);
+
+			// Edge case: all binarized frame per pair were identical & all XOR scores are thus 0 -> retry with other frames, blacklist this pair
+			if (maxXorThreshold == 0)
+			{
+				int frameIndex1 = maxAvgBrightnessDiffStartFrameIdx.value(), frameIndex2 = frameIndex1 + 1;
+
+				retryFrameIndicesBlacklist.insert(frameIndex1);
+
+				std::cout << "calculateBinarizationThreshold: (WARNING) calculated binarization threshold using frames " << frameIndex1 << " & " << frameIndex2 << " is 0, retrying with blacklisted start frame " << frameIndex1 << std::endl;
+				
+				maybeRetryNumber.emplace(maybeRetryNumber.value_or(0) + 1);
+
+				continue;
+			}
+			else
+			{
+				// Release resources
+				cap.release();
+
+				std::cout << "calculateBinarizationThreshold: calculated binarization threshold is " << maxXorThreshold << std::endl;
+
+				return { maxXorThreshold, xorScores };
+			}
 		}
-		
-		if (!maxAvgBrightnessDiffStartFrameIdx.has_value()){
-			throw std::runtime_error("calculateBinarizationThreshold: Could not find any consecutive frames with a non-zero brightness difference. Please input the binarization threshold manually.");
-		}
-
-		cap.set(cv::CAP_PROP_POS_FRAMES, maxAvgBrightnessDiffStartFrameIdx.value());
-
-		cv::Mat frame1Gray, frame2Gray;
-		cv::Mat frame1Binary, frame2Binary;
-		cv::Mat tempFrame;
-		cap.read(tempFrame);
-		cv::cvtColor(tempFrame, frame1Gray, cv::COLOR_BGR2GRAY);
-		cap.read(tempFrame);
-		cv::cvtColor(tempFrame, frame2Gray, cv::COLOR_BGR2GRAY);
-		tempFrame.release();
-
-		// Find binarization threshold that maximizes the XOR score
-		cv::Mat xorResult(height, width, CV_8UC1);
-		for (int t = 0; t <= 255; t++)
-		{
-			progressCallback(V3::Preprocessing::BinarizationThresholdCalcProgress::CALCULATING_XOR_SCORES, (double)t / 255.0, std::nullopt);
-			
-			cv::threshold(frame1Gray, frame1Binary, t, 255, cv::THRESH_BINARY);
-			cv::threshold(frame2Gray, frame2Binary, t, 255, cv::THRESH_BINARY);
-			
-			cv::bitwise_xor(frame1Binary, frame2Binary, xorResult);
-			
-			xorScores.push_back(cv::sum(xorResult)[0]);
-		}
-
-		std::vector<int>::iterator maxXorScore = std::max_element(xorScores.begin(), xorScores.end());
-		// Since thresholds range from 0-255, the index of the max value is the threshold itself
-		maxXorThreshold = std::distance(xorScores.begin(), maxXorScore);
-
-		// Edge case: all binarized frame per pair were identical & all XOR scores are thus 0 -> retry with other frames, blacklist this pair
-		if (maxXorThreshold == 0)
-		{
-			int frameIndex1 = maxAvgBrightnessDiffStartFrameIdx.value(), frameIndex2 = frameIndex1 + 1;
-
-			retryFrameIndicesBlacklist.insert(frameIndex1);
-
-			std::cout << "calculateBinarizationThreshold: (WARNING) calculated binarization threshold using frames " << frameIndex1 << " & " << frameIndex2 << " is 0, retrying with blacklisted start frame " << frameIndex1 << std::endl;
-			
-			maybeRetryNumber.emplace(maybeRetryNumber.value_or(0) + 1);
-
-			continue;
-		}
-		else
-		{
-			// Release resources
-			cap.release();
-
-			std::cout << "calculateBinarizationThreshold: calculated binarization threshold is " << maxXorThreshold << std::endl;
-
-			return { maxXorThreshold, xorScores };
-		}
+	}
+	catch (const V3::ProcessingAbortedException& e) {
+		cap.release(); // release resources
+		throw e; // re-throw the exception
 	}
 }
 
@@ -240,8 +260,9 @@ std::pair<int, std::vector<int>> V3::Preprocessing::calculateBinarizationThresho
 /// <param name="endFrame">The ending frame</param>
 /// <param name="threshold">The threshold value for binarization</param>
 /// <param name="resultPath">The path to the file where the result will be saved</param>
+/// <param name="abortFlag">The flag that indicates whether to abort processing</param>
 /// <returns>The matrix with pixel counts</returns>
-cv::Mat V3::Preprocessing::createHeatmap(std::string videoPath, int startFrame, int endFrame, int threshold, std::string resultPath) {
+cv::Mat V3::Preprocessing::createHeatmap(const std::string& videoPath, const int startFrame, const int endFrame, const int threshold, const std::string& resultPath, const std::atomic<bool>& abortFlag) {
 	// Open the video
 	cv::VideoCapture cap(videoPath);
 
@@ -277,28 +298,39 @@ cv::Mat V3::Preprocessing::createHeatmap(std::string videoPath, int startFrame, 
 	int frameIndex = startFrame + 1;
 
 	// Move through the next frames
-	while (true) {
-		// Load next frames
-		cv::Mat currentFrame, currentFrameGray, currentBinary;
-		if (!cap.read(currentFrame) || (endFrame != -1 && frameIndex > endFrame)) {
-			break;
+	try
+	{
+		while (true) {
+			if (abortFlag) {
+				throw V3::ProcessingAbortedException();
+			}
+
+			// Load next frames
+			cv::Mat currentFrame, currentFrameGray, currentBinary;
+			if (!cap.read(currentFrame) || (endFrame != -1 && frameIndex > endFrame)) {
+				break;
+			}
+
+			// Convert a given frame
+			cv::cvtColor(currentFrame, currentFrameGray, cv::COLOR_BGR2GRAY);
+			cv::threshold(currentFrameGray, currentBinary, threshold, 1, cv::THRESH_BINARY);
+
+			// Do the XOR operation over the frames
+			cv::Mat xorResult;
+			cv::bitwise_xor(prevBinary, currentBinary, xorResult);
+
+			// Update the pixel matrix
+			pixelCount += xorResult;
+
+			// Save the pixel matrix before new iteration starts
+			prevBinary = currentBinary;
+
+			frameIndex++;
 		}
-
-		// Convert a given frame
-		cv::cvtColor(currentFrame, currentFrameGray, cv::COLOR_BGR2GRAY);
-		cv::threshold(currentFrameGray, currentBinary, threshold, 1, cv::THRESH_BINARY);
-
-		// Do the XOR operation over the frames
-		cv::Mat xorResult;
-		cv::bitwise_xor(prevBinary, currentBinary, xorResult);
-
-		// Update the pixel matrix
-		pixelCount += xorResult;
-
-		// Save the pixel matrix before new iteration starts
-		prevBinary = currentBinary;
-
-		frameIndex++;
+	}
+	catch (const V3::ProcessingAbortedException& e) {
+		cap.release(); // release resources
+		throw e; // re-throw the exception
 	}
 
 	// Release resources
@@ -311,6 +343,10 @@ cv::Mat V3::Preprocessing::createHeatmap(std::string videoPath, int startFrame, 
 		cv::Mat pixelCountU8;
 
 		pixelCount.convertTo(pixelCountU8, CV_8UC1);
+
+		if (abortFlag) {
+			throw V3::ProcessingAbortedException();
+		}
 
 		// Apply color palette to the heatmap
 		cv::Mat heatmapColor;
@@ -331,15 +367,16 @@ cv::Mat V3::Preprocessing::createHeatmap(std::string videoPath, int startFrame, 
 /// <param name="top_percent">The percentage of the top cells to choose</param>
 /// <param name="resultPath">The path to the file where the result will be saved</param>
 /// <param name="imagePath">The path to the image file</param>
+/// <param name="abortFlag">The flag that indicates whether to abort processing</param>
 /// <returns>The coordinates of the selected cells</returns>
 std::vector<std::pair<int, int>> V3::Preprocessing::findMaxSumSquareCoordinatesWithPercent(
 	const cv::Mat& pixel_count_array,
-	double square_percent,
-	double top_percent,
-	std::string resultPath,
-	std::string imagePath
+	const double square_percent,
+	const double top_percent,
+	const std::string& resultPath,
+	const std::string& imagePath,
+	const std::atomic<bool>& abortFlag
 ) {
-
 	// Return an empty vector if the matrix is empty
 	if (pixel_count_array.empty()) {
 		return {};
@@ -356,6 +393,10 @@ std::vector<std::pair<int, int>> V3::Preprocessing::findMaxSumSquareCoordinatesW
 	// Find coordinates with the maximum sum
 	for (int i = 0; i <= rows - square_size; ++i) {
 		for (int j = 0; j <= cols - square_size; ++j) {
+			if (abortFlag) {
+				throw V3::ProcessingAbortedException();
+			}
+
 			int current_sum = cv::sum(pixel_count_array(cv::Rect(j, i, square_size, square_size)))[0];
 
 			if (current_sum > max_sum) {
@@ -385,11 +426,19 @@ std::vector<std::pair<int, int>> V3::Preprocessing::findMaxSumSquareCoordinatesW
 		}
 	}
 
+	if (abortFlag) {
+		throw V3::ProcessingAbortedException();
+	}
+
 	// Sort by values
 	std::sort(values_inside_square.begin(), values_inside_square.end(),
 		[](const std::pair<int, int>& a, const std::pair<int, int>& b) {
 			return a.first > b.first;
 		});
+
+	if (abortFlag) {
+		throw V3::ProcessingAbortedException();
+	}
 
 	// Find the most important cells
 	for (int i = 0; i < num_cells_to_choose; ++i) {
@@ -397,6 +446,10 @@ std::vector<std::pair<int, int>> V3::Preprocessing::findMaxSumSquareCoordinatesW
 		int y = index / cols;
 		int x = index % cols;
 		selected_coordinates.push_back({ x, y });
+	}
+
+	if (abortFlag) {
+		throw V3::ProcessingAbortedException();
 	}
 
 	// Read the existing PNG image
@@ -425,21 +478,23 @@ std::vector<std::pair<int, int>> V3::Preprocessing::findMaxSumSquareCoordinatesW
 /// <param name="coordinates">The coordinates of the cells to analyze</param>
 /// <param name="threshold">The threshold value for binarization</param>
 /// <param name="resultPath">The path to the file where the results will be saved</param>
+/// <param name="abortFlag">The flag that indicates whether to abort processing</param>
 /// <returns>The percentage of ones in the XOR matrix over time</returns>
 std::vector<double> V3::Preprocessing::countOnesInXorAtCoordinates(
-	std::string videoPath,
-	std::vector<std::pair<int, int>> coordinates,
-	int threshold,
-	std::string resultPath
+	const std::string& videoPath,
+	const std::vector<std::pair<int, int>>& coordinates,
+	const int threshold,
+	const std::string& resultPath,
+	const std::atomic<bool>& abortFlag
 ) {
 	// Open the video file
-	std::cout << "countOnesInXorAtCoordinates: rozpoczeto" << std::endl;
+	std::cout << "countOnesInXorAtCoordinates: started" << std::endl;
 
 	cv::VideoCapture cap(videoPath);
 
 	// Check whether the video has been loaded correctly
 	if (!cap.isOpened()) {
-		throw std::runtime_error("countOnesInXorAtCoordinates: blad, nie udalo sie otworzyc pliku.");
+		throw std::runtime_error("countOnesInXorAtCoordinates: error, could not open file.");
 	}
 
 	// Initialize a list for saving XOR comparisons to
@@ -450,7 +505,7 @@ std::vector<double> V3::Preprocessing::countOnesInXorAtCoordinates(
 	bool ret = cap.read(prev_frame);
 
 	if (!ret) {
-		throw std::runtime_error("countOnesInXorAtCoordinates: blad, nie udalo sie otworzyc ramki.");
+		throw std::runtime_error("countOnesInXorAtCoordinates: error, could not read frame.");
 	}
 
 	// Convert the first frame to grayscale
@@ -469,48 +524,68 @@ std::vector<double> V3::Preprocessing::countOnesInXorAtCoordinates(
 		total_cells = coordinates.size();
 	}
 
-	// Loop through all frames
-	while (true) {
-		// Read the current frame
-		cv::Mat current_frame;
-		ret = cap.read(current_frame);
+	// Load the video's dimentions
+	int width = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_WIDTH));
+	int height = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_HEIGHT));
 
-		// Break the loop if end of video is reached
-		if (!ret) {
-			break;
-		}
+	cv::Mat current_frame(height, width, CV_8UC1);
+	cv::Mat current_frame_gray(height, width, CV_8UC1), current_binary(height, width, CV_8UC1);
+	cv::Mat xor_result(height, width, CV_8UC1);
 
-		// Convert the current frame to grayscale
-		cv::Mat current_frame_gray, current_binary;
-		cv::cvtColor(current_frame, current_frame_gray, cv::COLOR_BGR2GRAY);
-		cv::threshold(current_frame_gray, current_binary, threshold, 1, cv::THRESH_BINARY);
-
-		// Calculate the XOR difference between frames
-		cv::Mat xor_result;
-		cv::bitwise_xor(prev_binary, current_binary, xor_result);
-
-		int ones_count = 0;
-		if (coordinates.empty()) {
-
-			// If the coordinates are empty, analyze the XOR matrix
-			ones_count = cv::countNonZero(xor_result);
-		}
-		else {
-			// Calculate the number of ones in the XOR matrix
-			for (const auto& coord : coordinates) {
-				ones_count += xor_result.at<uchar>(coord.second, coord.first);
+	try
+	{
+		// Loop through all frames
+		while (true) {
+			if (abortFlag) {
+				throw V3::ProcessingAbortedException();
 			}
+
+			// Read the current frame
+			ret = cap.read(current_frame);
+
+			// Break the loop if end of video is reached
+			if (!ret) {
+				break;
+			}
+
+			// Convert the current frame to grayscale
+			cv::cvtColor(current_frame, current_frame_gray, cv::COLOR_BGR2GRAY);
+			cv::threshold(current_frame_gray, current_binary, threshold, 1, cv::THRESH_BINARY);
+
+			// Calculate the XOR difference between frames
+			cv::bitwise_xor(prev_binary, current_binary, xor_result);
+
+			if (abortFlag) {
+				throw V3::ProcessingAbortedException();
+			}
+
+			int ones_count = 0;
+			if (coordinates.empty()) {
+
+				// If the coordinates are empty, analyze the XOR matrix
+				ones_count = cv::countNonZero(xor_result);
+			}
+			else {
+				// Calculate the number of ones in the XOR matrix
+				for (const auto& coord : coordinates) {
+					ones_count += xor_result.at<uchar>(coord.second, coord.first);
+				}
+			}
+
+			// Calculate the percentage based on the number of cells
+			double percentage_count = (static_cast<double>(ones_count) / total_cells) * 100.0;
+
+			ones_count_over_time.push_back(percentage_count);
+
+			// Update the current frame for the next iteration
+			prev_binary = current_binary;
+
+			frame_index++;
 		}
-
-		// Calculate the percentage based on the number of cells
-		double percentage_count = (static_cast<double>(ones_count) / total_cells) * 100.0;
-
-		ones_count_over_time.push_back(percentage_count);
-
-		// Update the current frame for the next iteration
-		prev_binary = current_binary;
-
-		frame_index++;
+	}
+	catch (const V3::ProcessingAbortedException& e) {
+		cap.release(); // release resources
+		throw e; // re-throw the exception
 	}
 
 	// Release resources
@@ -532,18 +607,27 @@ std::vector<double> V3::Preprocessing::countOnesInXorAtCoordinates(
 /// <param name="input_list"></param>
 /// <param name="n"></param>
 /// <param name="x"></param>
+/// <param name="abortFlag">Flag that indicates whether to abort processing</param>
 /// <returns></returns>
-std::vector<double> V3::Smoothing::modify_means(const std::vector<double>& input_list, size_t n, size_t x) {
+std::vector<double> V3::Smoothing::modifyMeans(const std::vector<double>& input_list, size_t n, size_t x, const std::atomic<bool>& abortFlag) {
 	if (n <= 0 || x <= 0) {
 		return input_list;
 	}
 
 	std::vector<double> current_list = input_list;
 
-	for (int iter = 0; iter < x; ++iter) {
+	for (int iter = 0; iter < x; ++iter) {		
+		if (abortFlag) {
+			throw V3::ProcessingAbortedException();
+		}
+
 		std::vector<double> modified_list;
 
 		for (size_t i = 0; i < current_list.size(); ++i) {
+			if (abortFlag) {
+				throw V3::ProcessingAbortedException();
+			}
+
 			double mean_value = 0.0;
 
 			if (i < n / 2) {
@@ -569,7 +653,7 @@ std::vector<double> V3::Smoothing::modify_means(const std::vector<double>& input
 /// </summary>
 /// <param name="values">The vector of values to create a copy of with normalized values from</param>
 /// <returns>Vector of normalized values (new object)</returns>
-std::vector<double> V3::Smoothing::clone_normalized_values(const std::vector<double>& values) {
+std::vector<double> V3::Smoothing::cloneNormalizedValues(const std::vector<double>& values) {
 	if (values.empty()) {
 		return {};
 	}
@@ -594,7 +678,7 @@ std::vector<double> V3::Smoothing::clone_normalized_values(const std::vector<dou
 /// <param name="threshold">The threshold value</param>
 /// <param name="resultPath">The path to the file where the result will be saved</param>
 /// <returns>The modified list of values (new object)</returns>
-std::vector<double> V3::Smoothing::clone_replace_zeros_values_below_threshold(const std::vector<double>& lst, double threshold, std::string resultPath) {
+std::vector<double> V3::Smoothing::cloneReplaceZerosValuesBelowThreshold(const std::vector<double>& lst, double threshold, std::string resultPath) {
 	std::vector<double> modified_values;
 	modified_values.reserve(lst.size());
 
@@ -641,8 +725,9 @@ std::vector<double> V3::Detection::clone_padded_with_zeros(const std::vector<dou
 /// Calculates the integrals of the given values with reference points at zero values
 /// </summary>
 /// <param name="values">The list of values to calculate the integrals for</param>
+/// <param name="abortFlag">The flag that indicates whether to abort processing</param>
 /// <returns>The list of integrals with reference points (new object)</returns>
-std::vector<std::vector<double>> V3::Detection::calculate_integrals_with_reference_points(const std::vector<double>& values) {
+std::vector<std::vector<double>> V3::Detection::calculate_integrals_with_reference_points(const std::vector<double>& values, const std::atomic<bool>& abortFlag) {
 	std::vector<double> integrals; // List to store calculated integrals
 	std::vector<std::vector<double>> results; // List to store results in the specified format
 
@@ -660,6 +745,10 @@ std::vector<std::vector<double>> V3::Detection::calculate_integrals_with_referen
 	for (size_t i = 0; i < values.size(); ++i) {
 		if (values[i] == 0) {
 			if (i > start_index) {
+				if (abortFlag) {
+					throw V3::ProcessingAbortedException();
+				}
+
 				// If zero occurred after non-zero values, calculate the integral between them
 				double integral_value = trapezoidal_rule(values, start_index, i);
 				integrals.push_back(integral_value);
@@ -734,11 +823,15 @@ std::vector<std::vector<double>> V3::Detection::remove_events(const std::vector<
 	return updated_list;
 }
 
-std::vector<V3::Detection::Phase> V3::Detection::locate_contractions_and_relaxations(const std::vector<double>& values, const std::vector<std::vector<double>>& integrals_results)
+std::vector<V3::Detection::Phase> V3::Detection::locate_contractions_and_relaxations(const std::vector<double>& values, const std::vector<std::vector<double>>& integrals_results, const std::atomic<bool>& abortFlag)
 {
 	std::vector<Phase> results;
 
 	for (const auto& contraction : integrals_results) {
+		if (abortFlag) {
+			throw V3::ProcessingAbortedException();
+		}
+
 		int start_index = contraction[2], end_index = contraction[3];
 
 		if (end_index - start_index <= 2) {

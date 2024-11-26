@@ -37,14 +37,25 @@ class MainFrame : public wxFrame
 {
 public:
 	MainFrame(const wxString &title);
+
+	enum AnalysisResult
+	{
+		FINISHED,
+		ABORTED,
+		INVALID_PARAMETERS,
+		FAILED
+	};
+
+	std::string getAnalysisResultLabel(const AnalysisResult& result);
+
 	void wxFPSAutoDetectAnalysisToggle(wxCommandEvent& evt);
 	void wxSavitzkyGolayFilter(wxCommandEvent& evt);
 	void wxMovingAverage(wxCommandEvent& evt);
 	void wxMergeEvents(wxCommandEvent& evt);
 	void wxAutoSelectEvents(wxCommandEvent& evt);
 	void SetTaskBarIcon();
-	void RunAnalysis();
-	void UpdateUI();
+	AnalysisResult RunAnalysis();
+	void UpdateUI(const std::optional<const AnalysisResult>& result = std::nullopt);
 	void OnTimer(wxTimerEvent& event);
 	void OnChar(wxKeyEvent& event);
 	void OnKillFocus(wxFocusEvent& event);
@@ -77,14 +88,13 @@ public:
 	wxTextCtrl* wxCTFileList;
 	wxButton* wxBChooseVideo;
 	wxStaticText* wxSTNumOfChosenFiles;
-	wxButton* wxBAnalyze;
+	wxButton* wxBAnalyse;
+	wxButton* wxBAbortAnalysis;
 	wxStaticText* wxSTStatus;
 	wxStaticText* wxSTStatusDisplayed;
 	wxStaticText* wxSTStatusVideo;
-	wxGauge* wxGProgress;
 	wxTimer* timer;
-	int direction = 1; // 1 for forward, -1 for backward
-	int position = 0; // Current position of the progress part
+	std::atomic<bool> stopAnalysisThreadFlag { false };
 
 	wxButton* wxBOutputPath;
 	wxTextCtrl* wxCTOutputPath;

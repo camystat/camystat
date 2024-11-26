@@ -7,6 +7,7 @@
 //#DEFINE SHOW_DEBUG_DIALOGS 1
 
 namespace fs = std::filesystem;
+using namespace std::string_literals;
 
 template <typename... Arguments>
 std::string JoinCommandLineArguments(Arguments... arguments)
@@ -93,6 +94,25 @@ void MainFrame::syncAutomaticRecognitionAnalysisFieldStates() {
 	controlEnabledState[wxTCLastFrame] = isAnyAutomaticAnalysisOptionActive;
 }
 
+std::string MainFrame::getAnalysisResultLabel(const AnalysisResult& result) {
+	switch (result) {
+	case MainFrame::AnalysisResult::FINISHED:
+		return "completed";
+
+	case MainFrame::AnalysisResult::ABORTED:
+		return "aborted";
+
+	case MainFrame::AnalysisResult::INVALID_PARAMETERS:
+		return "invalid parameters";
+
+	case MainFrame::AnalysisResult::FAILED:
+		return "failed";
+
+	default:
+		return "unknown";
+	}
+}
+
 MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title, wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE & ~wxMAXIMIZE_BOX) {
 
 	numberOfFiles = 0;
@@ -100,7 +120,9 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title, 
 
 	// Left side of the GUI
 
-	wxSTListOfFiles = new wxStaticText(panel, wxID_ANY, "List of .mov files for analysis", wxPoint(20, 20), wxSize(280, 20));
+	uint leftSideCoordY = 20;
+
+	wxSTListOfFiles = new wxStaticText(panel, wxID_ANY, "List of .mov files for analysis", wxPoint(20, leftSideCoordY), wxSize(280, 20));
 	{
 		wxFont font = wxSTListOfFiles->GetFont();
 		font.SetWeight(wxFONTWEIGHT_BOLD);
@@ -112,32 +134,71 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title, 
 		wxSTListOfFiles->Refresh();
 	}
 
-	wxCTFileList = new wxTextCtrl(panel, wxID_ANY, "", wxPoint(20, 45), wxSize(280, 80), wxTE_MULTILINE);
+	leftSideCoordY += 25;
+
+	wxCTFileList = new wxTextCtrl(panel, wxID_ANY, "", wxPoint(20, leftSideCoordY), wxSize(280, 80), wxTE_MULTILINE);
 	wxCTFileList->SetEditable(false);
 	wxCTFileList->Bind(wxEVT_LEFT_DOWN, &MainFrame::OnMouseClick, this);
 	wxCTFileList->Bind(wxEVT_SET_FOCUS, &MainFrame::OnFocus, this);
 
-	wxBChooseVideo = new wxButton(panel, wxID_ANY, "Choose video for analysis (.mov)", wxPoint(20, 135), wxSize(280, 20));
+	leftSideCoordY += 90;
 
-	wxSTNumOfChosenFiles = new wxStaticText(panel, wxID_ANY, "Number of chosen files: 0", wxPoint(20, 165), wxSize(280, 20));
+	wxBChooseVideo = new wxButton(panel, wxID_ANY, "Choose video for analysis (.mov)", wxPoint(20, leftSideCoordY), wxSize(280, 20));
 
-	wxBAnalyze = new wxButton(panel, wxID_ANY, "Analyze", wxPoint(20, 190), wxSize(280, 20));
+	leftSideCoordY += 30;
 
-	wxSTStatus = new wxStaticText(panel, wxID_ANY, STRING_STATUS_WAITING_FOR_INPUT, wxPoint(20, 220), wxSize(280, 20));
+	wxSTNumOfChosenFiles = new wxStaticText(panel, wxID_ANY, "Number of chosen files: 0", wxPoint(20, leftSideCoordY), wxSize(280, 20));
+
+	leftSideCoordY += 25;
+
+	wxBAnalyse = new wxButton(panel, wxID_ANY, "Analyse", wxPoint(20, leftSideCoordY), wxSize(280, 20));
+	wxBAnalyse->Bind(wxEVT_BUTTON, [this](wxCommandEvent& event)
+		{
+			timer->Start(1300);
+
+			std::thread([this]() {
+				AnalysisResult result = RunAnalysis();
+
+				timer->Stop();
+				wxSTStatusDisplayed->SetLabel(wxSTStatus->GetLabel());
+				m_dotCount = 0;
+
+				stopAnalysisThreadFlag = false;
+
+				processingRunning = false;
+				UpdateUI(result);
+			}).detach();
+		});
+
+	leftSideCoordY += 25;
+
+	wxBAbortAnalysis = new wxButton(panel, wxID_ANY, "Abort analysis", wxPoint(20, leftSideCoordY), wxSize(280, 20));
+	wxBAbortAnalysis->Bind(wxEVT_BUTTON, [this](wxCommandEvent &event) {
+		std::cout << "Aborting analysis on user request." << std::endl;
+
+		stopAnalysisThreadFlag = true;
+		UpdateUI();
+	});
+
+	leftSideCoordY += 30;
+
+	wxSTStatus = new wxStaticText(panel, wxID_ANY, STRING_STATUS_WAITING_FOR_INPUT, wxPoint(20, leftSideCoordY), wxSize(280, 20));
 	wxSTStatus->Hide();
 
-	wxSTStatusDisplayed = new wxStaticText(panel, wxID_ANY, STRING_STATUS_WAITING_FOR_INPUT, wxPoint(20, 220), wxSize(280, 20));
+	wxSTStatusDisplayed = new wxStaticText(panel, wxID_ANY, STRING_STATUS_WAITING_FOR_INPUT, wxPoint(20, leftSideCoordY), wxSize(280, 20));
 
-	wxSTStatusVideo = new wxStaticText(panel, wxID_ANY, "Video: Awaiting", wxPoint(20, 245), wxSize(280, 20));
+	leftSideCoordY += 25;
 
-	//wxGProgress = new wxGauge(panel, wxID_ANY, 100, wxPoint(20, 245), wxSize(280, 20));
-	//wxGProgress->SetRange(100);
-	//wxGProgress->SetValue(0);
+	wxSTStatusVideo = new wxStaticText(panel, wxID_ANY, "Video: Awaiting", wxPoint(20, leftSideCoordY), wxSize(280, 20));
+
+	leftSideCoordY += 25;
 
 	timer = new wxTimer(this);
 	this->Bind(wxEVT_TIMER, &MainFrame::OnTimer, this);
 
-	wxBOutputPath = new wxButton(panel, wxID_ANY, "Output path", wxPoint(20, 270), wxSize(280, 20));
+	wxBOutputPath = new wxButton(panel, wxID_ANY, "Output path", wxPoint(20, leftSideCoordY), wxSize(280, 20));
+
+	leftSideCoordY += 25;
 
 	PWSTR path = NULL;
 
@@ -145,7 +206,7 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title, 
 
 	if (SUCCEEDED(hr)) {
 		std::wcout << L"Documents folder: " << path << std::endl;
-		wxCTOutputPath = new wxTextCtrl(panel, wxID_ANY, path, wxPoint(20, 295), wxSize(280, 60), wxTE_MULTILINE);
+		wxCTOutputPath = new wxTextCtrl(panel, wxID_ANY, path, wxPoint(20, leftSideCoordY), wxSize(280, 60), wxTE_MULTILINE);
 		wxCTOutputPath->SetEditable(false);
 		wxCTOutputPath->Bind(wxEVT_LEFT_DOWN, &MainFrame::OnMouseClick, this);
 		wxCTOutputPath->Bind(wxEVT_SET_FOCUS, &MainFrame::OnFocus, this);
@@ -161,7 +222,9 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title, 
 		CoTaskMemFree(path);
 	}
 
-	wxSTOutputOptions = new wxStaticText(panel, wxID_ANY, "Output options", wxPoint(20, 360), wxSize(280, 20));
+	leftSideCoordY += 65;
+
+	wxSTOutputOptions = new wxStaticText(panel, wxID_ANY, "Output options", wxPoint(20, leftSideCoordY), wxSize(280, 20));
 	{
 		wxFont font = wxSTOutputOptions->GetFont();
 		font.SetWeight(wxFONTWEIGHT_BOLD);
@@ -173,16 +236,29 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title, 
 		wxSTOutputOptions->Refresh();
 	}
 
-	wxCBCsvStats = new wxCheckBox(panel, wxID_ANY, "CSV with stats", wxPoint(20, 385));
+	leftSideCoordY += 25;
+
+	wxCBCsvStats = new wxCheckBox(panel, wxID_ANY, "CSV with stats", wxPoint(20, leftSideCoordY));
 	wxCBCsvStats->SetValue(true);
-	wxCBCsvRaw = new wxCheckBox(panel, wxID_ANY, "CSV with raw data", wxPoint(20, 410));
+
+	leftSideCoordY += 25;
+
+	wxCBCsvRaw = new wxCheckBox(panel, wxID_ANY, "CSV with raw data", wxPoint(20, leftSideCoordY));
 	wxCBCsvRaw->SetValue(true);
-	wxCBLineChart = new wxCheckBox(panel, wxID_ANY, "Generate line chart", wxPoint(20, 435));
+
+	leftSideCoordY += 25;
+
+	wxCBLineChart = new wxCheckBox(panel, wxID_ANY, "Generate line chart", wxPoint(20, leftSideCoordY));
 	wxCBLineChart->SetValue(true);
-	wxCBEventChart = new wxCheckBox(panel, wxID_ANY, "Generate event chart", wxPoint(20, 460));
+
+	leftSideCoordY += 25;
+
+	wxCBEventChart = new wxCheckBox(panel, wxID_ANY, "Generate event chart", wxPoint(20, leftSideCoordY));
 	wxCBEventChart->SetValue(true);
 
-	//Right side of the GUI
+	leftSideCoordY += 25;
+
+	// Right side of the GUI
 
 	uint rightSideCoordY = 20;
 
@@ -469,25 +545,6 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title, 
 			}
 		});
 
-	wxBAnalyze->Bind(wxEVT_BUTTON, [this](wxCommandEvent& event)
-		{
-			timer->Start(1300);
-
-			std::thread([this]() {
-				RunAnalysis();
-
-				controlEnabledState[wxBAnalyze] = true;
-				timer->Stop();
-				wxSTStatusDisplayed->SetLabel(wxSTStatus->GetLabel());
-				m_dotCount = 0;
-
-				wxSTStatus->SetLabel("Status: Processing complete!");
-
-				processingRunning = false;
-				UpdateUI();
-			}).detach();
-		});
-
 	wxCBAutoDetectEvents->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent& event)
 		{
 			for (wxControl* ctrl : std::initializer_list<wxControl*>{
@@ -509,7 +566,7 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title, 
 		});
 
 	allInteractiveControls.insert(allInteractiveControls.end(), {
-		wxCTFileList, wxBChooseVideo, wxBAnalyze, wxBOutputPath, wxCTOutputPath, wxSTBinarizationThreshold, wxCBCsvStats,
+		wxCTFileList, wxBChooseVideo, wxBAnalyse, wxBOutputPath, wxCTOutputPath, wxSTBinarizationThreshold, wxCBCsvStats,
 		wxCBCsvRaw, wxCBLineChart, wxCBEventChart, wxTCFPS, wxTCBinarizationThreshold, wxTCFirstFrame, wxTCLastFrame,
 		wxTCSizeOfFocusField, wxTCPercentileOfTheHighestValues, wxCBSavitzkyGolayFilter, wxTCWindowLengthSGF, wxTCPolyorder,
 		wxCBMovingAverage, wxTCWindowLengthMA, wxTCNumberOfRepetitions, wxTCAutoMovementThreshold, wxTCLeftTrim, wxTCRightTrim,
@@ -535,7 +592,7 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title, 
 	}
 }
 
-void MainFrame::UpdateUI()
+void MainFrame::UpdateUI(const std::optional<const MainFrame::AnalysisResult>& analysisResult)
 {
 	for (wxControl*& ctrl : allInteractiveControls) {
 		bool isNormallyEnabled = !processingRunning; // default value
@@ -549,6 +606,17 @@ void MainFrame::UpdateUI()
 		}
 
 		ctrl->Enable(isNormallyEnabled);
+	}
+
+	// exception: wxBAbortAnalysis is controlled separately & is not on allInteractiveControls
+	// list since its state is inverted w.r.t. analysis running state
+	wxBAbortAnalysis->Enable(processingRunning && !stopAnalysisThreadFlag);
+
+	if (analysisResult.has_value())
+	{
+		std::string label = "Status: Processing "s + getAnalysisResultLabel(analysisResult.value()) + "!";
+		wxSTStatus->SetLabel(label);
+		wxSTStatusDisplayed->SetLabel(label);
 	}
 }
 
@@ -601,10 +669,12 @@ void MainFrame::SetTaskBarIcon()
 	SendMessage(hwnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
 }
 
-void MainFrame::RunAnalysis()
+MainFrame::AnalysisResult MainFrame::RunAnalysis()
 {
 	// Place the entire block of calculation code here.
 	// Make sure to remove or adjust any UI interaction code that doesn't make sense in a background thread.
+
+	stopAnalysisThreadFlag = false;
 
 	///PREPROCESSING
 
@@ -813,7 +883,7 @@ void MainFrame::RunAnalysis()
 		dialog.ShowModal();
 #endif
 		errorMessage += "Empty of wrong format value in right trim field.\n";
-		return;
+		return MainFrame::AnalysisResult::INVALID_PARAMETERS;
 	}
 
 	if (rightTrim < 0) {
@@ -862,7 +932,7 @@ void MainFrame::RunAnalysis()
 	if (errorMessage != "") {
 		wxMessageDialog dialog(NULL, "Following inputs have to be corrected:\n\n" + errorMessage, wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_ERROR | wxDIALOG_NO_PARENT);
 		dialog.ShowModal();
-		return;
+		return MainFrame::AnalysisResult::INVALID_PARAMETERS;
 	}
 
 	processingRunning = true;
@@ -937,13 +1007,15 @@ void MainFrame::RunAnalysis()
 	std::cout << "---------------------------------------------------------" << std::endl << std::endl;
 
 	for (wxString strTemp : directories) {
+		if (stopAnalysisThreadFlag) return MainFrame::AnalysisResult::ABORTED;
+
 		std::string inputPath = std::string(strTemp.mb_str());
 
 		if (inputPath == "") {
 			wxSTStatus->SetLabel("Status: List of files .mov shouldn't be empty.");
 			wxMessageDialog dialog(NULL, "ERROR: List of files .mov shouldn't be empty.", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_ERROR | wxDIALOG_NO_PARENT);
 			dialog.ShowModal();
-			return;
+			return MainFrame::AnalysisResult::INVALID_PARAMETERS;
 		}
 
 		fs::path pathObj(inputPath);
@@ -956,7 +1028,7 @@ void MainFrame::RunAnalysis()
 		std::string outputPath = std::string(strTemp.mb_str());
 
 		if (!fs::exists(outputPath)) {
-			return;
+			return MainFrame::AnalysisResult::FAILED;
 		}
 
 		std::string outputFolderName2 = "camystat_output_" + fileName;
@@ -1001,7 +1073,7 @@ void MainFrame::RunAnalysis()
 		plotPath = plotPath + "\\plot.exe";
 #if SHOW_DEBUG_DIALOGS
 		{
-			wxMessageDialog dialog(NULL, "LOG: apath to the plot.exe: " + plotPath, wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
+			wxMessageDialog dialog(NULL, "LOG: path to the plot.exe: " + plotPath, wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 			dialog.ShowModal();
 			wxMessageDialog dialog(NULL, plotPath, wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 			dialog.ShowModal();
@@ -1014,7 +1086,7 @@ void MainFrame::RunAnalysis()
 			wxSTStatus->SetLabel("Status: ERROR: Could not locate appdata folder!");
 			wxMessageDialog dialog(NULL, "ERROR: Could not locate the appdata folder.", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 			dialog.ShowModal();
-			return;
+			return MainFrame::AnalysisResult::FAILED;
 		}
 
 		std::wstring tempPathWstr(tempPath);
@@ -1041,6 +1113,16 @@ void MainFrame::RunAnalysis()
 			std::string tempPath2 = cammystatTempPathStr + "\\" + fileName;
 			FsUtils::CreateDirectoryWithCheck(tempPath2);
 		}
+
+		std::string pathToRemove = cammystatTempPathStr + "\\" + fileName;
+
+		const auto internalCleanup = [&pathToRemove]() {
+			// clean up the files after analysis is completed or aborted
+			if (wxFileName::DirExists(pathToRemove))
+			{
+				FsUtils::RemoveDirectoryRecursively(pathToRemove);
+			}
+		};
 
 		wxSTStatus->SetLabel("Status: Reading form's parameters...");
 
@@ -1093,7 +1175,8 @@ void MainFrame::RunAnalysis()
 						}
 
 						wxSTStatus->SetLabel(status.str());
-					}
+					},
+					stopAnalysisThreadFlag
 				);
 
 				wxTCBinarizationThreshold->SetValue(std::to_string(threshold));
@@ -1116,6 +1199,10 @@ void MainFrame::RunAnalysis()
 				Utils::callPlotExe(plotPath, "auto_binarization_thresh", "\"" + xorScoresForThresholdsPath + "\" \"" + calculatedThresholdPath + "\" \"" + savePath + "\"");
 			}
 			// Error handling
+			catch (const V3::ProcessingAbortedException& e) {
+				internalCleanup();
+				return MainFrame::AnalysisResult::ABORTED;
+			}
 			catch (const std::exception& e) {
 				wxMessageDialog dialog1(NULL, "ERROR: (calculateBinarizationThreshold) An error occurred during the binarization threshold calculation", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_ERROR | wxDIALOG_NO_PARENT);
 				dialog1.ShowModal();
@@ -1153,9 +1240,13 @@ void MainFrame::RunAnalysis()
 			cv::Mat heatmap11;
 			try
 			{
-				heatmap11 = V3::Preprocessing::createHeatmap(inputPath, startFrame, endFrame, threshold, heatmapPath);
+				heatmap11 = V3::Preprocessing::createHeatmap(inputPath, startFrame, endFrame, threshold, heatmapPath, stopAnalysisThreadFlag);
 			}
 			// Error handling
+			catch (const V3::ProcessingAbortedException& e) {
+				internalCleanup();
+				return MainFrame::AnalysisResult::ABORTED;
+			}
 			catch (const std::exception& e) {
 				wxMessageDialog dialog1(NULL, "ERROR: (createHeatmap) An error occurred during heatmap creation", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_ERROR | wxDIALOG_NO_PARENT);
 				dialog1.ShowModal();
@@ -1168,9 +1259,16 @@ void MainFrame::RunAnalysis()
 			std::string heatmapCoordinatesPath = outputFolderPath.string() + "\\heatmap_coordinates\\" + fileName + ".png";
 
 			wxSTStatus->SetLabel("Status: Finding max sum squares");
-			maxSumCoords12 = V3::Preprocessing::findMaxSumSquareCoordinatesWithPercent(
-				heatmap11, squarePercent, topPercent, heatmapCoordinatesPath, heatmapPath
-			);
+			try
+			{
+				maxSumCoords12 = V3::Preprocessing::findMaxSumSquareCoordinatesWithPercent(
+					heatmap11, squarePercent, topPercent, heatmapCoordinatesPath, heatmapPath, stopAnalysisThreadFlag
+				);
+			}
+			catch (const V3::ProcessingAbortedException& e) {
+				internalCleanup();
+				return MainFrame::AnalysisResult::ABORTED;
+			}
 		}
 
 		std::string rawCSVPath = outputFolderPath.string() + "\\csv_raw\\" + fileName + ".csv";
@@ -1181,7 +1279,14 @@ void MainFrame::RunAnalysis()
 		{
 			if (isAnyAutomaticAnalysisOptionActive) {
 				wxSTStatus->SetLabel("Status: Couting ones in xor");
-				passedDoubleVector = V3::Preprocessing::countOnesInXorAtCoordinates(inputPath, maxSumCoords12, threshold, rawCSVPath);
+				try
+				{
+					passedDoubleVector = V3::Preprocessing::countOnesInXorAtCoordinates(inputPath, maxSumCoords12, threshold, rawCSVPath, stopAnalysisThreadFlag);
+				}
+				catch (const V3::ProcessingAbortedException& e) {
+					internalCleanup();
+					return MainFrame::AnalysisResult::ABORTED;
+				}
 #if SHOW_DEBUG_DIALOGS
 				{
 					wxMessageDialog dialog(NULL, "LOG: XOR (with coords) calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
@@ -1192,7 +1297,7 @@ void MainFrame::RunAnalysis()
 			else {
 				std::vector<std::pair<int, int>> coordinates;
 				wxSTStatus->SetLabel("Status: Couting ones in xor without coords");
-				passedDoubleVector = V3::Preprocessing::countOnesInXorAtCoordinates(inputPath, coordinates, threshold, rawCSVPath);
+				passedDoubleVector = V3::Preprocessing::countOnesInXorAtCoordinates(inputPath, coordinates, threshold, rawCSVPath, stopAnalysisThreadFlag);
 #if SHOW_DEBUG_DIALOGS
 				{
 					wxMessageDialog dialog(NULL, "LOG: no coordinates XOR calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
@@ -1217,7 +1322,14 @@ void MainFrame::RunAnalysis()
 
 		if (wxCBSavitzkyGolayFilter->IsChecked()) {
 			wxSTStatus->SetLabel("Status: Filtering (Savgol)");
-			passedDoubleVector = Savgol::savgol_filter(passedDoubleVector, savitzkyGolayWindowLength, polyorder);
+			try
+			{
+				passedDoubleVector = Savgol::savgol_filter(passedDoubleVector, savitzkyGolayWindowLength, polyorder);
+			}
+			catch (const V3::ProcessingAbortedException& e) {
+				internalCleanup();
+				return MainFrame::AnalysisResult::ABORTED;
+			}
 #if SHOW_DEBUG_DIALOGS
 			{
 				wxMessageDialog dialog(NULL, "LOG: Savgol (Savitzky-Golay) filter has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
@@ -1228,7 +1340,14 @@ void MainFrame::RunAnalysis()
 
 		if (wxCBMovingAverage->IsChecked()) {
 			wxSTStatus->SetLabel("Status: Modifying means");
-			passedDoubleVector = V3::Smoothing::modify_means(passedDoubleVector, movingAverageWindowLength, numberOfRepetitions);
+			try
+			{
+				passedDoubleVector = V3::Smoothing::modifyMeans(passedDoubleVector, movingAverageWindowLength, numberOfRepetitions, stopAnalysisThreadFlag);
+			}
+			catch (const V3::ProcessingAbortedException& e) {
+				internalCleanup();
+				return MainFrame::AnalysisResult::ABORTED;
+			}
 #if SHOW_DEBUG_DIALOGS
 			{
 				wxMessageDialog dialog(NULL, "LOG: Moving Average calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
@@ -1238,7 +1357,7 @@ void MainFrame::RunAnalysis()
 		}
 
 		wxSTStatus->SetLabel("Status: Normalizing values");
-		passedDoubleVector = V3::Smoothing::clone_normalized_values(passedDoubleVector);
+		passedDoubleVector = V3::Smoothing::cloneNormalizedValues(passedDoubleVector);
 #if SHOW_DEBUG_DIALOGS
 		{
 			wxMessageDialog dialog(NULL, "LOG: Normalize values calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
@@ -1261,7 +1380,7 @@ void MainFrame::RunAnalysis()
 
 		std::string rawChartPath = outputFolderPath.string() + "\\csv_stats\\" + fileName + ".csv";
 		wxSTStatus->SetLabel("Status: Replacing zeros");
-		passedDoubleVector = V3::Smoothing::clone_replace_zeros_values_below_threshold(passedDoubleVector, movementThreshold, rawChartPath);
+		passedDoubleVector = V3::Smoothing::cloneReplaceZerosValuesBelowThreshold(passedDoubleVector, movementThreshold, rawChartPath);
 #if SHOW_DEBUG_DIALOGS
 		{
 			wxMessageDialog dialog(NULL, "LOG: Replace zeros values below threshold calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
@@ -1282,7 +1401,14 @@ void MainFrame::RunAnalysis()
 		std::vector<std::vector<double>> events;
 		if (wxCBAutoDetectEvents->GetValue()) {
 			wxSTStatus->SetLabel("Status: Calculating integrals");
-			events = V3::Detection::calculate_integrals_with_reference_points(passedDoubleVector);
+			try
+			{
+				events = V3::Detection::calculate_integrals_with_reference_points(passedDoubleVector, stopAnalysisThreadFlag);
+			}
+			catch (const V3::ProcessingAbortedException& e) {
+				internalCleanup();
+				return MainFrame::AnalysisResult::ABORTED;
+			}
 #if SHOW_DEBUG_DIALOGS
 			{
 				wxMessageDialog dialog(NULL, "LOG: calculate_integrals_with_reference_points calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
@@ -1309,7 +1435,14 @@ void MainFrame::RunAnalysis()
 #endif
 
 			wxSTStatus->SetLabel("Status: Normalizing second column");
-			events = Utils::normalizeSecondColumnInCopy(events);
+			try
+			{
+				events = Utils::normalizeSecondColumnInCopy(events);
+			}
+			catch (const V3::ProcessingAbortedException& e) {
+				internalCleanup();
+				return MainFrame::AnalysisResult::ABORTED;
+			}
 		}
 		std::string normalizedChartsPath = outputFolderPath.string() + "\\normalized_chart";
 #if SHOW_DEBUG_DIALOGS
@@ -1323,15 +1456,20 @@ void MainFrame::RunAnalysis()
 		
 		if (analyseContractionRelaxationEvents) {
 			wxSTStatus->SetLabel("Status: Contraction-relaxation analysis");
-			std::vector<V3::Detection::Phase> contractionRelaxationPhases = V3::Detection::locate_contractions_and_relaxations(passedDoubleVector, events);
-			Utils::writeVectorToFile(contractionRelaxationPhasesPath, contractionRelaxationPhases);
+			try
+			{
+				std::vector<V3::Detection::Phase> contractionRelaxationPhases = V3::Detection::locate_contractions_and_relaxations(passedDoubleVector, events, stopAnalysisThreadFlag);
+				Utils::writeVectorToFile(contractionRelaxationPhasesPath, contractionRelaxationPhases);
+			}
+			catch (const V3::ProcessingAbortedException& e) {
+				internalCleanup();
+				return MainFrame::AnalysisResult::ABORTED;
+			}
 		}
 
 		wxSTStatus->SetLabel("Status: Saving vector of vectors");
 		std::string eventsPath = cammystatTempPathStr + "\\" + fileName + "\\events" + fileName + ".csv";
 		Utils::writeVectorOfVectorsToFile(eventsPath, events);
-
-		std::string pathToRemove = cammystatTempPathStr + "\\" + fileName;
 
 		if(outputLineChart || outputEventChart) wxSTStatus->SetLabel("Status: Saving plots");
 
@@ -1339,8 +1477,18 @@ void MainFrame::RunAnalysis()
 			Utils::callPlotExe(plotPath, "video_events", JoinCommandLineArguments(valuesB4XORPath, "", fileName, outputFolderPath.string() + "\\raw_chart", fps));
 		}
 
+		if (stopAnalysisThreadFlag) {
+			internalCleanup();
+			return MainFrame::AnalysisResult::ABORTED;
+		}
+		
 		if (outputEventChart) {
 			Utils::callPlotExe(plotPath, "video_events", JoinCommandLineArguments(valuesPath, eventsPath, fileName, normalizedChartsPath, fps));
+		}
+
+		if (stopAnalysisThreadFlag) {
+			internalCleanup();
+			return MainFrame::AnalysisResult::ABORTED;
 		}
 
 		if (analyseContractionRelaxationEvents) {
@@ -1348,14 +1496,10 @@ void MainFrame::RunAnalysis()
 			Utils::callPlotExe(plotPath, "contraction_relaxation_analysis", JoinCommandLineArguments(valuesPath, contractionRelaxationPhasesPath, fileName, contractionRelaxationPath));
 		}
 
-		// clean up the files after analysis
-		if (wxFileName::DirExists(pathToRemove))
-		{
-			FsUtils::RemoveDirectoryRecursively(pathToRemove);
-		}
-
 		wxSTStatus->SetLabel("Status: Finished");
 	}
+
+	return MainFrame::AnalysisResult::FINISHED;
 }
 
 void MainFrame::OnTimer(wxTimerEvent& event)
