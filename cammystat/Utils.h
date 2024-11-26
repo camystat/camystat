@@ -23,7 +23,6 @@ class Utils
 public:
 	static std::vector<double> clone_trimmed_list(const std::vector<double>& lst, size_t n, size_t x);
 	static std::vector<double> aggregate(const std::string& videoPath, const std::string& compressedPath, const std::string& heatmapPath, const std::string& coordPath, const std::string& resultPath);
-	static void write_vector_to_file(const std::vector<std::vector<double>>& data, const std::string& filename);
 	static std::string TCHARToString(const TCHAR* tcharStr);
 
 	static std::wstring s2ws(const std::string& s) {

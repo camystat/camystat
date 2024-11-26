@@ -1,7 +1,4 @@
 #include "V3.h"
-#include <wx/wx.h>
-#include "wx/setup.h"
-#include <Eigen/Dense>
 
 /// <summary>
 /// Video conversion functionality - DEPRECATED
@@ -735,4 +732,60 @@ std::vector<std::vector<double>> V3::Detection::remove_events(const std::vector<
 	}
 
 	return updated_list;
+}
+
+std::vector<V3::Detection::Phase> V3::Detection::locate_contractions_and_relaxations(const std::vector<double>& values, const std::vector<std::vector<double>>& integrals_results)
+{
+	std::vector<Phase> results;
+
+	for (const auto& contraction : integrals_results) {
+		int start_index = contraction[2], end_index = contraction[3];
+
+		if (end_index - start_index <= 2) {
+			continue; // Not enough points to find a local minimum
+		}
+
+		// Extract segment of values for the current contraction
+		std::vector<double> segment(values.begin() + start_index, values.begin() + end_index);
+		std::vector<double> inner_segment(segment.begin() + 1, segment.end() - 1);
+
+		// Find indices of local minima in the inner segment
+		std::vector<int> local_minima;
+		for (size_t i = 1; i < inner_segment.size() - 1; ++i) {
+			if (inner_segment[i - 1] > inner_segment[i] && inner_segment[i] < inner_segment[i + 1]) {
+				local_minima.push_back(i);
+			}
+		}
+
+		// Skip if there's not exactly one local minimum
+		if (local_minima.size() != 1) {
+			continue;
+		}
+
+		// Calculate absolute index of the minimum
+		int min_index_relative = local_minima[0];
+		int min_index_absolute = start_index + 1 + min_index_relative;
+
+		// Split the segment into contraction and relaxation phases
+		std::vector<double> contraction_segment(values.begin() + start_index, values.begin() + min_index_absolute + 1);
+		std::vector<double> relaxation_segment(values.begin() + min_index_absolute, values.begin() + end_index);
+
+		// Calculate integrals (approximated using trapezoidal rule)
+		auto trapezoidal_integral = [](const std::vector<double>& data) {
+			double integral = 0.0;
+			for (size_t i = 0; i < data.size() - 1; ++i) {
+				integral += 0.5 * (data[i] + data[i + 1]);
+			}
+			return integral;
+			};
+
+		double contraction_value = trapezoidal_integral(contraction_segment);
+		double relaxation_value = trapezoidal_integral(relaxation_segment);
+
+		// Append results
+		results.push_back({ "contraction", static_cast<int>(results.size()) + 1, contraction_value, start_index, min_index_absolute });
+		results.push_back({ "relaxation", static_cast<int>(results.size()) + 1, relaxation_value, min_index_absolute, end_index });
+	}
+
+	return results;
 }

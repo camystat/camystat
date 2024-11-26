@@ -1,5 +1,8 @@
 {
   "editor.formatOnSave": false,
+  "[python]": {
+    "editor.formatOnSave": true,
+  },
   "files.associations": {
     "*.json.liquid": "json",
     "*.yaml.liquid": "yaml",

@@ -8,6 +8,9 @@
 #include <opencv2/opencv.hpp>
 #include <optional>
 #include <set>
+#include <wx/wx.h>
+#include "wx/setup.h"
+#include <Eigen/Dense>
 #include "Utils.h"
 
 // Klasa funkcjonujaca jako przestrzen nazw V2 -- implementujaca metody z kodu Pythona w jezyku C++
@@ -136,6 +139,34 @@ public:
 
     class Detection {
     public:
+        class Phase {
+        public:
+            /// <summary>
+            /// Represents a phase of a contraction or relaxation event.
+            /// "contraction" or "relaxation"
+            /// </summary>
+            std::string phase_type;
+            int phase_number;
+            double phase_value;
+            int start_index;
+            int end_index;
+
+            Phase(std::string phase_type, int phase_number, double phase_value, int start_index, int end_index) :
+                phase_type(phase_type), phase_number(phase_number), phase_value(phase_value), start_index(start_index), end_index(end_index) {}
+
+            std::string to_string() const {
+                std::ostringstream oss;
+
+                oss << phase_type << "," << phase_number << "," << phase_value << "," << start_index << "," << end_index;
+                return oss.str();
+            }
+
+            friend std::ostream& operator<< (std::ostream& stream, const Phase& phase) {
+                stream << phase.to_string();
+                return stream;
+            }
+        };
+
         static std::vector<double> trim_list(const std::vector<double>& lst, int n, int x) {
             /*
             Removes n elements from the beginning and x elements from the end of the list.
@@ -166,5 +197,7 @@ public:
         static std::vector<std::vector<double>> calculate_integrals_with_reference_points(const std::vector<double>& values);
         static std::vector<std::vector<double>> merge_events(const std::vector<std::vector<double>>& event_list, double distance_threshold);
         static std::vector<std::vector<double>> remove_events(const std::vector<std::vector<double>>& event_list, double threshold_value);
+
+        static std::vector<V3::Detection::Phase> locate_contractions_and_relaxations(const std::vector<double>& values, const std::vector<std::vector<double>>& integrals_results);
     };
 };

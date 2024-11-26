@@ -1,36 +1,21 @@
 import csv
 import sys
 import os
-import plotly.graph_objects as go
-import shutil
+import numpy as np
 import argparse
 import matplotlib.pyplot as plt
-from typing import List
+from typing import List, Literal, Tuple, TypeVar, cast
+
+import plotly.graph_objects as pgo
 
 Values = List[int | float]
+PhaseType = Literal["contraction"] | Literal["relaxation"]
+Phase = Tuple[PhaseType, int, int | float, int, int]
+"""Format: [phase_type ('contraction' or 'relaxation'), phase_number, phase_value, start_index, end_index]."""
 
 
-def remove_folder(folder_path: str):
-    """Remove a folder and all its contents."""
-    if os.path.isdir(folder_path):
-        try:
-            shutil.rmtree(folder_path)
-            print(f"Successfully removed: {folder_path}")
-        except Exception as e:
-            print(f"Error: {e}")
-    else:
-        print(f"The path {folder_path} is not a directory.")
-
-
-def normalize_values(values: Values) -> Values:
-    if not values:
-        return []
-    min_value = min(values)
-    max_value = max(values)
-
-    normalized_values = [(x - min_value) / (max_value - min_value) for x in values]
-
-    return normalized_values
+def sanitize_path(path: str) -> str:
+    return path.replace("\\", "/")
 
 
 def read_vector_from_csv(file_path: str) -> Values:
@@ -42,12 +27,22 @@ def read_vector_from_csv(file_path: str) -> Values:
         return vector
 
 
-def read_vector_of_vectors_from_csv(file_path: str) -> List[Values]:
+def to_float_or_str(value: str) -> float | str:
+    try:
+        return float(value)
+    except ValueError:
+        return value
+
+
+T = TypeVar("T")
+
+
+def read_vector_of_vectors_from_csv(file_path: str) -> List[T]:  # type: ignore
     with open(file_path, mode="r") as file:
         reader = csv.reader(file)
         vector_of_vectors = []
         for row in reader:
-            vector_of_vectors.append([float(value) for value in row])
+            vector_of_vectors.append([to_float_or_str(value) for value in row])
         return vector_of_vectors
 
 
@@ -57,11 +52,8 @@ def plot_video_events(
     video_name: str,
     save_path: str,
     fps: int,
-    path_to_remove: str,
-    normalize_flag: bool,
 ):
-    print("log: path to remove:" + path_to_remove)
-    values = read_vector_from_csv(values_path)
+    normalized_values = read_vector_from_csv(values_path)
 
     events: List[Values] = []
     if events_path != "":
@@ -70,35 +62,24 @@ def plot_video_events(
     print("log: read_vector_from_csv")
     print("log: read_vector_of_vectors_from_csv")
 
-    normalized_values: Values = normalize_values(values) if normalize_flag else values
-
-    print("log: normalize_values")
-
     # Convert frame numbers to time in seconds
-    time_values = [i / fps for i in range(len(values))]
+    time_values = [i / fps for i in range(len(normalized_values))]
 
     print("log: time_values")
 
     # Prepare figure
-    fig = go.Figure()
+    fig = pgo.Figure()
 
     # Add line trace for normalized values
     fig.add_trace(
-        go.Scatter(x=time_values, y=normalized_values, mode="lines", name="Values")
+        pgo.Scatter(x=time_values, y=normalized_values, mode="lines", name="Values")
     )
 
-    print("log: add_trace")
+    print("log: add traces")
 
     if events:
         # Normalize event values
-        event_values = [event[1] for event in events]
-
-        normalized_event_values = []
-
-        if normalize_flag:
-            normalized_event_values = normalize_values(event_values)
-        else:
-            normalized_event_values = event_values
+        normalized_event_values = [event[1] for event in events]
 
         print("log: normalized_event_values")
 
@@ -134,7 +115,7 @@ def plot_video_events(
 
             # Add red marker for the normalized event value
             fig.add_trace(
-                go.Scatter(
+                pgo.Scatter(
                     x=[event_time_mid],
                     y=[normalized_event_values[idx]],
                     mode="markers",
@@ -145,19 +126,109 @@ def plot_video_events(
 
             print("log: add_trace")
 
-            print("log: path from which we remove files: " + path_to_remove)
-
-            remove_folder(path_to_remove)
-
     # Update layout
     fig.update_layout(
         title=f'Plot for {video_name}{f" - {len(events)} event{'' if len(events) == 1 else 's'}" if events is not None else ""}',
         xaxis_title="Time (seconds)",
-        yaxis_title="Normalized Values" if normalize_flag else "XOR Values",
+        yaxis_title="XOR Values",
         showlegend=True,
     )
 
     print("log: update_layout")
+
+    # Save plot as HTML file
+    full_save_path = os.path.join(save_path, f"{video_name}_plot.html")
+    fig.write_html(full_save_path)
+
+    print("log: written to html")
+
+
+def plot_contraction_relaxation_phases(
+    normalized_values: Values,
+    normalized_phases: List[Phase],
+    video_name: str,
+    save_path: str,
+) -> None:
+    """
+    Plots cardiomyocyte activity with contraction and relaxation phases highlighted, ensuring paired numbering. Y values are always 0 by design.
+    Args:
+    normalized_values (list): List of normalized numeric values representing cardiomyocyte activity over time.
+    normalized_phases (list): A list of normalied phases from locate_contractions_and_relaxations.
+    """
+
+    # Pair phases to share the same ordinal number
+    paired_phases = []
+    pair_number = 1  # Start numbering pairs
+    for phase in normalized_phases:
+        phase_type, _, phase_value, start_index, end_index, *_ = phase
+        paired_phases.append(
+            [phase_type, pair_number, phase_value, start_index, end_index]
+        )
+
+        if (
+            phase_type == "relaxation"
+        ):  # Increment pair number only after a relaxation phase
+            pair_number += 1
+
+    # Prepare figure
+    fig = pgo.Figure()
+
+    # Add paired phases (contractions and relaxations)
+    for phase in paired_phases:
+        phase_type, pair_number, _, start_index, end_index = phase
+        phase_color = "blue" if phase_type == "contraction" else "green"
+        phase_label = "Contraction" if phase_type == "contraction" else "Relaxation"
+
+        # Highlight the phase as a shaded region
+        fig.add_shape(
+            type="rect",
+            xref="x",
+            yref="paper",
+            x0=start_index,
+            y0=0,
+            x1=end_index,
+            y1=1,
+            line=dict(color=phase_color, width=0),
+            fillcolor=phase_color,
+            opacity=0.2,
+            layer="below",
+        )
+
+        # Draw a semi-transparent, filled-in polygon for the phase
+        opacity = 0.2
+        fig.add_trace(
+            pgo.Scatter(
+                x=[start_index, end_index, end_index, start_index, start_index],
+                y=[0, 0, 1, 1, 0],
+                fill="toself",
+                mode="lines",
+                name=phase_label,
+                text=phase_label,
+                opacity=opacity,
+                fillcolor=phase_color,
+                marker=dict(color=phase_color, opacity=opacity),
+                line=dict(color="rgba(0,0,0,0)"),  # disable shape stroke
+            )
+        )
+
+    # Draw activity
+    fig.add_trace(
+        pgo.Scatter(
+            x=list(range(len(normalized_values))),
+            y=normalized_values,
+            mode="lines",
+            name="Activity",
+            marker=dict(color="black"),
+        )
+    )
+
+    # Update layout
+    fig.update_layout(
+        title=f"Contraction-relaxation analysis for {video_name}",
+        xaxis_title="Frame",
+        yaxis_title="XOR Values",
+        showlegend=True,
+    )
 
     # Save plot as HTML file
     full_save_path = os.path.join(save_path, f"{video_name}_plot.html")
@@ -213,13 +284,25 @@ if __name__ == "__main__":
     parser_video_events.add_argument(
         "fps", type=int, help="Frames per second of the video."
     )
-    parser_video_events.add_argument("path_to_remove", type=str, help="Path to remove.")
-    parser_video_events.add_argument(
-        "normalize_flag",
-        type=bool,
-        help="Normalize the values.",
-        default=False,
-        nargs="?",
+
+    parser_contraction_relaxation_analysis = subparsers.add_parser(
+        "contraction_relaxation_analysis", help="Plot contraction-relaxation analysis."
+    )
+    parser_contraction_relaxation_analysis.add_argument(
+        "normalized_values_path",
+        type=str,
+        help="Path to the CSV file containing the normalized values.",
+    )
+    parser_contraction_relaxation_analysis.add_argument(
+        "normalized_phases_path",
+        type=str,
+        help="Path to the CSV file containing the normalized phases.",
+    )
+    parser_contraction_relaxation_analysis.add_argument(
+        "video_name", type=str, help="Name of the video."
+    )
+    parser_contraction_relaxation_analysis.add_argument(
+        "save_path", type=str, help="Path to save the plot."
     )
 
     parser_auto_binarization_threshold = subparsers.add_parser(
@@ -251,13 +334,11 @@ if __name__ == "__main__":
             case "video_events":
                 anyValidCommand = True
 
-                values_path = options.values_path.replace("\\", "/")
-                events_path = options.events_path.replace("\\", "/")
+                values_path = sanitize_path(options.values_path)
+                events_path = sanitize_path(options.events_path)
                 video_name = options.video_name
-                save_path = options.save_path.replace("\\", "/")
+                save_path = sanitize_path(options.save_path)
                 fps = options.fps
-                path_to_remove = options.path_to_remove.replace("\\", "/")
-                normalize_flag = options.normalize_flag
 
                 plot_video_events(
                     values_path,
@@ -265,16 +346,32 @@ if __name__ == "__main__":
                     video_name,
                     save_path,
                     fps,
-                    path_to_remove,
-                    normalize_flag,
+                )
+
+            case "contraction_relaxation_analysis":
+                anyValidCommand = True
+
+                normalized_values_path = sanitize_path(options.normalized_values_path)
+                normalized_phases_path = sanitize_path(options.normalized_phases_path)
+                video_name = options.video_name
+                save_path = sanitize_path(options.save_path)
+
+                plot_contraction_relaxation_phases(
+                    normalized_values=read_vector_from_csv(normalized_values_path),
+                    normalized_phases=cast(
+                        List[Phase],
+                        read_vector_of_vectors_from_csv(normalized_phases_path),
+                    ),
+                    video_name=video_name,
+                    save_path=save_path,
                 )
 
             case "auto_binarization_thresh":
                 anyValidCommand = True
 
-                xor_results_path = options.xor_results_path.replace("\\", "/")
-                threshold_result_path = options.threshold_result_path.replace("\\", "/")
-                save_path = options.save_path.replace("\\", "/")
+                xor_results_path = sanitize_path(options.xor_results_path)
+                threshold_result_path = sanitize_path(options.threshold_result_path)
+                save_path = sanitize_path(options.save_path)
 
                 plot_auto_binarization_threshold(
                     xor_results_path, threshold_result_path, save_path

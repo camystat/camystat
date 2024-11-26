@@ -51,39 +51,6 @@ std::vector<double> Utils::aggregate(const std::string& videoPath, const std::st
 }
 
 /// <summary>
-/// Writes the given vector of vectors <paramref name="data"/> to a file with the specified <paramref name="filename"/>
-/// </summary>
-/// <param name="data">The data to be written to the file</param>
-/// <param name="filename">The name of the file to write the data to</param>
-void Utils::write_vector_to_file(const std::vector<std::vector<double>>& data, const std::string& filename) {
-	std::ofstream outfile(filename);
-
-	if (!outfile.is_open()) {
-		std::cerr << "Failed to open file: " << filename << std::endl;
-		return;
-	}
-
-	outfile << "[";
-
-	for (size_t i = 0; i < data.size(); ++i) {
-		outfile << "[";
-		for (size_t j = 0; j < data[i].size(); ++j) {
-			outfile << data[i][j];
-			if (j < data[i].size() - 1) {
-				outfile << ", ";
-			}
-		}
-		outfile << "]";
-		if (i < data.size() - 1) {
-			outfile << ",\n ";
-		}
-	}
-
-	outfile << "]";
-	outfile.close();
-}
-
-/// <summary>
 /// Converts a TCHAR string to a std::string
 /// </summary>
 /// <param name="tcharStr">The TCHAR</param>

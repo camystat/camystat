@@ -1,28 +1,10 @@
 #include "MainFrame.h"
-#include <wx/wx.h>
-#include "V3.h"
-#include "wx/setup.h"
-#include "Utils.h"
-#include <shlobj.h>
-#include <filesystem>
-#include <chrono>
-#include <iomanip>
-#include <sstream>
-#include <cmath>
-#include "Savgol.h"
-#include <locale>
-#include <codecvt>
-#include <string>
-#include <tchar.h>
-#include <wx/app.h>
-#include <wx/stdpaths.h>
-#include "resource.h"
 
 //UNCOMMENT BELOW LINE WITH DEFINE TO INTRODUCE DEBUG MODE
 //IN DEBUG MODE EVERY STEP IS BEING LOGGED
 //WHICH CAN BE QUITE ANNOYING
 // 
-//#DEFINE DEBUG 1
+//#DEFINE SHOW_DEBUG_DIALOGS 1
 
 namespace fs = std::filesystem;
 
@@ -277,8 +259,8 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title, 
 	wxCBCsvRaw->SetValue(true);
 	wxCBLineChart = new wxCheckBox(panel, wxID_ANY, "Generate line chart", wxPoint(20, 435));
 	wxCBLineChart->SetValue(true);
-	wxCBNormalizedChart = new wxCheckBox(panel, wxID_ANY, "Generate normalized chart", wxPoint(20, 460));
-	wxCBNormalizedChart->SetValue(true);
+	wxCBEventChart = new wxCheckBox(panel, wxID_ANY, "Generate event chart", wxPoint(20, 460));
+	wxCBEventChart->SetValue(true);
 
 	//Right side of the GUI
 
@@ -490,6 +472,9 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title, 
 
 	rightSideCoordY += 25;
 
+	wxCBContractionRelaxationChart = new wxCheckBox(panel, wxID_ANY, "Auto contraction-relaxation analysis", wxPoint(345, rightSideCoordY));
+	wxCBContractionRelaxationChart->SetValue(true);
+
 	wxMenuBar* menuBar = new wxMenuBar;
 
 	wxMenu* debugWindowMenu = new wxMenu;
@@ -594,7 +579,8 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title, 
 				wxSTAutoMergeEvents,
 				wxCBAutoSelectEvents,
 				wxTCAutoSelectEvents,
-				wxSTAutoSelectEvents
+				wxSTAutoSelectEvents,
+				wxCBContractionRelaxationChart
 			}) {
 				controlEnabledState[ctrl] = event.IsChecked();
 			}
@@ -602,65 +588,31 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title, 
 			UpdateUI();
 		});
 
-	allInteractiveControls.push_back(wxCTFileList);
-	allInteractiveControls.push_back(wxBChooseVideo);
-	allInteractiveControls.push_back(wxBAnalyze);
-	allInteractiveControls.push_back(wxBOutputPath);
-	allInteractiveControls.push_back(wxCTOutputPath);
-	allInteractiveControls.push_back(wxSTBinarizationThreshold);
-	allInteractiveControls.push_back(wxCBCsvStats);
-	allInteractiveControls.push_back(wxCBCsvRaw);
-	allInteractiveControls.push_back(wxCBLineChart);
-	allInteractiveControls.push_back(wxCBNormalizedChart);
-	allInteractiveControls.push_back(wxTCFPS);
-	allInteractiveControls.push_back(wxTCBinarizationThreshold);
-	allInteractiveControls.push_back(wxTCFirstFrame);
-	allInteractiveControls.push_back(wxTCLastFrame);
-	allInteractiveControls.push_back(wxTCSizeOfFocusField);
-	allInteractiveControls.push_back(wxTCPercentileOfTheHighestValues);
-	allInteractiveControls.push_back(wxCBSavitzkyGolayFilter);
-	allInteractiveControls.push_back(wxTCWindowLengthSGF);
-	allInteractiveControls.push_back(wxTCPolyorder);
-	allInteractiveControls.push_back(wxCBMovingAverage);
-	allInteractiveControls.push_back(wxTCWindowLengthMA);
-	allInteractiveControls.push_back(wxTCNumberOfRepetitions);
-	allInteractiveControls.push_back(wxTCAutoMovementThreshold);
-	allInteractiveControls.push_back(wxTCLeftTrim);
-	allInteractiveControls.push_back(wxTCRightTrim);
-	allInteractiveControls.push_back(wxCBAutoMergeEvents);
-	allInteractiveControls.push_back(wxTCAutoMergeEvents);
-	allInteractiveControls.push_back(wxCBAutoSelectEvents);
-	allInteractiveControls.push_back(wxTCAutoSelectEvents);
-	allInteractiveControls.push_back(wxSTFPS);
-	allInteractiveControls.push_back(wxSTBinarizationThresholdRange);
-	allInteractiveControls.push_back(wxSTFirstFrame);
-	allInteractiveControls.push_back(wxSTLastFrame);
-	allInteractiveControls.push_back(wxCBFocusCoordinatesAnalysis);
-	allInteractiveControls.push_back(wxSTSizeOfFocusField);
-	allInteractiveControls.push_back(wxSTPercentileOfTheHighestValues);
-	allInteractiveControls.push_back(wxSTWindowLengthSGF);
-	allInteractiveControls.push_back(wxSTPolyorder);
-	allInteractiveControls.push_back(wxSTWindowLengthMA);
-	allInteractiveControls.push_back(wxCBAutoDetectEvents);
-	allInteractiveControls.push_back(wxSTNumberOfRepetitions);
-	allInteractiveControls.push_back(wxSTAutoMovementThresholdStatic);
-	allInteractiveControls.push_back(wxSTAutoMovementThreshold);
-	allInteractiveControls.push_back(wxSTTrimList);
-	allInteractiveControls.push_back(wxSTLeftTrim);
-	allInteractiveControls.push_back(wxSTRightTrim);
-	allInteractiveControls.push_back(wxSTAutoMergeEvents);
-	allInteractiveControls.push_back(wxSTAutoSelectEvents);
-	allInteractiveControls.push_back(wxCBAutomaticBinarizationThreshold);
-	allInteractiveControls.push_back(wxCBFocusField);
+	allInteractiveControls.insert(allInteractiveControls.end(), {
+		wxCTFileList, wxBChooseVideo, wxBAnalyze, wxBOutputPath, wxCTOutputPath, wxSTBinarizationThreshold, wxCBCsvStats,
+		wxCBCsvRaw, wxCBLineChart, wxCBEventChart, wxTCFPS, wxTCBinarizationThreshold, wxTCFirstFrame, wxTCLastFrame,
+		wxTCSizeOfFocusField, wxTCPercentileOfTheHighestValues, wxCBSavitzkyGolayFilter, wxTCWindowLengthSGF, wxTCPolyorder,
+		wxCBMovingAverage, wxTCWindowLengthMA, wxTCNumberOfRepetitions, wxTCAutoMovementThreshold, wxTCLeftTrim, wxTCRightTrim,
+		wxCBAutoMergeEvents, wxTCAutoMergeEvents, wxCBAutoSelectEvents, wxTCAutoSelectEvents, wxSTFPS, wxSTBinarizationThresholdRange,
+		wxSTFirstFrame, wxSTLastFrame, wxCBFocusCoordinatesAnalysis, wxSTSizeOfFocusField, wxSTPercentileOfTheHighestValues, wxSTWindowLengthSGF,
+		wxSTPolyorder, wxSTWindowLengthMA, wxCBAutoDetectEvents, wxSTNumberOfRepetitions, wxSTAutoMovementThresholdStatic,
+		wxSTAutoMovementThreshold, wxSTTrimList, wxSTLeftTrim, wxSTRightTrim, wxSTAutoMergeEvents, wxSTAutoSelectEvents,
+		wxCBAutomaticBinarizationThreshold, wxCBFocusField, wxCBContractionRelaxationChart
+	});
 
 	syncAutomaticRecognitionAnalysisFieldStates();
 	UpdateUI();
 
-#ifdef DEBUG
-	ShowConsole();
-#else
-	HideConsole();
-#endif
+	if (IsDebuggerPresent())
+	{
+		// if a debugger is attached, the user may want the debug window to be shown by default
+		ShowConsole();
+	}
+	else
+	{
+		// if this is a release session, hide the debug window by default
+		HideConsole();
+	}
 }
 
 void MainFrame::UpdateUI()
@@ -729,16 +681,18 @@ void MainFrame::SetTaskBarIcon()
 	SendMessage(hwnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
 }
 
-std::string joinPlotVideoEventsFlags(
-	const std::string& valuesPath,
-	const std::string& eventsPath,
-	const std::string& videoName,
-	const std::string& savePath,
-	int fps,
-	const std::string& pathToRemove
-)
+template <typename... Arguments>
+std::string joinCommandLineArguments(Arguments... arguments)
 {
-	return "\"" + valuesPath + "\" \"" + eventsPath + "\" \"" + videoName + "\" \"" + savePath + "\" \"" + std::to_string(fps) + "\" \"" + pathToRemove + "\"";
+    std::ostringstream oss;
+    ((oss << "\"" << arguments << "\" "), ...); // Fold all arguments using sstream << operator
+
+    std::string result = oss.str();
+    if (!result.empty()) {
+        result.pop_back(); // Trim trailing space
+    }
+
+    return result;
 }
 
 void MainFrame::RunAnalysis()
@@ -1053,10 +1007,13 @@ void MainFrame::RunAnalysis()
 	std::cout << "Left trim: " << leftTrim << std::endl;
 	std::cout << "Right trim: " << rightTrim << std::endl;
 
+	const bool analyseContractionRelaxationEvents = wxCBContractionRelaxationChart->IsChecked();
+
 	if (wxCBAutoDetectEvents->IsChecked()) {
 		std::cout << "Movement threshold: " << movementThreshold << std::endl;
-		std::cout << "Automatically merge events (autoMergeEvents): " << autoMergeEvents << std::endl;
-		std::cout << "Automatically select events (autoSelectEvents): " << autoSelectEvents << std::endl;
+		std::cout << "Automatically merge events: " << autoMergeEvents << std::endl;
+		std::cout << "Automatically select events: " << autoSelectEvents << std::endl;
+		std::cout << "Analyse contraction-relaxation events: " << analyseContractionRelaxationEvents << std::endl;
 	}
 
 	std::cout << "Output path base: " << outputPath << std::endl;
@@ -1093,7 +1050,7 @@ void MainFrame::RunAnalysis()
 		bool csvStats = wxCBCsvStats->IsChecked();
 		bool csvRaw = wxCBCsvRaw->IsChecked();
 		bool lineChart = wxCBLineChart->IsChecked();
-		bool normalizedChart = wxCBNormalizedChart->IsChecked();
+		bool eventChart = wxCBEventChart->IsChecked();
 
 		wxSTStatus->SetLabel("Status: Preparing output folders");
 
@@ -1114,8 +1071,11 @@ void MainFrame::RunAnalysis()
 		if (lineChart) {
 			createDirectoryWithCheck(outputFolderPath / "raw_chart");
 		}
-		if (normalizedChart) {
+		if (eventChart) {
 			createDirectoryWithCheck(outputFolderPath / "normalized_chart");
+		}
+		if (analyseContractionRelaxationEvents) {
+			createDirectoryWithCheck(outputFolderPath / "contraction_relaxation_chart");
 		}
 		if (wxCBAutomaticBinarizationThreshold->IsChecked()) {
 			createDirectoryWithCheck(outputFolderPath / "auto_binarization_threshold");
@@ -1453,22 +1413,40 @@ void MainFrame::RunAnalysis()
 			dialog.ShowModal();
 		}
 #endif
-
-		std::string eventsPath = cammystatTempPathStr + "\\" + fileName + "\\events" + fileName + ".csv";
+		
+		std::string contractionRelaxationPhasesPath = cammystatTempPathStr + "\\" + fileName + "\\contractionRelaxationPhases" + fileName + ".csv";
+		
+		if (analyseContractionRelaxationEvents) {
+			wxSTStatus->SetLabel("Status: Contraction-relaxation analysis");
+			std::vector<V3::Detection::Phase> contractionRelaxationPhases = V3::Detection::locate_contractions_and_relaxations(passedDoubleVector, events);
+			Utils::writeVectorToFile(contractionRelaxationPhasesPath, contractionRelaxationPhases);
+		}
 
 		wxSTStatus->SetLabel("Status: Saving vector of vectors");
+		std::string eventsPath = cammystatTempPathStr + "\\" + fileName + "\\events" + fileName + ".csv";
 		Utils::writeVectorOfVectorsToFile(eventsPath, events);
 
 		std::string pathToRemove = cammystatTempPathStr + "\\" + fileName;
 
-		if(lineChart || normalizedChart) wxSTStatus->SetLabel("Status: Saving plots");
+		if(lineChart || eventChart) wxSTStatus->SetLabel("Status: Saving plots");
 
 		if (lineChart) {
-			Utils::callPlotExe(plotPath, "video_events", joinPlotVideoEventsFlags(valuesB4XORPath, "", fileName, outputFolderPath.string() + "\\raw_chart", fps, pathToRemove));
+			Utils::callPlotExe(plotPath, "video_events", joinCommandLineArguments(valuesB4XORPath, "", fileName, outputFolderPath.string() + "\\raw_chart", fps));
 		}
 
-		if (normalizedChart) {
-			Utils::callPlotExe(plotPath, "video_events", joinPlotVideoEventsFlags(valuesPath, eventsPath, fileName, normalizedChartsPath, fps, pathToRemove));
+		if (eventChart) {
+			Utils::callPlotExe(plotPath, "video_events", joinCommandLineArguments(valuesPath, eventsPath, fileName, normalizedChartsPath, fps));
+		}
+
+		if (analyseContractionRelaxationEvents) {
+			std::string contractionRelaxationPath = outputFolderPath.string() + "\\contraction_relaxation_chart";
+			Utils::callPlotExe(plotPath, "contraction_relaxation_analysis", joinCommandLineArguments(valuesPath, contractionRelaxationPhasesPath, fileName, contractionRelaxationPath));
+		}
+
+		// clean up the files after analysis
+		if (wxFileName::DirExists(pathToRemove))
+		{
+			RemoveDirectoryRecursively(pathToRemove);
 		}
 
 		wxSTStatus->SetLabel("Status: Finished");
