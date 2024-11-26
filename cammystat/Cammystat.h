@@ -13,8 +13,7 @@
 #include <Eigen/Dense>
 #include "Utils.h"
 
-// Klasa funkcjonujaca jako przestrzen nazw V2 -- implementujaca metody z kodu Pythona w jezyku C++
-class V3
+class Cammystat
 {
 public:
     class ProcessingAbortedException : public std::runtime_error
@@ -52,7 +51,7 @@ public:
             CALCULATING_XOR_SCORES
         };
 
-        using BinarizationThresholdCalcProgressCallback = std::function<void(V3::Preprocessing::BinarizationThresholdCalcProgress, std::optional<double>, std::optional<int>)>;
+        using BinarizationThresholdCalcProgressCallback = std::function<void(Cammystat::Preprocessing::BinarizationThresholdCalcProgress, std::optional<double>, std::optional<int>)>;
 
         // Binarization threshold
         // 
@@ -205,6 +204,6 @@ public:
         static std::vector<std::vector<double>> merge_events(const std::vector<std::vector<double>>& event_list, double distance_threshold);
         static std::vector<std::vector<double>> remove_events(const std::vector<std::vector<double>>& event_list, double threshold_value);
 
-        static std::vector<V3::Detection::Phase> locate_contractions_and_relaxations(const std::vector<double>& values, const std::vector<std::vector<double>>& integrals_results, const std::atomic<bool>& abortFlag);
+        static std::vector<Cammystat::Detection::Phase> locate_contractions_and_relaxations(const std::vector<double>& values, const std::vector<std::vector<double>>& integrals_results, const std::atomic<bool>& abortFlag);
     };
 };

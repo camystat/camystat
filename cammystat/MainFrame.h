@@ -18,7 +18,7 @@
 #include <type_traits>
 
 #include "resource.h"
-#include "V3.h"
+#include "Cammystat.h"
 #include "Utils.h"
 #include "Savgol.h"
 #include "FsUtils.h"

@@ -34,19 +34,19 @@ std::vector<double> Utils::aggregate(const std::string& videoPath, const std::st
 	//V2::Compression::resizeVideo(videoPath, compressedPath, scaleFactor);
 
 	// Create heatmap
-	cv::Mat heatmap = V3::Preprocessing::createHeatmap(videoPath, 0, -1, 4, heatmapPath);
+	cv::Mat heatmap = Cammystat::Preprocessing::createHeatmap(videoPath, 0, -1, 4, heatmapPath);
 
 	std::string imagePath = ""; //mock
 
 	// Find max sum square coordinates
 	double squarePercent = 30.0;  // Example percentage
 	double topPercent = 30.0;  // Example percentage
-	std::vector<std::pair<int, int>> maxSumCoords = V3::Preprocessing::findMaxSumSquareCoordinatesWithPercent(
+	std::vector<std::pair<int, int>> maxSumCoords = Cammystat::Preprocessing::findMaxSumSquareCoordinatesWithPercent(
 		heatmap, squarePercent, topPercent, coordPath, imagePath
 	);
 
 	// Count ones in XOR at coordinates
-	std::vector<double> onesCountOverTime = V3::Preprocessing::countOnesInXorAtCoordinates(videoPath, maxSumCoords, 100, resultPath);
+	std::vector<double> onesCountOverTime = Cammystat::Preprocessing::countOnesInXorAtCoordinates(videoPath, maxSumCoords, 100, resultPath);
 	return onesCountOverTime;
 }
 

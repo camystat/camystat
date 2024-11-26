@@ -21,7 +21,7 @@
     <ClCompile Include="Application.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
-    <ClCompile Include="V3.cpp">
+    <ClCompile Include="Cammystat.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
     <ClCompile Include="Utils.cpp">
@@ -44,7 +44,7 @@
     <ClInclude Include="Application.h">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
-    <ClInclude Include="V3.h">
+    <ClInclude Include="Cammystat.h">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
     <ClInclude Include="Utils.h">
