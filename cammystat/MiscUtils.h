@@ -6,4 +6,5 @@
 
 namespace MiscUtils {
 	std::string GetCurrentDateTime();
+	std::string BoolToStringDebug(bool value);
 }

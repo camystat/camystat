@@ -8,3 +8,7 @@ std::string MiscUtils::GetCurrentDateTime() {
 	ss << std::put_time(std::localtime(&in_time_t), "%Y%m%d_%H%M%S");
 	return ss.str();
 }
+
+std::string MiscUtils::BoolToStringDebug(bool value) {
+	return value ? "yes" : "no";
+}

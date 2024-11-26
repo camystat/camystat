@@ -877,6 +877,11 @@ void MainFrame::RunAnalysis()
 
 	FsUtils::CreateDirectoryWithCheck(outputFolderPath);
 
+	const bool outputCsvStats = wxCBCsvStats->IsChecked();
+	const bool outputCsvRaw = wxCBCsvRaw->IsChecked();
+	const bool outputLineChart = wxCBLineChart->IsChecked();
+	const bool outputEventChart = wxCBEventChart->IsChecked();
+
 	// write out parameters
 	std::cout << std::endl << "---------------------------------------------------------" << std::endl;
 	std::cout << "Program parameters:" << std::endl << std::endl;
@@ -917,13 +922,18 @@ void MainFrame::RunAnalysis()
 
 	if (wxCBAutoDetectEvents->IsChecked()) {
 		std::cout << "Movement threshold: " << movementThreshold << std::endl;
-		std::cout << "Automatically merge events: " << autoMergeEvents << std::endl;
-		std::cout << "Automatically select events: " << autoSelectEvents << std::endl;
-		std::cout << "Analyse contraction-relaxation events: " << analyseContractionRelaxationEvents << std::endl;
+		std::cout << "Automatically merge events: " << autoMergeEvents << " frames" << std::endl;
+		std::cout << "Automatically select events: " << autoSelectEvents << " units" << std::endl;
+		std::cout << "Analyse contraction-relaxation events: " << MiscUtils::BoolToStringDebug(analyseContractionRelaxationEvents) << std::endl;
 	}
 
 	std::cout << "Output path base: " << outputPath << std::endl;
 	std::cout << "Output folder path: " << outputFolderPath << std::endl;
+	std::cout << std::endl;
+	std::cout << "Output - CSV with stats: " << MiscUtils::BoolToStringDebug(outputCsvStats) << std::endl;
+	std::cout << "Output - CSV with raw data: " << MiscUtils::BoolToStringDebug(outputCsvRaw) << std::endl;
+	std::cout << "Output - line chart: " << MiscUtils::BoolToStringDebug(outputLineChart) << std::endl;
+	std::cout << "Output - event chart: " << MiscUtils::BoolToStringDebug(outputEventChart) << std::endl;
 	std::cout << "---------------------------------------------------------" << std::endl << std::endl;
 
 	for (wxString strTemp : directories) {
@@ -953,11 +963,6 @@ void MainFrame::RunAnalysis()
 		wxSTStatusVideo->SetLabel("Video: " + fileName);
 		fs::path outputFolderPath = fs::path(outputPath) / outputFolderName / outputFolderName2;
 
-		bool csvStats = wxCBCsvStats->IsChecked();
-		bool csvRaw = wxCBCsvRaw->IsChecked();
-		bool lineChart = wxCBLineChart->IsChecked();
-		bool eventChart = wxCBEventChart->IsChecked();
-
 		wxSTStatus->SetLabel("Status: Preparing output folders");
 
 		// Create the main output folder
@@ -968,16 +973,16 @@ void MainFrame::RunAnalysis()
 			FsUtils::CreateDirectoryWithCheck(outputFolderPath / "activity_heatmap");
 			FsUtils::CreateDirectoryWithCheck(outputFolderPath / "heatmap_coordinates");
 		}
-		if (csvStats) {
+		if (outputCsvStats) {
 			FsUtils::CreateDirectoryWithCheck(outputFolderPath / "csv_stats");
 		}
-		if (csvRaw) {
+		if (outputCsvRaw) {
 			FsUtils::CreateDirectoryWithCheck(outputFolderPath / "csv_raw");
 		}
-		if (lineChart) {
+		if (outputLineChart) {
 			FsUtils::CreateDirectoryWithCheck(outputFolderPath / "raw_chart");
 		}
-		if (eventChart) {
+		if (outputEventChart) {
 			FsUtils::CreateDirectoryWithCheck(outputFolderPath / "normalized_chart");
 		}
 		if (analyseContractionRelaxationEvents) {
@@ -1328,13 +1333,13 @@ void MainFrame::RunAnalysis()
 
 		std::string pathToRemove = cammystatTempPathStr + "\\" + fileName;
 
-		if(lineChart || eventChart) wxSTStatus->SetLabel("Status: Saving plots");
+		if(outputLineChart || outputEventChart) wxSTStatus->SetLabel("Status: Saving plots");
 
-		if (lineChart) {
+		if (outputLineChart) {
 			Utils::callPlotExe(plotPath, "video_events", JoinCommandLineArguments(valuesB4XORPath, "", fileName, outputFolderPath.string() + "\\raw_chart", fps));
 		}
 
-		if (eventChart) {
+		if (outputEventChart) {
 			Utils::callPlotExe(plotPath, "video_events", JoinCommandLineArguments(valuesPath, eventsPath, fileName, normalizedChartsPath, fps));
 		}
 
