@@ -184,14 +184,18 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
+    <ClCompile Include="FsUtils.cpp" />
     <ClCompile Include="MainFrame.cpp" />
+    <ClCompile Include="MiscUtils.cpp" />
     <ClCompile Include="Savgol.cpp" />
     <ClCompile Include="Utils.cpp" />
     <ClCompile Include="V3.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h" />
+    <ClInclude Include="FsUtils.h" />
     <ClInclude Include="MainFrame.h" />
+    <ClInclude Include="MiscUtils.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Savgol.h" />
     <ClInclude Include="Utils.h" />

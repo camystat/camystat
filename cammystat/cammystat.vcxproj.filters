@@ -30,6 +30,12 @@
     <ClCompile Include="Savgol.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
+    <ClCompile Include="FsUtils.cpp">
+      <Filter>Pliki źródłowe</Filter>
+    </ClCompile>
+    <ClCompile Include="MiscUtils.cpp">
+      <Filter>Pliki źródłowe</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MainFrame.h">
@@ -48,6 +54,12 @@
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
     <ClInclude Include="resource.h">
+      <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
+    <ClInclude Include="FsUtils.h">
+      <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
+    <ClInclude Include="MiscUtils.h">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
   </ItemGroup>
@@ -81,13 +93,7 @@
     <CopyFileToFolders Include="misc\EIGEN_LICENSE.txt">
       <Filter>Pliki zasobów</Filter>
     </CopyFileToFolders>
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="misc\PLOT_EXE_LICENSES.txt">
-      <Filter>Pliki zasobów</Filter>
-    </Text>
-    <Text Include="misc\WXWIDGETS_LICENSE.txt">
-      <Filter>Pliki zasobów</Filter>
-    </Text>
+    <CopyFileToFolders Include="misc\PLOT_EXE_LICENSES.txt" />
+    <CopyFileToFolders Include="misc\WXWIDGETS_LICENSE.txt" />
   </ItemGroup>
 </Project>

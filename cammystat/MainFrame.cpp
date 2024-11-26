@@ -8,98 +8,18 @@
 
 namespace fs = std::filesystem;
 
-void RemoveFilesAndFolder(const fs::path& folderPath) {
-	// Check if the folder exists
-	if (fs::exists(folderPath) && fs::is_directory(folderPath)) {
-		// Iterate over the files in the directory and remove them
-		for (const auto& entry : fs::directory_iterator(folderPath)) {
-			fs::remove(entry);
-		}
-
-		// Remove the folder itself
-		fs::remove(folderPath);
-
-		std::cout << "Folder and its contents have been removed successfully.\n";
-	}
-	else {
-		std::cerr << "The folder does not exist or is not a directory.\n";
-	}
-}
-
-bool RemoveDirectoryRecursively(const wxString& dirPath)
+template <typename... Arguments>
+std::string JoinCommandLineArguments(Arguments... arguments)
 {
-	wxDir dir(dirPath);
-	if (!dir.IsOpened())
-	{
-		return false;
+	std::ostringstream oss;
+	((oss << "\"" << arguments << "\" "), ...); // Fold all arguments using sstream << operator
+
+	std::string result = oss.str();
+	if (!result.empty()) {
+		result.pop_back(); // Trim trailing space
 	}
 
-	wxString filename;
-	bool cont = dir.GetFirst(&filename);
-
-	while (cont)
-	{
-		wxString filePath = dirPath + wxFILE_SEP_PATH + filename;
-
-		if (wxFileName::DirExists(filePath))
-		{
-			if (!RemoveDirectoryRecursively(filePath))
-			{
-				return false;
-			}
-		}
-		else
-		{
-			if (!wxRemoveFile(filePath))
-			{
-				return false;
-			}
-		}
-
-		cont = dir.GetNext(&filename);
-	} 
-
-	return wxFileName::Rmdir(dirPath);
-}
-
-std::wstring StringToWString(const std::string& str) {
-	size_t len = str.length();
-	std::wstring wstr(len, L'\0');
-	std::mbstowcs(&wstr[0], str.c_str(), len);
-	return wstr;
-}
-
-bool FolderExists(const std::wstring& folderPath) {
-	DWORD fileAttributes = GetFileAttributes(folderPath.c_str());
-
-	if (fileAttributes == INVALID_FILE_ATTRIBUTES) {
-		// The folder does not exist if GetFileAttributes returns INVALID_FILE_ATTRIBUTES
-		return false;
-	}
-
-	// Check if the path is a directory
-	return (fileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
-}
-
-std::string getCurrentDateTime() {
-	auto now = std::chrono::system_clock::now();
-	auto in_time_t = std::chrono::system_clock::to_time_t(now);
-
-	std::stringstream ss;
-	ss << std::put_time(std::localtime(&in_time_t), "%Y%m%d_%H%M%S");
-	return ss.str();
-}
-
-void createDirectoryWithCheck(const fs::path& dirPath) {
-	if (fs::create_directory(dirPath)) {
-		std::cout << "Created folder: " << dirPath << std::endl;
-	}
-	else if (fs::exists(dirPath)) {
-		std::cout << "Folder already exists: " << dirPath << std::endl;
-	}
-	else {
-		std::cerr << "Failed to create folder: " << dirPath << std::endl;
-	}
+	return result;
 }
 
 wxDEFINE_EVENT(wxEVT_CREATE_NEW_WINDOW, wxThreadEvent);
@@ -681,20 +601,6 @@ void MainFrame::SetTaskBarIcon()
 	SendMessage(hwnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
 }
 
-template <typename... Arguments>
-std::string joinCommandLineArguments(Arguments... arguments)
-{
-    std::ostringstream oss;
-    ((oss << "\"" << arguments << "\" "), ...); // Fold all arguments using sstream << operator
-
-    std::string result = oss.str();
-    if (!result.empty()) {
-        result.pop_back(); // Trim trailing space
-    }
-
-    return result;
-}
-
 void MainFrame::RunAnalysis()
 {
 	// Place the entire block of calculation code here.
@@ -965,11 +871,11 @@ void MainFrame::RunAnalysis()
 	wxCommandEvent citeMeEvent;
 	OnCiteMe(citeMeEvent);
 
-	std::string dateTime = getCurrentDateTime();
+	std::string dateTime = MiscUtils::GetCurrentDateTime();
 	std::string outputFolderName = "camystat_output_" + dateTime;
 	fs::path outputFolderPath = fs::path(outputPath) / outputFolderName;
 
-	createDirectoryWithCheck(outputFolderPath);
+	FsUtils::CreateDirectoryWithCheck(outputFolderPath);
 
 	// write out parameters
 	std::cout << std::endl << "---------------------------------------------------------" << std::endl;
@@ -1055,30 +961,30 @@ void MainFrame::RunAnalysis()
 		wxSTStatus->SetLabel("Status: Preparing output folders");
 
 		// Create the main output folder
-		createDirectoryWithCheck(outputFolderPath);
+		FsUtils::CreateDirectoryWithCheck(outputFolderPath);
 
 		// Create the subfolders
 		if (isAnyAutomaticAnalysisOptionActive) {
-			createDirectoryWithCheck(outputFolderPath / "activity_heatmap");
-			createDirectoryWithCheck(outputFolderPath / "heatmap_coordinates");
+			FsUtils::CreateDirectoryWithCheck(outputFolderPath / "activity_heatmap");
+			FsUtils::CreateDirectoryWithCheck(outputFolderPath / "heatmap_coordinates");
 		}
 		if (csvStats) {
-			createDirectoryWithCheck(outputFolderPath / "csv_stats");
+			FsUtils::CreateDirectoryWithCheck(outputFolderPath / "csv_stats");
 		}
 		if (csvRaw) {
-			createDirectoryWithCheck(outputFolderPath / "csv_raw");
+			FsUtils::CreateDirectoryWithCheck(outputFolderPath / "csv_raw");
 		}
 		if (lineChart) {
-			createDirectoryWithCheck(outputFolderPath / "raw_chart");
+			FsUtils::CreateDirectoryWithCheck(outputFolderPath / "raw_chart");
 		}
 		if (eventChart) {
-			createDirectoryWithCheck(outputFolderPath / "normalized_chart");
+			FsUtils::CreateDirectoryWithCheck(outputFolderPath / "normalized_chart");
 		}
 		if (analyseContractionRelaxationEvents) {
-			createDirectoryWithCheck(outputFolderPath / "contraction_relaxation_chart");
+			FsUtils::CreateDirectoryWithCheck(outputFolderPath / "contraction_relaxation_chart");
 		}
 		if (wxCBAutomaticBinarizationThreshold->IsChecked()) {
-			createDirectoryWithCheck(outputFolderPath / "auto_binarization_threshold");
+			FsUtils::CreateDirectoryWithCheck(outputFolderPath / "auto_binarization_threshold");
 		}
 
 		wxSTStatus->SetLabel("Status: Reading current path");
@@ -1113,12 +1019,12 @@ void MainFrame::RunAnalysis()
 			wxSTStatus->SetLabel("Status: Detected appdata folder");
 		}
 
-		std::wstring cammystatTempPathWstr = StringToWString(tempPathStr + "Cammystat");
+		std::wstring cammystatTempPathWstr = FsUtils::StringToWString(tempPathStr + "Cammystat");
 		{
 			wxSTStatus->SetLabel("Status: Cammystat folder located");
 		}
-		if (!FolderExists(cammystatTempPathWstr)) {
-			createDirectoryWithCheck(cammystatTempPathWstr);
+		if (!FsUtils::FolderExists(cammystatTempPathWstr)) {
+			FsUtils::CreateDirectoryWithCheck(cammystatTempPathWstr);
 			wxSTStatus->SetLabel("Status: Cammystat appdata folder has been created");
 		}
 
@@ -1126,16 +1032,10 @@ void MainFrame::RunAnalysis()
 
 		std::string heatmapPath = outputFolderPath.string() + "\\activity_heatmap\\" + fileName + ".png";
 
-		if (FolderExists(cammystatTempPathWstr)) {
+		if (FsUtils::FolderExists(cammystatTempPathWstr)) {
 			std::string tempPath2 = cammystatTempPathStr + "\\" + fileName;
-			createDirectoryWithCheck(tempPath2);
+			FsUtils::CreateDirectoryWithCheck(tempPath2);
 		}
-
-		//wxString number = wxSTFileList->GetValue();
-		//double scaleFactor = 2.0; //assumed
-		//if (!number.ToDouble(&scaleFactor)) { /* error! */ }
-
-		//V3::Compression::resizeVideo(inputPath, outputPath, scaleFactor);
 
 		wxSTStatus->SetLabel("Status: Reading form's parameters...");
 
@@ -1431,22 +1331,22 @@ void MainFrame::RunAnalysis()
 		if(lineChart || eventChart) wxSTStatus->SetLabel("Status: Saving plots");
 
 		if (lineChart) {
-			Utils::callPlotExe(plotPath, "video_events", joinCommandLineArguments(valuesB4XORPath, "", fileName, outputFolderPath.string() + "\\raw_chart", fps));
+			Utils::callPlotExe(plotPath, "video_events", JoinCommandLineArguments(valuesB4XORPath, "", fileName, outputFolderPath.string() + "\\raw_chart", fps));
 		}
 
 		if (eventChart) {
-			Utils::callPlotExe(plotPath, "video_events", joinCommandLineArguments(valuesPath, eventsPath, fileName, normalizedChartsPath, fps));
+			Utils::callPlotExe(plotPath, "video_events", JoinCommandLineArguments(valuesPath, eventsPath, fileName, normalizedChartsPath, fps));
 		}
 
 		if (analyseContractionRelaxationEvents) {
 			std::string contractionRelaxationPath = outputFolderPath.string() + "\\contraction_relaxation_chart";
-			Utils::callPlotExe(plotPath, "contraction_relaxation_analysis", joinCommandLineArguments(valuesPath, contractionRelaxationPhasesPath, fileName, contractionRelaxationPath));
+			Utils::callPlotExe(plotPath, "contraction_relaxation_analysis", JoinCommandLineArguments(valuesPath, contractionRelaxationPhasesPath, fileName, contractionRelaxationPath));
 		}
 
 		// clean up the files after analysis
 		if (wxFileName::DirExists(pathToRemove))
 		{
-			RemoveDirectoryRecursively(pathToRemove);
+			FsUtils::RemoveDirectoryRecursively(pathToRemove);
 		}
 
 		wxSTStatus->SetLabel("Status: Finished");
@@ -1522,13 +1422,10 @@ void MainFrame::OnKillFocus(wxFocusEvent& event) {
 	if (textCtrl) {
 		wxString value = textCtrl->GetValue();
 
-		//if (textCtrl == m_numberInput || textCtrl == m_decimalInput) {
-			// Prevent leading zeros (e.g., 00 or 000)
 		if (value.StartsWith("0") && value.Length() > 1 && value[1] != '.') {
 			value.Trim(false);  // Remove leading zeroes
 			textCtrl->SetValue(value);
 		}
-		//}
 	}
 	event.Skip();  // Make sure other event handlers still get this event
 }
@@ -1626,7 +1523,7 @@ void MainFrame::OnClose(wxCloseEvent& event)
 
 	if (wxFileName::DirExists(pathToRemove))
 	{
-		RemoveDirectoryRecursively(pathToRemove);
+		FsUtils::RemoveDirectoryRecursively(pathToRemove);
 	}
 
 	event.Skip();

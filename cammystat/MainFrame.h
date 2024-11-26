@@ -1,35 +1,28 @@
 #pragma once
 #include <wx/wx.h>
 #include "wx/setup.h"
-#include <wx/filesys.h>
 #include <wx/wfstream.h>
-#include <wx/zipstrm.h>
-#include <wx/dir.h>
 #include <wx/app.h>
 #include <wx/stdpaths.h>
-#include <wx/listctrl.h>
-#include <wx/gbsizer.h>
-#include <wx/progdlg.h>
 
-#include <shlobj.h>
-#include <filesystem>
-#include <chrono>
-#include <iomanip>
-#include <cmath>
-#include <locale>
-#include <codecvt>
-#include <tchar.h>
-
-#include <type_traits>
 #include <vector>
 #include <map>
 #include <string>
 #include <sstream>
+#include <shlobj.h>
+#include <filesystem>
+#include <cmath>
+#include <locale>
+#include <codecvt>
+#include <tchar.h>
+#include <type_traits>
 
 #include "resource.h"
 #include "V3.h"
 #include "Utils.h"
 #include "Savgol.h"
+#include "FsUtils.h"
+#include "MiscUtils.h"
 
 #define STRING_STATUS_WAITING_FOR_INPUT "Status: Waiting for input"
 #define MAIN_WINDOW_WIDTH 640
