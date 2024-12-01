@@ -1602,7 +1602,10 @@ void MainFrame::OpenLicensesFolder(wxCommandEvent& WXUNUSED(event)) {
 
 	wxString exeDirPath = exeFilePath.GetPath();
 
-	wxString command = wxString::Format("explorer \"%s\"", exeDirPath);
+	wxString command = wxString::Format("explorer \"%s\\licenses\"", exeDirPath);
+
+	std::cout << "Opening licenses folder: " << command << std::endl;
+
 	system(command.c_str());
 }
 

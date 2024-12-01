@@ -397,7 +397,7 @@ FodyWeavers.xsd
 # JetBrains Rider
 *.sln.iml
 
-# GUI
+# cammystat
 cammystat/sandbox
 cammystat/include/wxWidgets
 cammystat/include/eigen
@@ -405,3 +405,4 @@ cammystat/include/opencv2
 cammystat/lib/opencv2
 cammystat/command.txt
 cammystat/plot.exe
+/opencv

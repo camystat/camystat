@@ -205,6 +205,12 @@
     <ResourceCompile Include="icon.rc" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="misc\licenses\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>licenses\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
     <CopyFileToFolders Include="citeme.txt" />
   </ItemGroup>
   <ItemGroup>
@@ -216,10 +222,6 @@
     </CopyFileToFolders>
   </ItemGroup>
   <ItemGroup>
-    <CopyFileToFolders Include="lib\opencv2\OPENCV_LICENSE.txt" />
-    <CopyFileToFolders Include="lib\opencv2\OPENCV_LICENSE_FFMPEG.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <CopyFileToFolders Include="lib\opencv2\opencv_world4100.dll">
       <FileType>Document</FileType>
     </CopyFileToFolders>
@@ -228,11 +230,6 @@
     <CopyFileToFolders Include="lib\opencv2\opencv_videoio_ffmpeg4100_64.dll">
       <FileType>Document</FileType>
     </CopyFileToFolders>
-  </ItemGroup>
-  <ItemGroup>
-    <CopyFileToFolders Include="misc\EIGEN_LICENSE.txt" />
-    <CopyFileToFolders Include="misc\PLOT_EXE_LICENSES.txt" />
-    <CopyFileToFolders Include="misc\WXWIDGETS_LICENSE.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

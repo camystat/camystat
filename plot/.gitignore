@@ -2,3 +2,5 @@ build
 dist
 plot.spec
 THIRDPARTYLICENSES
+venv
+PLOT_EXE_LICENSES.txt

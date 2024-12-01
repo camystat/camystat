@@ -7,26 +7,33 @@ cmd /c 'mklink /J wxWidgets "../../wxWidgets/include"'
 cmd /c 'mklink /J eigen "../../eigen"'
 cd ../..
 
+# prepare licenses output directory
+$licensesDirectory = "cammystat/misc/licenses"
+if(!(test-path -PathType container $licensesDirectory)) {
+  New-Item -ItemType Directory -Path $licensesDirectory -Force | Out-Null
+}
+
 # prepare opencv
-Write-Host "Downloading & extracting OpenCV binaries for development (this may take a while)..."
-$wc = New-Object net.webclient
-$wc.Downloadfile("https://github.com/opencv/opencv/releases/download/4.10.0/opencv-4.10.0-windows.exe", "opencv.exe")
+If(!(test-path -PathType container ./opencv)) {
+  Write-Host "Downloading & extracting OpenCV binaries for development (this may take a while)..."
+  $wc = New-Object net.webclient
+  $wc.Downloadfile("https://github.com/opencv/opencv/releases/download/4.10.0/opencv-4.10.0-windows.exe", "opencv.exe")
 
-.\opencv.exe -o"./opencv-tmp" -y | Out-Null
-Copy-Item -Path opencv-tmp/opencv/build/include/opencv2 -Destination cammystat/include/opencv2/opencv2 -Recurse -Force
+  .\opencv.exe -o"./opencv" -y | Out-Null
+  Remove-Item -Path opencv.exe
+}
+
+Write-Host "Copying OpenCV files..."
+Copy-Item -Path opencv/opencv/build/include/opencv2 -Destination cammystat/include/opencv2/opencv2 -Recurse -Force
 New-Item -ItemType Directory -Path cammystat/lib/opencv2 -Force | Out-Null
-Copy-Item -Path opencv-tmp/opencv/build/x64/vc16/lib/* -Destination cammystat/lib/opencv2 -Recurse -Force
-Copy-Item -Path opencv-tmp/opencv/build/bin/opencv_videoio_ffmpeg4100_64.dll -Destination cammystat/lib/opencv2/opencv_videoio_ffmpeg4100_64.dll -Recurse -Force
-Copy-Item -Path opencv-tmp/opencv/build/x64/vc16/bin/opencv_world4100.dll -Destination cammystat/lib/opencv2/opencv_world4100.dll -Recurse -Force
-Copy-Item -Path opencv-tmp/opencv/build/x64/vc16/bin/opencv_world4100.pdb -Destination cammystat/lib/opencv2/opencv_world4100.pdb -Recurse -Force
+Copy-Item -Path opencv/opencv/build/x64/vc16/lib/* -Destination cammystat/lib/opencv2 -Recurse -Force
+Copy-Item -Path opencv/opencv/build/bin/opencv_videoio_ffmpeg4100_64.dll -Destination cammystat/lib/opencv2/opencv_videoio_ffmpeg4100_64.dll -Recurse -Force
+Copy-Item -Path opencv/opencv/build/x64/vc16/bin/opencv_world4100.dll -Destination cammystat/lib/opencv2/opencv_world4100.dll -Recurse -Force
+Copy-Item -Path opencv/opencv/build/x64/vc16/bin/opencv_world4100.pdb -Destination cammystat/lib/opencv2/opencv_world4100.pdb -Recurse -Force
 
-Copy-Item -Path opencv-tmp/opencv/LICENSE* -Destination cammystat/lib/opencv2 -Recurse -Force
-Copy-Item -Path opencv-tmp/opencv/LICENSE.txt -Destination cammystat/lib/opencv2/OPENCV_LICENSE.txt -Recurse -Force
-Copy-Item -Path opencv-tmp/opencv/LICENSE_FFMPEG.txt -Destination cammystat/lib/opencv2/OPENCV_LICENSE_FFMPEG.txt -Recurse -Force
-Copy-Item -Path opencv-tmp/opencv/LICENSE* -Destination cammystat/include/opencv2/opencv2 -Recurse -Force
-
-Remove-Item -Path opencv-tmp -Recurse -Force
-Remove-Item -Path opencv.exe
+Copy-Item -Path opencv/opencv/LICENSE.txt -Destination cammystat/misc/licenses/OPENCV_LICENSE.txt -Recurse -Force
+Copy-Item -Path opencv/opencv/LICENSE_FFMPEG.txt -Destination cammystat/misc/licenses/OPENCV_LICENSE_FFMPEG.txt -Recurse -Force
+Copy-Item -Path opencv/opencv/build/etc/licenses/* -Destination cammystat/misc/licenses -Recurse -Force
 
 # copy eigen license files
 $directory = "eigen/"
@@ -44,44 +51,7 @@ foreach ($file in $files) {
 
 # download wxWidgets license
 $wc = New-Object net.webclient
-$wc.Downloadfile("https://raw.githubusercontent.com/wxWidgets/wxWidgets/master/docs/licence.txt", "cammystat/misc/WXWIDGETS_LICENSE.txt")
-
-# compile licenses of plot dependencies
-cd plot
-
-& pip install third-party-license-file-generator
-
-$pythonPath = (Get-Command python).Source
-
-& python -m third_party_license_file_generator -r requirements.txt -p $pythonPath
-
-$outputFile = "../cammystat/misc/PLOT_EXE_LICENSES.txt"
-
-Set-Content -Path $outputFile -Value ""
-
-Copy-Item -Path THIRDPARTYLICENSES -Destination $outputFile -Force
-
-foreach ($filename in @(
-  "LICENSE",
-  "LICENSE_AMSFONTS",
-  "LICENSE_BAKOMA",
-  "LICENSE_CARLOGO",
-  "LICENSE_COLORBREWER",
-  "LICENSE_COURIERTEN",
-  "LICENSE_JSXTOOLS_RESIZE_OBSERVER",
-  "LICENSE_QT4_EDITOR",
-  "LICENSE_SOLARIZED",
-  "LICENSE_STIX",
-  "LICENSE_YORICK"
-)) {
-    $response = Invoke-WebRequest -Uri "https://raw.githubusercontent.com/matplotlib/matplotlib/refs/heads/main/LICENSE/$filename"
-
-    Add-Content -Path $outputFile -Value "`n====== matplotlib/LICENSE/$filename ======`n"
-    $response.Content | Add-Content -Path $outputFile
-    Add-Content -Path $outputFile -Value "`n=============`n"
-}
-
-cd ..
+$wc.Downloadfile("https://raw.githubusercontent.com/wxWidgets/wxWidgets/master/docs/licence.txt", "cammystat/misc/licenses/WXWIDGETS_LICENSE.txt")
 
 # build wxWidgets
 $VSWPath = "${Env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe"
@@ -115,11 +85,48 @@ Write-Host "Copying wxWidgets lib files..."
 Copy-Item -Path lib/vc_x64_lib/* -Destination ../cammystat/lib/wxwidgets-MT -Force
 cd ..
 
+Write-Host "Activating python venv..."
+cd plot
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+
 Write-Host "Installing pyinstaller & build dependencies with pip..."
 pip install -U pyinstaller plotly numpy matplotlib
 
+# compile licenses of plot dependencies
+& pip install third-party-license-file-generator
+
+$pythonPath = (Get-Command python).Source
+
+& python -m third_party_license_file_generator -r requirements.txt -p $pythonPath
+
+$outputFile = "../cammystat/misc/licenses/PLOT_EXE_LICENSES.txt"
+
+Set-Content -Path $outputFile -Value ""
+
+Copy-Item -Path THIRDPARTYLICENSES -Destination $outputFile -Force
+
+foreach ($filename in @(
+  "LICENSE",
+  "LICENSE_AMSFONTS",
+  "LICENSE_BAKOMA",
+  "LICENSE_CARLOGO",
+  "LICENSE_COLORBREWER",
+  "LICENSE_COURIERTEN",
+  "LICENSE_JSXTOOLS_RESIZE_OBSERVER",
+  "LICENSE_QT4_EDITOR",
+  "LICENSE_SOLARIZED",
+  "LICENSE_STIX",
+  "LICENSE_YORICK"
+)) {
+    $response = Invoke-WebRequest -Uri "https://raw.githubusercontent.com/matplotlib/matplotlib/refs/heads/main/LICENSE/$filename"
+
+    Add-Content -Path $outputFile -Value "`n====== matplotlib/LICENSE/$filename ======`n"
+    $response.Content | Add-Content -Path $outputFile
+    Add-Content -Path $outputFile -Value "`n=============`n"
+}
+
 Write-Host "Building plot.exe (this may take a while)..."
-cd plot
 pyinstaller --onefile plot.py
 cd dist
 Copy-Item -Path plot.exe -Destination ../../cammystat/plot.exe -Force

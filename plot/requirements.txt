@@ -1,2 +1,2 @@
-plotly
-matplotlib
+plotly==5.24.1
+matplotlib==3.9.3
