@@ -1324,7 +1324,7 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 			wxSTStatus->SetLabel("Status: Filtering (Savgol)");
 			try
 			{
-				passedDoubleVector = Savgol::savgol_filter(passedDoubleVector, savitzkyGolayWindowLength, polyorder);
+				passedDoubleVector = Savgol::savgolFilter(passedDoubleVector, savitzkyGolayWindowLength, polyorder);
 			}
 			catch (const Cammystat::ProcessingAbortedException& e) {
 				internalCleanup();

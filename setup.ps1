@@ -37,7 +37,7 @@ Copy-Item -Path opencv/opencv/build/etc/licenses/* -Destination cammystat/misc/l
 
 # copy eigen license files
 $directory = "eigen/"
-$outputFile = "cammystat/misc/EIGEN_LICENSE.txt"
+$outputFile = "cammystat/misc/licenses/EIGEN_LICENSE.txt"
 
 $files = Get-ChildItem -Path $directory -Filter "COPYING.*" -File | Where-Object { $_.Name -ne "COPYING.README" }
 
