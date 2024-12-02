@@ -185,6 +185,7 @@
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
     <ClCompile Include="FsUtils.cpp" />
+    <ClCompile Include="IterativeReportWriter.cpp" />
     <ClCompile Include="MainFrame.cpp" />
     <ClCompile Include="MiscUtils.cpp" />
     <ClCompile Include="Savgol.cpp" />
@@ -194,6 +195,7 @@
   <ItemGroup>
     <ClInclude Include="Application.h" />
     <ClInclude Include="FsUtils.h" />
+    <ClInclude Include="IterativeReportWriter.h" />
     <ClInclude Include="MainFrame.h" />
     <ClInclude Include="MiscUtils.h" />
     <ClInclude Include="resource.h" />

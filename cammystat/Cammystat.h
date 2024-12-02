@@ -13,9 +13,8 @@
 #include <Eigen/Dense>
 #include "Utils.h"
 
-class Cammystat
+namespace Cammystat
 {
-public:
     class ProcessingAbortedException : public std::runtime_error
     {
     public:
@@ -147,23 +146,29 @@ public:
     public:
         class Phase {
         public:
+            enum PhaseType
+            {
+                CONTRACTION,
+                RELAXATION
+            };
+
             /// <summary>
             /// Represents a phase of a contraction or relaxation event.
-            /// "contraction" or "relaxation"
+            /// Corresponds to "contraction" or "relaxation".
             /// </summary>
-            std::string phase_type;
+            PhaseType phase_type;
             int phase_number;
             double phase_value;
             int start_index;
             int end_index;
 
-            Phase(std::string phase_type, int phase_number, double phase_value, int start_index, int end_index) :
+            Phase(PhaseType phase_type, int phase_number, double phase_value, int start_index, int end_index) :
                 phase_type(phase_type), phase_number(phase_number), phase_value(phase_value), start_index(start_index), end_index(end_index) {}
 
             std::string to_string() const {
                 std::ostringstream oss;
 
-                oss << phase_type << "," << phase_number << "," << phase_value << "," << start_index << "," << end_index;
+                oss << (phase_type == PhaseType::CONTRACTION ? "contraction" : "relaxation") << "," << phase_number << "," << phase_value << "," << start_index << "," << end_index;
                 return oss.str();
             }
 

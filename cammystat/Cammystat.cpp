@@ -876,8 +876,8 @@ std::vector<Cammystat::Detection::Phase> Cammystat::Detection::locate_contractio
 		double relaxation_value = trapezoidal_integral(relaxation_segment);
 
 		// Append results
-		results.push_back({ "contraction", static_cast<int>(results.size()) + 1, contraction_value, start_index, min_index_absolute });
-		results.push_back({ "relaxation", static_cast<int>(results.size()) + 1, relaxation_value, min_index_absolute, end_index });
+		results.push_back({ Cammystat::Detection::Phase::PhaseType::CONTRACTION, static_cast<int>(results.size()) + 1, contraction_value, start_index, min_index_absolute });
+		results.push_back({ Cammystat::Detection::Phase::PhaseType::RELAXATION, static_cast<int>(results.size()) + 1, relaxation_value, min_index_absolute, end_index });
 	}
 
 	return results;

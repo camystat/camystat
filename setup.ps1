@@ -2,10 +2,10 @@ Write-Host "Pulling submodules..."
 git submodule update --init
 
 Write-Host "Creating symlinks..."
-cd cammystat/include
+Set-Location cammystat/include
 cmd /c 'mklink /J wxWidgets "../../wxWidgets/include"'
 cmd /c 'mklink /J eigen "../../eigen"'
-cd ../..
+Set-Location ../..
 
 # prepare licenses output directory
 $licensesDirectory = "cammystat/misc/licenses"
@@ -65,7 +65,7 @@ if ($installationPath -and (test-path "$installationPath\Common7\Tools\vsdevcmd.
 }
 
 Write-Host "Building wxWidgets (this may take a while)..."
-cd wxWidgets/build/msw
+Set-Location wxWidgets/build/msw
 git submodule update --init
 # set CL=/MP
 # nmake.exe -f makefile.vc SHARED=0 BUILD=release RUNTIME_LIBS=static TARGET_CPU=X64 # CFG=-mt TARGET_CPU=X64
@@ -80,13 +80,13 @@ foreach ($file in $vcxprojFiles) {
 
 msbuild wx_vc17.sln /p:Configuration=Release /property:MultiProcessorCompilation=true /p:Platform=x64
 
-cd ../..
+Set-Location ../..
 Write-Host "Copying wxWidgets lib files..."
 Copy-Item -Path lib/vc_x64_lib/* -Destination ../cammystat/lib/wxwidgets-MT -Force
-cd ..
+Set-Location ..
 
 Write-Host "Activating python venv..."
-cd plot
+Set-Location plot
 python -m venv venv
 .\venv\Scripts\Activate.ps1
 
@@ -128,8 +128,8 @@ foreach ($filename in @(
 
 Write-Host "Building plot.exe (this may take a while)..."
 pyinstaller --onefile plot.py
-cd dist
+Set-Location dist
 Copy-Item -Path plot.exe -Destination ../../cammystat/plot.exe -Force
-cd ../..
+Set-Location ../..
 
 Write-Host "Done"

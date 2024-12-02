@@ -1006,6 +1006,8 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 	std::cout << "Output - event chart: " << MiscUtils::BoolToStringDebug(outputEventChart) << std::endl;
 	std::cout << "---------------------------------------------------------" << std::endl << std::endl;
 
+	Cammystat::IterativeReportWriter reportWriter((outputFolderPath / "report.csv").string(), analyseContractionRelaxationEvents);
+
 	for (wxString strTemp : directories) {
 		if (stopAnalysisThreadFlag) return MainFrame::AnalysisResult::ABORTED;
 
@@ -1023,6 +1025,13 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 		wxSTStatus->SetLabel("Status: Initializing...");
 
 		std::string fileName = pathObj.stem().string();
+
+		reportWriter.rowBuffer.videoName = fileName;
+		{
+			cv::VideoCapture cap(inputPath);
+			reportWriter.rowBuffer.videoDurationSeconds = cap.get(cv::CAP_PROP_FRAME_COUNT) / static_cast<double>(fps);
+			cap.release();
+		}
 
 		strTemp = wxCTOutputPath->GetValue();
 		std::string outputPath = std::string(strTemp.mb_str());
@@ -1451,6 +1460,32 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 			dialog.ShowModal();
 		}
 #endif
+
+		reportWriter.rowBuffer.eventsDetected = events.size();
+		{
+			double avgEventLengthFrames = 0, avgRestLengthFrames = 0;
+			std::optional<int> lastEventEndFrame = std::nullopt;
+			int restsCount = 0;
+			for (const auto &event : events)
+			{
+				avgEventLengthFrames += event[3] - event[2] + 1;
+
+				if (lastEventEndFrame.has_value()) {
+					avgRestLengthFrames += event[2] - lastEventEndFrame.value() - 1; // exclusive on both ends, thus diff + 1 - 2 = diff - 1
+					restsCount++;
+				}
+
+				lastEventEndFrame = event[3];
+			}
+			avgEventLengthFrames /= static_cast<double>(std::max(static_cast<int>(events.size()), 1));
+			avgRestLengthFrames /= static_cast<double>(std::max(restsCount, 1));
+			
+			double avgEventLengthSeconds = avgEventLengthFrames / static_cast<double>(fps);
+			reportWriter.rowBuffer.avgEventDurationSeconds = avgEventLengthSeconds;
+
+			double avgRestLengthSeconds = avgRestLengthFrames / static_cast<double>(fps);
+			reportWriter.rowBuffer.avgRestDurationSeconds = avgRestLengthSeconds;
+		}
 		
 		std::string contractionRelaxationPhasesPath = cammystatTempPathStr + "\\" + fileName + "\\contractionRelaxationPhases" + fileName + ".csv";
 		
@@ -1460,6 +1495,33 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 			{
 				std::vector<Cammystat::Detection::Phase> contractionRelaxationPhases = Cammystat::Detection::locate_contractions_and_relaxations(passedDoubleVector, events, stopAnalysisThreadFlag);
 				Utils::writeVectorToFile(contractionRelaxationPhasesPath, contractionRelaxationPhases);
+
+				double avgContractionDurationFrames = 0, avgRelaxationDurationFrames = 0;
+				int contractionCount = 0, relaxationCount = 0;
+				for (const auto& phase : contractionRelaxationPhases) {
+					int lenFrames = phase.end_index - phase.start_index + 1;
+
+					if (phase.phase_type == Cammystat::Detection::Phase::PhaseType::CONTRACTION) {
+						avgContractionDurationFrames += lenFrames;
+						contractionCount++;
+					}
+					else {
+						avgRelaxationDurationFrames += lenFrames;
+						relaxationCount++;
+					}
+
+					avgContractionDurationFrames /= static_cast<double>(std::max(contractionCount, 1));
+					avgRelaxationDurationFrames /= static_cast<double>(std::max(relaxationCount, 1));
+
+					double avgContractionDurationSeconds = avgContractionDurationFrames / static_cast<double>(fps);
+					double avgRelaxationDurationSeconds = avgRelaxationDurationFrames / static_cast<double>(fps);
+
+					reportWriter.rowBuffer.avgContractionDurationSeconds = avgContractionDurationSeconds;
+					reportWriter.rowBuffer.avgRelaxationDurationSeconds = avgRelaxationDurationSeconds;
+				}
+
+				assert(contractionCount == relaxationCount);
+				reportWriter.rowBuffer.approvedEventsForContrRelaxAnalysis = contractionCount;
 			}
 			catch (const Cammystat::ProcessingAbortedException& e) {
 				internalCleanup();
@@ -1496,6 +1558,7 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 			Utils::callPlotExe(plotPath, "contraction_relaxation_analysis", JoinCommandLineArguments(valuesPath, contractionRelaxationPhasesPath, fileName, contractionRelaxationPath));
 		}
 
+		reportWriter.finalizeRow();
 		wxSTStatus->SetLabel("Status: Finished");
 	}
 

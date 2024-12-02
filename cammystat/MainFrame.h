@@ -23,6 +23,7 @@
 #include "Savgol.h"
 #include "FsUtils.h"
 #include "MiscUtils.h"
+#include "IterativeReportWriter.h"
 
 #define STRING_STATUS_WAITING_FOR_INPUT "Status: Waiting for input"
 #define MAIN_WINDOW_WIDTH 640
