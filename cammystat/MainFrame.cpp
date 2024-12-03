@@ -13,7 +13,22 @@ template <typename... Arguments>
 std::string JoinCommandLineArguments(Arguments... arguments)
 {
 	std::ostringstream oss;
-	((oss << "\"" << arguments << "\" "), ...); // Fold all arguments using sstream << operator
+
+	// lambda for conditional streaming - std::filesystem::path's operator<< already surrounds its value with "",
+	// thus there's no need to do so manually
+	auto append_argument = [&oss](const auto& arg) {
+		if constexpr (std::is_same_v<std::decay_t<decltype(arg)>, std::filesystem::path>) {
+			// no extra quotes for std::filesystem::path
+			oss << arg;
+		} else {
+			// quotes for other arguments
+			oss << "\"" << arg << "\"";
+		}
+
+		oss << " "; // space separator
+	};
+
+	(append_argument(arguments), ...);
 
 	std::string result = oss.str();
 	if (!result.empty()) {
@@ -97,16 +112,16 @@ void MainFrame::syncAutomaticRecognitionAnalysisFieldStates() {
 std::string MainFrame::getAnalysisResultLabel(const AnalysisResult& result) {
 	switch (result) {
 	case MainFrame::AnalysisResult::FINISHED:
-		return "completed";
+		return "Processing completed";
 
 	case MainFrame::AnalysisResult::ABORTED:
-		return "aborted";
+		return "Processing aborted";
 
 	case MainFrame::AnalysisResult::INVALID_PARAMETERS:
-		return "invalid parameters";
+		return "Invalid parameters";
 
 	case MainFrame::AnalysisResult::FAILED:
-		return "failed";
+		return "Processing failed";
 
 	default:
 		return "unknown";
@@ -614,9 +629,25 @@ void MainFrame::UpdateUI(const std::optional<const MainFrame::AnalysisResult>& a
 
 	if (analysisResult.has_value())
 	{
-		std::string label = "Status: Processing "s + getAnalysisResultLabel(analysisResult.value()) + "!";
+		bool failed = analysisResult.value() == AnalysisResult::FAILED;
+		std::string status = getAnalysisResultLabel(analysisResult.value());
+
+		std::string label = "Status: "s + status + "!";
 		wxSTStatus->SetLabel(label);
 		wxSTStatusDisplayed->SetLabel(label);
+
+		std::string dialogMessage = status;
+
+		if (failed) {
+			dialogMessage += "\n\nPlease see the logs (main window bar -> Debug console -> Show debug console) for more information.";
+		}
+
+		wxMessageDialog dialog(NULL, dialogMessage, "Processing result", wxOK | wxCENTER | wxDIALOG_NO_PARENT | (analysisResult.value() == AnalysisResult::FINISHED ? wxICON_INFORMATION : wxICON_ERROR));
+		dialog.ShowModal();
+
+		if (failed) {
+			ShowConsole();
+		}
 	}
 }
 
@@ -938,12 +969,9 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 	processingRunning = true;
 	UpdateUI();
 
-	wxCommandEvent citeMeEvent;
-	OnCiteMe(citeMeEvent);
-
 	std::string dateTime = MiscUtils::GetCurrentDateTime();
-	std::string outputFolderName = "camystat_output_" + dateTime;
-	fs::path outputFolderPath = fs::path(outputPath) / outputFolderName;
+	std::string thisRunFolderName = "camystat_output_" + dateTime;
+	fs::path outputFolderPath = fs::path(outputPath) / thisRunFolderName;
 
 	FsUtils::CreateDirectoryWithCheck(outputFolderPath);
 
@@ -955,7 +983,7 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 	// write out parameters
 	std::cout << std::endl << "---------------------------------------------------------" << std::endl;
 	std::cout << "Program parameters:" << std::endl << std::endl;
-	std::cout << "Auto binarization threshold: " << (wxCBAutomaticBinarizationThreshold->IsChecked() ? "true" : "false") << std::endl;
+	std::cout << "Auto binarization threshold: " << MiscUtils::BoolToStringDebug(wxCBAutomaticBinarizationThreshold->IsChecked()) << std::endl;
 	
 	if (isAnyAutomaticAnalysisOptionActive) {
 		std::cout << "Focus field square percent: " << squarePercent << "%" << std::endl;
@@ -1006,12 +1034,13 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 	std::cout << "Output - event chart: " << MiscUtils::BoolToStringDebug(outputEventChart) << std::endl;
 	std::cout << "---------------------------------------------------------" << std::endl << std::endl;
 
-	Cammystat::IterativeReportWriter reportWriter((outputFolderPath / "report.csv").string(), analyseContractionRelaxationEvents);
+	wxCommandEvent citeMeEvent;
+	OnCiteMe(citeMeEvent);
 
-	for (wxString strTemp : directories) {
+	for (wxString directory : directories) {
 		if (stopAnalysisThreadFlag) return MainFrame::AnalysisResult::ABORTED;
 
-		std::string inputPath = std::string(strTemp.mb_str());
+		std::string inputPath = std::string(directory.mb_str());
 
 		if (inputPath == "") {
 			wxSTStatus->SetLabel("Status: List of files .mov shouldn't be empty.");
@@ -1026,6 +1055,27 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 
 		std::string fileName = pathObj.stem().string();
 
+		std::string outputPath = std::string(wxCTOutputPath->GetValue().mb_str());
+
+		if (!fs::exists(outputPath)) {
+			return MainFrame::AnalysisResult::FAILED;
+		}
+
+		std::string thisFileFolderName = "camystat_output_" + fileName;
+		wxSTStatusVideo->SetLabel("Video: " + fileName);
+		fs::path outputFolderPath = fs::path(outputPath) / thisRunFolderName / thisFileFolderName;
+
+		// Create the main output folder
+		FsUtils::CreateDirectoryWithCheck(outputFolderPath);
+
+		std::filesystem::path reportOutputPath = outputFolderPath / "report.csv";
+		Cammystat::IterativeReportWriter reportWriter(reportOutputPath, analyseContractionRelaxationEvents);
+
+		if (!reportWriter.isOpen()) {
+			std::cerr << "Error: IterativeReportWriter could not open file " << reportOutputPath << " for writing!" << std::endl;
+			return MainFrame::AnalysisResult::FAILED;
+		}
+
 		reportWriter.rowBuffer.videoName = fileName;
 		{
 			cv::VideoCapture cap(inputPath);
@@ -1033,21 +1083,7 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 			cap.release();
 		}
 
-		strTemp = wxCTOutputPath->GetValue();
-		std::string outputPath = std::string(strTemp.mb_str());
-
-		if (!fs::exists(outputPath)) {
-			return MainFrame::AnalysisResult::FAILED;
-		}
-
-		std::string outputFolderName2 = "camystat_output_" + fileName;
-		wxSTStatusVideo->SetLabel("Video: " + fileName);
-		fs::path outputFolderPath = fs::path(outputPath) / outputFolderName / outputFolderName2;
-
 		wxSTStatus->SetLabel("Status: Preparing output folders");
-
-		// Create the main output folder
-		FsUtils::CreateDirectoryWithCheck(outputFolderPath);
 
 		// Create the subfolders
 		if (isAnyAutomaticAnalysisOptionActive) {
@@ -1089,42 +1125,34 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 		}
 #endif
 
-		TCHAR tempPath[MAX_PATH];
+		TCHAR appdataPathBuffer[MAX_PATH];
 
-		if (GetTempPath(MAX_PATH, tempPath) == 0) {
+		if (GetTempPath(MAX_PATH, appdataPathBuffer) == 0) {
 			wxSTStatus->SetLabel("Status: ERROR: Could not locate appdata folder!");
 			wxMessageDialog dialog(NULL, "ERROR: Could not locate the appdata folder.", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 			dialog.ShowModal();
 			return MainFrame::AnalysisResult::FAILED;
 		}
 
-		std::wstring tempPathWstr(tempPath);
+		std::filesystem::path appdataPath = appdataPathBuffer;
+		wxSTStatus->SetLabel("Status: Detected appdata folder");
 
-		std::string tempPathStr(tempPathWstr.begin(), tempPathWstr.end());
-		{
-			wxSTStatus->SetLabel("Status: Detected appdata folder");
-		}
+		std::filesystem::path cammystatTempPath = appdataPath / "Cammystat";
+		wxSTStatus->SetLabel("Status: Cammystat folder located");
 
-		std::wstring cammystatTempPathWstr = FsUtils::StringToWString(tempPathStr + "Cammystat");
-		{
-			wxSTStatus->SetLabel("Status: Cammystat folder located");
-		}
-		if (!FsUtils::FolderExists(cammystatTempPathWstr)) {
-			FsUtils::CreateDirectoryWithCheck(cammystatTempPathWstr);
+		if (!FsUtils::FolderExists(cammystatTempPath)) {
+			FsUtils::CreateDirectoryWithCheck(cammystatTempPath);
 			wxSTStatus->SetLabel("Status: Cammystat appdata folder has been created");
 		}
 
-		std::string cammystatTempPathStr(cammystatTempPathWstr.begin(), cammystatTempPathWstr.end());
+		std::filesystem::path heatmapPath = outputFolderPath / "activity_heatmap" / (fileName + ".png");
+		std::filesystem::path thisFileTempPath = cammystatTempPath / fileName;
 
-		std::string heatmapPath = outputFolderPath.string() + "\\activity_heatmap\\" + fileName + ".png";
-
-		if (FsUtils::FolderExists(cammystatTempPathWstr)) {
-			std::string tempPath2 = cammystatTempPathStr + "\\" + fileName;
-			FsUtils::CreateDirectoryWithCheck(tempPath2);
+		if (FsUtils::FolderExists(cammystatTempPath)) {
+			FsUtils::CreateDirectoryWithCheck(thisFileTempPath);
 		}
 
-		std::string pathToRemove = cammystatTempPathStr + "\\" + fileName;
-
+		std::string pathToRemove = (thisFileTempPath).string();
 		const auto internalCleanup = [&pathToRemove]() {
 			// clean up the files after analysis is completed or aborted
 			if (wxFileName::DirExists(pathToRemove))
@@ -1190,11 +1218,11 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 
 				wxTCBinarizationThreshold->SetValue(std::to_string(threshold));
 
-				std::string xorScoresForThresholdsPath = cammystatTempPathStr + "\\" + fileName + "\\autoBinarizationThresholdXOR_" + fileName + ".csv";
+				std::filesystem::path xorScoresForThresholdsPath = thisFileTempPath / ("autoBinarizationThresholdXOR_" + fileName + ".csv");
 				wxSTStatus->SetLabel("Status: Saving threshold calculation results");
-				Utils::writeVectorToFile(xorScoresForThresholdsPath, xorScoresForThresholds);
+				Utils::writeVectorToFile(xorScoresForThresholdsPath.string(), xorScoresForThresholds);
 
-				std::string calculatedThresholdPath = cammystatTempPathStr + "\\" + fileName + "\\autoBinarizationThreshold_" + fileName + ".txt";
+				std::filesystem::path calculatedThresholdPath = thisFileTempPath / ("autoBinarizationThreshold_" + fileName + ".txt");
 				std::ofstream outFile(calculatedThresholdPath);
 				if (outFile.is_open()) {
 					outFile << threshold;
@@ -1204,8 +1232,8 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 					std::cerr << "Failed to open file for writing: " << calculatedThresholdPath << std::endl;
 				}
 
-				std::string savePath = outputFolderPath.string() + "\\auto_binarization_threshold";
-				Utils::callPlotExe(plotPath, "auto_binarization_thresh", "\"" + xorScoresForThresholdsPath + "\" \"" + calculatedThresholdPath + "\" \"" + savePath + "\"");
+				std::filesystem::path savePath = outputFolderPath / "auto_binarization_threshold";
+				Utils::callPlotExe(plotPath, "auto_binarization_thresh", "\"" + xorScoresForThresholdsPath.string() + "\" \"" + calculatedThresholdPath.string() + "\" \"" + savePath.string() + "\"");
 			}
 			// Error handling
 			catch (const Cammystat::ProcessingAbortedException& e) {
@@ -1222,8 +1250,7 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 			}
 		}
 		else {
-			strTemp = wxTCBinarizationThreshold->GetValue();
-			if (strTemp.ToLong(&longTemp)) {
+			if (wxTCBinarizationThreshold->GetValue().ToLong(&longTemp)) {
 				threshold = static_cast<int>(longTemp);
 			}
 			else {
@@ -1265,13 +1292,13 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 				continue; // process the next image
 			}
 
-			std::string heatmapCoordinatesPath = outputFolderPath.string() + "\\heatmap_coordinates\\" + fileName + ".png";
+			std::filesystem::path heatmapCoordinatesPath = outputFolderPath / "heatmap_coordinates" / (fileName + ".png");
 
 			wxSTStatus->SetLabel("Status: Finding max sum squares");
 			try
 			{
 				maxSumCoords12 = Cammystat::Preprocessing::findMaxSumSquareCoordinatesWithPercent(
-					heatmap11, squarePercent, topPercent, heatmapCoordinatesPath, heatmapPath, stopAnalysisThreadFlag
+					heatmap11, squarePercent, topPercent, heatmapCoordinatesPath.string(), heatmapPath.string(), stopAnalysisThreadFlag
 				);
 			}
 			catch (const Cammystat::ProcessingAbortedException& e) {
@@ -1280,7 +1307,7 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 			}
 		}
 
-		std::string rawCSVPath = outputFolderPath.string() + "\\csv_raw\\" + fileName + ".csv";
+		std::filesystem::path rawCSVPath = outputFolderPath / "csv_raw" / (fileName + ".csv");
 
 		// Count ones in XOR at coordinates
 		std::vector<double> passedDoubleVector;
@@ -1325,9 +1352,9 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 			continue; // process the next image
 		}
 
-		std::string valuesB4XORPath = cammystatTempPathStr + "\\" + fileName + "\\valuesB4XOR" + fileName + ".csv";
+		std::filesystem::path valuesB4XORPath = thisFileTempPath / ("valuesB4XOR" + fileName + ".csv");
 		wxSTStatus->SetLabel("Status: Saving vectors before xor");
-		Utils::writeVectorToFile(valuesB4XORPath, passedDoubleVector);
+		Utils::writeVectorToFile(valuesB4XORPath.string(), passedDoubleVector);
 
 		if (wxCBSavitzkyGolayFilter->IsChecked()) {
 			wxSTStatus->SetLabel("Status: Filtering (Savgol)");
@@ -1383,11 +1410,11 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 		}
 #endif
 
-		std::string valuesPath = cammystatTempPathStr + "\\" + fileName + "\\values" + fileName + ".csv";
+		std::filesystem::path valuesPath = thisFileTempPath / ("values" + fileName + ".csv");
 		wxSTStatus->SetLabel("Status: Saving vectors");
-		Utils::writeVectorToFile(valuesPath, passedDoubleVector);
+		Utils::writeVectorToFile(valuesPath.string(), passedDoubleVector);
 
-		std::string rawChartPath = outputFolderPath.string() + "\\csv_stats\\" + fileName + ".csv";
+		std::filesystem::path rawChartPath = outputFolderPath / "csv_stats" / (fileName + ".csv");
 		wxSTStatus->SetLabel("Status: Replacing zeros");
 		passedDoubleVector = Cammystat::Smoothing::cloneReplaceZerosValuesBelowThreshold(passedDoubleVector, movementThreshold, rawChartPath);
 #if SHOW_DEBUG_DIALOGS
@@ -1453,7 +1480,7 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 				return MainFrame::AnalysisResult::ABORTED;
 			}
 		}
-		std::string normalizedChartsPath = outputFolderPath.string() + "\\normalized_chart";
+		std::filesystem::path normalizedChartsPath = outputFolderPath / "normalized_chart";
 #if SHOW_DEBUG_DIALOGS
 		{
 			wxMessageDialog dialog(NULL, fileName + " " + normalizedChartsPath + " " + std::to_string(fps), wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
@@ -1487,14 +1514,14 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 			reportWriter.rowBuffer.avgRestDurationSeconds = avgRestLengthSeconds;
 		}
 		
-		std::string contractionRelaxationPhasesPath = cammystatTempPathStr + "\\" + fileName + "\\contractionRelaxationPhases" + fileName + ".csv";
+		std::filesystem::path contractionRelaxationPhasesPath = thisFileTempPath / ("contractionRelaxationPhases" + fileName + ".csv");
 		
 		if (analyseContractionRelaxationEvents) {
 			wxSTStatus->SetLabel("Status: Contraction-relaxation analysis");
 			try
 			{
 				std::vector<Cammystat::Detection::Phase> contractionRelaxationPhases = Cammystat::Detection::locate_contractions_and_relaxations(passedDoubleVector, events, stopAnalysisThreadFlag);
-				Utils::writeVectorToFile(contractionRelaxationPhasesPath, contractionRelaxationPhases);
+				Utils::writeVectorToFile(contractionRelaxationPhasesPath.string(), contractionRelaxationPhases);
 
 				double avgContractionDurationFrames = 0, avgRelaxationDurationFrames = 0;
 				int contractionCount = 0, relaxationCount = 0;
@@ -1530,13 +1557,13 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 		}
 
 		wxSTStatus->SetLabel("Status: Saving vector of vectors");
-		std::string eventsPath = cammystatTempPathStr + "\\" + fileName + "\\events" + fileName + ".csv";
-		Utils::writeVectorOfVectorsToFile(eventsPath, events);
+		std::filesystem::path eventsPath = thisFileTempPath / ("events" + fileName + ".csv");
+		Utils::writeVectorOfVectorsToFile(eventsPath.string(), events);
 
 		if(outputLineChart || outputEventChart) wxSTStatus->SetLabel("Status: Saving plots");
 
 		if (outputLineChart) {
-			Utils::callPlotExe(plotPath, "video_events", JoinCommandLineArguments(valuesB4XORPath, "", fileName, outputFolderPath.string() + "\\raw_chart", fps));
+			Utils::callPlotExe(plotPath, "video_events", JoinCommandLineArguments(valuesB4XORPath, "", fileName, outputFolderPath / "raw_chart", fps));
 		}
 
 		if (stopAnalysisThreadFlag) {
@@ -1554,7 +1581,7 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 		}
 
 		if (analyseContractionRelaxationEvents) {
-			std::string contractionRelaxationPath = outputFolderPath.string() + "\\contraction_relaxation_chart";
+			std::filesystem::path contractionRelaxationPath = outputFolderPath / "contraction_relaxation_chart";
 			Utils::callPlotExe(plotPath, "contraction_relaxation_analysis", JoinCommandLineArguments(valuesPath, contractionRelaxationPhasesPath, fileName, contractionRelaxationPath));
 		}
 

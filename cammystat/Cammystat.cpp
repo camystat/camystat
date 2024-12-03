@@ -7,8 +7,8 @@
 /// <param name="inputPath">The path to the input video</param>
 /// <param name="outputPath">The path to the output video</param>
 /// <param name="scaleFactor">The scale factor for resizing</param>
-void Cammystat::Compression::resizeVideo(const std::string inputPath, std::string outputPath, double scaleFactor) {
-	cv::VideoCapture cap(inputPath);
+void Cammystat::Compression::resizeVideo(const std::filesystem::path& inputPath, const std::filesystem::path& outputPath, double scaleFactor) {
+	cv::VideoCapture cap(inputPath.string());
 
 	// Check whether the video was loaded
 	if (!cap.isOpened()) {
@@ -26,7 +26,7 @@ void Cammystat::Compression::resizeVideo(const std::string inputPath, std::strin
 	int new_height = static_cast<int>(frame_height / scaleFactor);
 
 	// Create object for saving new data into .mp4v
-	cv::VideoWriter out(outputPath, cv::VideoWriter::fourcc('m', 'p', '4', 'v'), 30, cv::Size(new_width, new_height));
+	cv::VideoWriter out(outputPath.string(), cv::VideoWriter::fourcc('m', 'p', '4', 'v'), 30, cv::Size(new_width, new_height));
 
 	// Check whether the object could been created
 	if (!out.isOpened()) {
@@ -88,14 +88,14 @@ long double calcU8MatAvgBrightness(const cv::Mat& mat, std::map<int, long double
 /// <param name="progressCallback">Callback invoked when progress changes.</param>
 /// <param name="abortFlag">Flag that indicates whether to abort processing</param>
 /// <returns>The threshold & XOR scores vector for all tested threshold values (0-255).</returns>
-std::pair<int, std::vector<int>> Cammystat::Preprocessing::calculateBinarizationThreshold(const std::string& videoPath, const int startFrame, const int endFrame, const Cammystat::Preprocessing::BinarizationThresholdCalcProgressCallback& progressCallback, const std::atomic<bool>& abortFlag) {
+std::pair<int, std::vector<int>> Cammystat::Preprocessing::calculateBinarizationThreshold(const std::filesystem::path& videoPath, const int startFrame, const int endFrame, const Cammystat::Preprocessing::BinarizationThresholdCalcProgressCallback& progressCallback, const std::atomic<bool>& abortFlag) {
 	progressCallback(Cammystat::Preprocessing::BinarizationThresholdCalcProgress::STARTING, std::nullopt, std::nullopt);
 
 	// For handling edge case when XOR operation returns 0s for the selected given pair of frames to retry with a next-in-turn pair of frames
 	std::set<int> retryFrameIndicesBlacklist;
 
 	// Open the video
-	cv::VideoCapture cap(videoPath);
+	cv::VideoCapture cap(videoPath.string());
 
 	// Check whether the video has been loaded correctly
 	if (!cap.isOpened()) {
@@ -104,7 +104,7 @@ std::pair<int, std::vector<int>> Cammystat::Preprocessing::calculateBinarization
 		throw std::runtime_error("calculateBinarizationThreshold: Could not open a file.");
 	}
 
-	// Load the video's dimentions
+	// Load the video's dimensions
 	int width = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_WIDTH));
 	int height = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_HEIGHT));
 
@@ -262,9 +262,9 @@ std::pair<int, std::vector<int>> Cammystat::Preprocessing::calculateBinarization
 /// <param name="resultPath">The path to the file where the result will be saved</param>
 /// <param name="abortFlag">The flag that indicates whether to abort processing</param>
 /// <returns>The matrix with pixel counts</returns>
-cv::Mat Cammystat::Preprocessing::createHeatmap(const std::string& videoPath, const int startFrame, const int endFrame, const int threshold, const std::string& resultPath, const std::atomic<bool>& abortFlag) {
+cv::Mat Cammystat::Preprocessing::createHeatmap(const std::filesystem::path& videoPath, const int startFrame, const int endFrame, const int threshold, const std::filesystem::path& resultPath, const std::atomic<bool>& abortFlag) {
 	// Open the video
-	cv::VideoCapture cap(videoPath);
+	cv::VideoCapture cap(videoPath.string());
 
 	// Check whether the video has been loaded correctly
 	if (!cap.isOpened()) {
@@ -273,7 +273,7 @@ cv::Mat Cammystat::Preprocessing::createHeatmap(const std::string& videoPath, co
 		throw std::runtime_error("createHeatmap: Could not open a file.");
 	}
 
-	// Load the video's dimentions
+	// Load the video's dimensions
 	int width = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_WIDTH));
 	int height = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_HEIGHT));
 
@@ -353,7 +353,7 @@ cv::Mat Cammystat::Preprocessing::createHeatmap(const std::string& videoPath, co
 		cv::applyColorMap(pixelCountU8, heatmapColor, cv::COLORMAP_JET);
 
 		// Save the heatmap
-		cv::imwrite(resultPath, heatmapColor);
+		cv::imwrite(resultPath.string(), heatmapColor);
 	}
 
 	return pixelCount;
@@ -373,8 +373,8 @@ std::vector<std::pair<int, int>> Cammystat::Preprocessing::findMaxSumSquareCoord
 	const cv::Mat& pixel_count_array,
 	const double square_percent,
 	const double top_percent,
-	const std::string& resultPath,
-	const std::string& imagePath,
+	const std::filesystem::path& resultPath,
+	const std::filesystem::path& imagePath,
 	const std::atomic<bool>& abortFlag
 ) {
 	// Return an empty vector if the matrix is empty
@@ -453,7 +453,7 @@ std::vector<std::pair<int, int>> Cammystat::Preprocessing::findMaxSumSquareCoord
 	}
 
 	// Read the existing PNG image
-	cv::Mat image = cv::imread(imagePath, cv::IMREAD_COLOR);
+	cv::Mat image = cv::imread(imagePath.string(), cv::IMREAD_COLOR);
 
 	if (image.empty()) {
 		std::cerr << "Nie udalo sie wczytac obrazu: " << imagePath << std::endl;
@@ -466,7 +466,7 @@ std::vector<std::pair<int, int>> Cammystat::Preprocessing::findMaxSumSquareCoord
 	}
 
 	// Save the image as PNG with the points overlaid
-	cv::imwrite(resultPath, image);
+	cv::imwrite(resultPath.string(), image);
 
 	return selected_coordinates;
 }
@@ -481,16 +481,16 @@ std::vector<std::pair<int, int>> Cammystat::Preprocessing::findMaxSumSquareCoord
 /// <param name="abortFlag">The flag that indicates whether to abort processing</param>
 /// <returns>The percentage of ones in the XOR matrix over time</returns>
 std::vector<double> Cammystat::Preprocessing::countOnesInXorAtCoordinates(
-	const std::string& videoPath,
+	const std::filesystem::path& videoPath,
 	const std::vector<std::pair<int, int>>& coordinates,
 	const int threshold,
-	const std::string& resultPath,
+	const std::filesystem::path& resultPath,
 	const std::atomic<bool>& abortFlag
 ) {
 	// Open the video file
 	std::cout << "countOnesInXorAtCoordinates: started" << std::endl;
 
-	cv::VideoCapture cap(videoPath);
+	cv::VideoCapture cap(videoPath.string());
 
 	// Check whether the video has been loaded correctly
 	if (!cap.isOpened()) {
@@ -524,23 +524,11 @@ std::vector<double> Cammystat::Preprocessing::countOnesInXorAtCoordinates(
 		total_cells = coordinates.size();
 	}
 
-	// Load the video's dimentions
-	int width = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_WIDTH));
-	int height = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_HEIGHT));
-
-	cv::Mat current_frame(height, width, CV_8UC1);
-	cv::Mat current_frame_gray(height, width, CV_8UC1), current_binary(height, width, CV_8UC1);
-	cv::Mat xor_result(height, width, CV_8UC1);
-
-	try
-	{
-		// Loop through all frames
+	// Loop through all frames
+	try {
 		while (true) {
-			if (abortFlag) {
-				throw Cammystat::ProcessingAbortedException();
-			}
-
 			// Read the current frame
+			cv::Mat current_frame;
 			ret = cap.read(current_frame);
 
 			// Break the loop if end of video is reached
@@ -549,15 +537,13 @@ std::vector<double> Cammystat::Preprocessing::countOnesInXorAtCoordinates(
 			}
 
 			// Convert the current frame to grayscale
+			cv::Mat current_frame_gray, current_binary;
 			cv::cvtColor(current_frame, current_frame_gray, cv::COLOR_BGR2GRAY);
 			cv::threshold(current_frame_gray, current_binary, threshold, 1, cv::THRESH_BINARY);
 
 			// Calculate the XOR difference between frames
+			cv::Mat xor_result;
 			cv::bitwise_xor(prev_binary, current_binary, xor_result);
-
-			if (abortFlag) {
-				throw Cammystat::ProcessingAbortedException();
-			}
 
 			int ones_count = 0;
 			if (coordinates.empty()) {
@@ -678,7 +664,7 @@ std::vector<double> Cammystat::Smoothing::cloneNormalizedValues(const std::vecto
 /// <param name="threshold">The threshold value</param>
 /// <param name="resultPath">The path to the file where the result will be saved</param>
 /// <returns>The modified list of values (new object)</returns>
-std::vector<double> Cammystat::Smoothing::cloneReplaceZerosValuesBelowThreshold(const std::vector<double>& lst, double threshold, std::string resultPath) {
+std::vector<double> Cammystat::Smoothing::cloneReplaceZerosValuesBelowThreshold(const std::vector<double>& lst, double threshold, std::filesystem::path resultPath) {
 	std::vector<double> modified_values;
 	modified_values.reserve(lst.size());
 

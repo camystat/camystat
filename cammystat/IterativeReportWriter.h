@@ -3,6 +3,7 @@
 #include <fstream>
 #include <string>
 #include <algorithm>
+#include <filesystem>
 
 namespace Cammystat {
 	class IterativeReportWriterRow {
@@ -39,7 +40,7 @@ namespace Cammystat {
 
 		IterativeReportWriter() = delete;
 
-		IterativeReportWriter(std::string filePath, bool contractionRelaxationAnalysis) : outFile(filePath), rowBuffer(contractionRelaxationAnalysis) {
+		IterativeReportWriter(std::filesystem::path filePath, bool contractionRelaxationAnalysis) : outFile(filePath), rowBuffer(contractionRelaxationAnalysis) {
 			// write header
 			this->outFile << "Video name;Video duration;Events detected;Events/minute;Average event duration;Average rest duration";
 			
@@ -52,6 +53,10 @@ namespace Cammystat {
 
 		~IterativeReportWriter() {
 			this->outFile.close();
+		}
+
+		bool isOpen() {
+			return this->outFile.is_open();
 		}
 
 		void finalizeRow() {

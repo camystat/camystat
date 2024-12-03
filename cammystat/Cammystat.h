@@ -36,7 +36,7 @@ namespace Cammystat
         // Po drugie, redukcja rozmiaru oparta na łączeniu kilku pikseli w jeden redukuje zakłócenia polegające 
         // na mikrodrganiach obrazu, które okazały się wyjątkowo uciążliwe w analizie angrań opartych na różnicowaniu macierzy
 
-        static void resizeVideo(std::string inputPath, std::string outputPath, double scaleFactor);
+        static void resizeVideo(const std::filesystem::path& inputPath, const std::filesystem::path& outputPath, double scaleFactor);
     };
 
     // Klasa odpowiedzialna za przetwarzanie wstepne (etap pierwszy)
@@ -56,7 +56,7 @@ namespace Cammystat
         // 
         // Calculates an automatic binarization threshold for the given video file using frames from the specified range, based on Marcin's algorithm design.
 
-        static std::pair<int, std::vector<int>> calculateBinarizationThreshold(const std::string& videoPath, const int startFrame, const int endFrame, const BinarizationThresholdCalcProgressCallback& progressCallback, const std::atomic<bool>& abortFlag);
+        static std::pair<int, std::vector<int>> calculateBinarizationThreshold(const std::filesystem::path& videoPath, const int startFrame, const int endFrame, const BinarizationThresholdCalcProgressCallback& progressCallback, const std::atomic<bool>& abortFlag);
         
         // 1.1 Heatmapa aktywności na filmie
         // 
@@ -76,7 +76,7 @@ namespace Cammystat
         // odpowiednim pikselom.Funkcja zlicza te zmiany dla każdego piksela i zwraca macierz odpowiadającą kształtem 
         // wideo z liczbą odnotowanych zmian dla każdego piksela.
 
-        static cv::Mat createHeatmap(const std::string& videoPath, const int startFrame = 0, const int endFrame = -1, const int threshold = 128, const std::string& resultPath = "", const std::atomic<bool>& abortFlag = false);
+        static cv::Mat createHeatmap(const std::filesystem::path& videoPath, const int startFrame = 0, const int endFrame = -1, const int threshold = 128, const std::filesystem::path& resultPath = "", const std::atomic<bool>& abortFlag = false);
 
         // 1.2 Wyznaczanie obszaru zainteresowania
         // 
@@ -94,8 +94,8 @@ namespace Cammystat
             const cv::Mat& pixel_count_array,
             const double square_percent,
             const double top_percent,
-            const std::string& resultPath,
-            const std::string& imagePath,
+            const std::filesystem::path& resultPath,
+            const std::filesystem::path& imagePath,
             const std::atomic<bool>& abortFlag = false
         );
 
@@ -124,10 +124,10 @@ namespace Cammystat
         // odpowiadające aktywności na kolejnych klatkach filmu.
 
         static std::vector<double> countOnesInXorAtCoordinates(
-            const std::string& videoPath,
+            const std::filesystem::path& videoPath,
             const std::vector<std::pair<int, int>>& coordinates = {},
             const int threshold = 128,
-            const std::string& resultPath = "",
+            const std::filesystem::path& resultPath = "",
             const std::atomic<bool>& abortFlag = false
         );
     };
@@ -139,7 +139,7 @@ namespace Cammystat
         static std::vector<double> smoothValues(const std::vector<double>&, float percentile);
         static std::vector<double> modifyMeans(const std::vector<double>& input_list, size_t n = 2, size_t x = 1, const std::atomic<bool>& abortFlag = false);
         static std::vector<double> cloneNormalizedValues(const std::vector<double>& values);
-        static std::vector<double> cloneReplaceZerosValuesBelowThreshold(const std::vector<double>& lst, double threshold, std::string resultPath);
+        static std::vector<double> cloneReplaceZerosValuesBelowThreshold(const std::vector<double>& lst, double threshold, std::filesystem::path resultPath);
     };
 
     class Detection {
