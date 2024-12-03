@@ -179,21 +179,6 @@ def plot_contraction_relaxation_phases(
         phase_color = "blue" if phase_type == "contraction" else "green"
         phase_label = "Contraction" if phase_type == "contraction" else "Relaxation"
 
-        # Highlight the phase as a shaded region
-        fig.add_shape(
-            type="rect",
-            xref="x",
-            yref="paper",
-            x0=start_index,
-            y0=0,
-            x1=end_index,
-            y1=1,
-            line=dict(color=phase_color, width=0),
-            fillcolor=phase_color,
-            opacity=0.2,
-            layer="below",
-        )
-
         # Draw a semi-transparent, filled-in polygon for the phase
         opacity = 0.2
         fig.add_trace(
