@@ -1,12 +1,13 @@
 import csv
 import sys
 import os
-import numpy as np
 import argparse
+import matplotlib
 import matplotlib.pyplot as plt
 from typing import List, Literal, Tuple, TypeVar, cast
-
 import plotly.graph_objects as pgo
+
+matplotlib.use("Agg")
 
 Values = List[int | float]
 PhaseType = Literal["contraction"] | Literal["relaxation"]

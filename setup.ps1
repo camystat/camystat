@@ -90,11 +90,11 @@ Set-Location plot
 python -m venv venv
 .\venv\Scripts\Activate.ps1
 
-Write-Host "Installing pyinstaller & build dependencies with pip..."
-pip install -U pyinstaller plotly numpy matplotlib
+Write-Host "Installing build dependencies with pip..."
+pip install -r requirements.txt
 
 # compile licenses of plot dependencies
-& pip install third-party-license-file-generator
+& pip install third-party-license-file-generator setuptools
 
 $pythonPath = (Get-Command python).Source
 
