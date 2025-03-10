@@ -1582,7 +1582,7 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 
 		if (analyseContractionRelaxationEvents) {
 			std::filesystem::path contractionRelaxationPath = outputFolderPath / "contraction_relaxation_chart";
-			Utils::callPlotExe(plotPath, "contraction_relaxation_analysis", JoinCommandLineArguments(valuesPath, contractionRelaxationPhasesPath, fileName, contractionRelaxationPath));
+			Utils::callPlotExe(plotPath, "contraction_relaxation_analysis", JoinCommandLineArguments(valuesPath, contractionRelaxationPhasesPath, fileName, contractionRelaxationPath, fps));
 		}
 
 		reportWriter.finalizeRow();

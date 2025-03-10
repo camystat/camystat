@@ -149,6 +149,7 @@ def plot_contraction_relaxation_phases(
     normalized_phases: List[Phase],
     video_name: str,
     save_path: str,
+    fps: int
 ) -> None:
     """
     Plots cardiomyocyte activity with contraction and relaxation phases highlighted, ensuring paired numbering. Y values are always 0 by design.
@@ -184,7 +185,7 @@ def plot_contraction_relaxation_phases(
         opacity = 0.2
         fig.add_trace(
             pgo.Scatter(
-                x=[start_index, end_index, end_index, start_index, start_index],
+                x=[start_index / fps, end_index / fps, end_index / fps, start_index / fps, start_index / fps],
                 y=[0, 0, 1, 1, 0],
                 fill="toself",
                 mode="lines",
@@ -197,10 +198,13 @@ def plot_contraction_relaxation_phases(
             )
         )
 
+    # Convert frame numbers to time in seconds
+    time_values = [i / fps for i in range(len(normalized_values))]
+
     # Draw activity
     fig.add_trace(
         pgo.Scatter(
-            x=list(range(len(normalized_values))),
+            x=time_values,
             y=normalized_values,
             mode="lines",
             name="Activity",
@@ -211,7 +215,7 @@ def plot_contraction_relaxation_phases(
     # Update layout
     fig.update_layout(
         title=f"Contraction-relaxation analysis for {video_name}",
-        xaxis_title="Frame",
+        xaxis_title="Time (seconds)",
         yaxis_title="XOR Values",
         showlegend=True,
     )
@@ -290,6 +294,9 @@ if __name__ == "__main__":
     parser_contraction_relaxation_analysis.add_argument(
         "save_path", type=str, help="Path to save the plot."
     )
+    parser_contraction_relaxation_analysis.add_argument(
+        "fps", type=int, help="Frames per second of the video."
+    )
 
     parser_auto_binarization_threshold = subparsers.add_parser(
         "auto_binarization_thresh",
@@ -341,6 +348,7 @@ if __name__ == "__main__":
                 normalized_phases_path = sanitize_path(options.normalized_phases_path)
                 video_name = options.video_name
                 save_path = sanitize_path(options.save_path)
+                fps = options.fps
 
                 plot_contraction_relaxation_phases(
                     normalized_values=read_vector_from_csv(normalized_values_path),
@@ -350,6 +358,7 @@ if __name__ == "__main__":
                     ),
                     video_name=video_name,
                     save_path=save_path,
+                    fps=fps
                 )
 
             case "auto_binarization_thresh":
