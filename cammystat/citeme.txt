@@ -3,34 +3,54 @@
 
     If you find this tool useful, please consider citing our work:
 
-    Marcin Rojek  
-    Lead Statistician, Programmer, Poland  
+    Marcin Rojek
+    Department of Histology and Cell Pathology
+    Faculty of Medical Sciences in Zabrze
     Medical University of Silesia
-    Department of Histology and Cell Pathology  
-    (https://www.researchgate.net/profile/Marcin-Rojek-3)
+    40-055 Katowice, Poland
+    marcin.arojek@gmail.com
 
-    Piotr Lewandowski  
-    Physician, Histology Specialist  
+    Piotr Lewandowski
+    Department of Histology and Cell Pathology
+    Faculty of Medical Sciences in Zabrze
     Medical University of Silesia
-    Department of Histology and Cell Pathology  
-    (https://www.researchgate.net/profile/Piotr-Lewandowski-4)
+    40-055 Katowice, Poland
+    lewandop@icloud.com
 
-    Filip Patryk Pietryga  
-    Independent Programmer  
-
-    Artur Morys - Magiera
-    Programmer (fixes & improvements)
-    Department of Automatic Control & Robotics
+    Artur Morys-Magiera
     AGH University of Krakow
-    (https://www.researchgate.net/profile/Artur-Morys-Magiera)
- 
-    Professor Romuald Wojnicz  
-    Project Supervisor, Head of Department  
+    Faculty of Electrical Engineering, Automatics, Computer Science and Biomedical Engineering
+    Department of Automatic Control & Robotics
+    al. A. Mickiewicza 30
+    30-059 Krakow, Poland
+    amorys@agh.edu.pl
+
+    Filip Pietryga
+    Independent Programmer
+
+    Aleksandra Kowalik
+    Silesian Park of Medical Technology Kardio-Med Silesia
+    M. Curie-Skłodowskiej 10c, 41-800 Zabrze, Poland
+
+    Sławomir Grzegorczyn
+    Department of Biophysics
+    Faculty of Medical Sciences in Zabrze
     Medical University of Silesia
-    Department of Histology and Cell Pathology 
-    (https://histologia-zabrze.sum.edu.pl/)
+    Zabrze, Poland
+
+    Professor Romuald Wojnicz
+    Department of Histology and Cell Pathology
+    Faculty of Medical Sciences in Zabrze
+    Medical University of Silesia
+    40-055 Katowice, Poland
+    Silesian Nanomicroscopy Center, Silesia LabMed — Research and Implementation Center
+    Medical University of Silesia
+    40-055 Katowice, Poland
 
     Project website:
+    https://github.com/camystat/camystat
+
+    Additional resources:
     https://github.com/MARROJEK/TIF_to_MOV
 
     Your citation helps recognize our work and supports further research.
@@ -38,4 +58,4 @@
 
     ---------------------------------------------------------------------
 
-    This project uses the Eigen library (https://gitlab.com/libeigen/eigen).
+    This project uses the Eigen library (https://gitlab.com/libeigen/eigen), wxWidgets (https://github.com/wxWidgets/wxWidgets) and OpenCV (https://github.com/opencv/opencv).
