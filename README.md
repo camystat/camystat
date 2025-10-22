@@ -1,4 +1,4 @@
-# cammystat
+# camystat
 
 Research project.
 
