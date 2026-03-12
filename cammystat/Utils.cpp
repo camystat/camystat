@@ -3,6 +3,7 @@
 #include <fstream>
 #include <chrono>
 #include <numeric>
+#include <wx/utils.h>
 
 /// <summary>
 /// Creates a trimmed copy of the list <paramref name="lst"/>, by filtering out the first <paramref name="n"/> elements and the last <paramref name="x"/> elements from the input list
@@ -50,6 +51,7 @@ std::vector<double> Utils::aggregate(const std::string& videoPath, const std::st
 	return onesCountOverTime;
 }
 
+#ifdef _WIN32
 /// <summary>
 /// Converts a TCHAR string to a std::string
 /// </summary>
@@ -67,6 +69,7 @@ std::string Utils::TCHARToString(const TCHAR* tcharStr) {
 	return std::string(tcharStr);
 #endif
 }
+#endif
 
 void Utils::callPlotExe(
 	const std::string& exePath,
@@ -81,6 +84,7 @@ void Utils::callPlotExe(
 	//wxMessageDialog dialog(NULL, command, wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 	//dialog.ShowModal();
 
+#ifdef _WIN32
 	// Convert std::string to std::wstring for WinAPI functions
 	std::wstring commandW = Utils::stringToWString(command);
 
@@ -133,6 +137,13 @@ void Utils::callPlotExe(
 		wxMessageDialog dialog(NULL, "Failed to execute plotting script using CreateProcess.", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 		dialog.ShowModal();
 	}
+#else
+	long exitCode = wxExecute(command, wxEXEC_SYNC | wxEXEC_HIDE_CONSOLE);
+	if (exitCode != 0) {
+		wxMessageDialog dialog(NULL, "Plotting script finished with a non-zero exit code!.", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
+		dialog.ShowModal();
+	}
+#endif
 
 	// Save command to a file
 	std::string filePath = "command.txt";

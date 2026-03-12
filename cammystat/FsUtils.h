@@ -13,6 +13,6 @@ namespace FsUtils {
 	void RemoveFilesAndFolder(const fs::path& folderPath);
 	bool RemoveDirectoryRecursively(const wxString& dirPath);
 	std::wstring StringToWString(const std::string& str);
-	bool FolderExists(const std::wstring& folderPath);
+	bool FolderExists(const fs::path& folderPath);
 	void CreateDirectoryWithCheck(const fs::path& dirPath);
 }

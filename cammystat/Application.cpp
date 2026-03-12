@@ -6,6 +6,7 @@
 wxIMPLEMENT_APP(Application);
 
 Application::Application() {
+#ifdef _WIN32
 	AllocConsole();
 	SetConsoleTitleA(("Debug console"));
 	freopen("conin$", "r", stdin);
@@ -27,14 +28,23 @@ Application::Application() {
 	if (!consoleCloseDisabled) {
 		std::cerr << "Failed to disable the debug console window close button. Clicking it will close the whole application." << std::endl;
 	}
+#endif
 }
 
 bool Application::OnInit() {
 	MainFrame* mainFrame = new MainFrame("CamMyStat");
 
 	mainFrame->SetTitle("CamMyStat");
+#ifdef _WIN32
 	wxIcon icon(wxICON(IDI_APP_ICON));
 	mainFrame->SetIcon(icon);
+#else
+	// Best-effort: allow running from build dir where we copy icon.ico
+	wxIcon icon;
+	if (icon.LoadFile("icon.ico", wxBITMAP_TYPE_ICO)) {
+		mainFrame->SetIcon(icon);
+	}
+#endif
 	mainFrame->Center();
 	mainFrame->SetTaskBarIcon();
 	mainFrame->Show();

@@ -9,12 +9,10 @@
 #include <map>
 #include <string>
 #include <sstream>
-#include <shlobj.h>
 #include <filesystem>
 #include <cmath>
 #include <locale>
 #include <codecvt>
-#include <tchar.h>
 #include <type_traits>
 
 #include "resource.h"
@@ -33,6 +31,12 @@
 
 // note: the below variable controls legacy debug windows informing of errors for validation / information about paths or read values
 #define SHOW_DEBUG_DIALOGS false
+
+#ifdef _WIN32
+  #include <Windows.h>
+  #include <shlobj.h>
+  #include <tchar.h>
+#endif
 
 class MainFrame : public wxFrame
 {

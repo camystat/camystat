@@ -1,5 +1,7 @@
 #include "MainFrame.h"
 
+#include <thread>
+
 //UNCOMMENT BELOW LINE WITH DEFINE TO INTRODUCE DEBUG MODE
 //IN DEBUG MODE EVERY STEP IS BEING LOGGED
 //WHICH CAN BE QUITE ANNOYING
@@ -79,23 +81,31 @@ wxEND_EVENT_TABLE()
 
 void MainFrame::ShowConsole()
 {
+#ifdef _WIN32
 	HWND debugConsoleWindowHwnd = GetConsoleWindow();
 
     ShowWindow(debugConsoleWindowHwnd, SW_SHOW);
 	SetActiveWindow(debugConsoleWindowHwnd);
+#endif
 
 	this->SyncToggleDebugWindowMenuItemLabel();
 }
 
 void MainFrame::HideConsole()
 {
+#ifdef _WIN32
 	ShowWindow(GetConsoleWindow(), SW_HIDE);
+#endif
 
 	this->SyncToggleDebugWindowMenuItemLabel();
 }
 
 bool MainFrame::IsConsoleShown() {
+#ifdef _WIN32
 	return IsWindowVisible(GetConsoleWindow());
+#else
+	return false;
+#endif
 }
 
 void MainFrame::SyncToggleDebugWindowMenuItemLabel() {
@@ -215,27 +225,24 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title, 
 
 	leftSideCoordY += 25;
 
+	wxString documentsDir;
+#ifdef _WIN32
 	PWSTR path = NULL;
-
 	HRESULT hr = SHGetKnownFolderPath(FOLDERID_Documents, 0, NULL, &path);
-
-	if (SUCCEEDED(hr)) {
-		std::wcout << L"Documents folder: " << path << std::endl;
-		wxCTOutputPath = new wxTextCtrl(panel, wxID_ANY, path, wxPoint(20, leftSideCoordY), wxSize(280, 60), wxTE_MULTILINE);
-		wxCTOutputPath->SetEditable(false);
-		wxCTOutputPath->Bind(wxEVT_LEFT_DOWN, &MainFrame::OnMouseClick, this);
-		wxCTOutputPath->Bind(wxEVT_SET_FOCUS, &MainFrame::OnFocus, this);
-	}
-	else {
-		wxSTStatus->SetLabel("Status: ERROR: Failed to get the path to the Documents folder.");
-		wxMessageDialog dialog(NULL, "Status: ERROR: Failed to get the path to the Documents folder.", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_ERROR | wxDIALOG_NO_PARENT);
-		dialog.ShowModal();
-	}
-
-	// Free the memory allocated by SHGetKnownFolderPath
-	if (path) {
+	if (SUCCEEDED(hr) && path) {
+		documentsDir = wxString(path);
 		CoTaskMemFree(path);
+	} else {
+		documentsDir = wxStandardPaths::Get().GetDocumentsDir();
 	}
+#else
+	documentsDir = wxStandardPaths::Get().GetDocumentsDir();
+#endif
+
+	wxCTOutputPath = new wxTextCtrl(panel, wxID_ANY, documentsDir, wxPoint(20, leftSideCoordY), wxSize(280, 60), wxTE_MULTILINE);
+	wxCTOutputPath->SetEditable(false);
+	wxCTOutputPath->Bind(wxEVT_LEFT_DOWN, &MainFrame::OnMouseClick, this);
+	wxCTOutputPath->Bind(wxEVT_SET_FOCUS, &MainFrame::OnFocus, this);
 
 	leftSideCoordY += 65;
 
@@ -595,6 +602,7 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title, 
 	syncAutomaticRecognitionAnalysisFieldStates();
 	UpdateUI();
 
+#ifdef _WIN32
 	if (IsDebuggerPresent())
 	{
 		// if a debugger is attached, the user may want the debug window to be shown by default
@@ -605,6 +613,9 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title, 
 		// if this is a release session, hide the debug window by default
 		HideConsole();
 	}
+#else
+	HideConsole();
+#endif
 }
 
 void MainFrame::UpdateUI(const std::optional<const MainFrame::AnalysisResult>& analysisResult)
@@ -692,12 +703,14 @@ void MainFrame::wxAutoSelectEvents(wxCommandEvent& evt) {
 
 void MainFrame::SetTaskBarIcon()
 {
+#ifdef _WIN32
 	HWND hwnd = (HWND)GetHWND();
 
 	HICON hIcon = (HICON)LoadImage(NULL, L"./icon.ico", IMAGE_ICON, 0, 0, LR_LOADFROMFILE);
 
 	SendMessage(hwnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
 	SendMessage(hwnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
+#endif
 }
 
 MainFrame::AnalysisResult MainFrame::RunAnalysis()
@@ -1110,12 +1123,9 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 		}
 
 		wxSTStatus->SetLabel("Status: Reading current path");
-		TCHAR buffer[MAX_PATH];
-		DWORD length = GetCurrentDirectory(MAX_PATH, buffer);
-		std::string plotPath = Utils::TCHARToString(buffer);
-		plotPath = plotPath.substr(0, plotPath.size() - 1);
+		std::filesystem::path cwd = std::filesystem::current_path();
 		wxSTStatus->SetLabel("Status: Calculating path to plot");
-		plotPath = plotPath + "\\plot.exe";
+		std::string plotPath = (cwd / "plot.exe").string();
 #if SHOW_DEBUG_DIALOGS
 		{
 			wxMessageDialog dialog(NULL, "LOG: path to the plot.exe: " + plotPath, wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
@@ -1125,16 +1135,16 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 		}
 #endif
 
-		TCHAR appdataPathBuffer[MAX_PATH];
-
-		if (GetTempPath(MAX_PATH, appdataPathBuffer) == 0) {
-			wxSTStatus->SetLabel("Status: ERROR: Could not locate appdata folder!");
-			wxMessageDialog dialog(NULL, "ERROR: Could not locate the appdata folder.", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
+		std::filesystem::path appdataPath;
+		try {
+			appdataPath = std::filesystem::temp_directory_path();
+		}
+		catch (...) {
+			wxSTStatus->SetLabel("Status: ERROR: Could not locate temp folder!");
+			wxMessageDialog dialog(NULL, "ERROR: Could not locate the temp folder.", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 			dialog.ShowModal();
 			return MainFrame::AnalysisResult::FAILED;
 		}
-
-		std::filesystem::path appdataPath = appdataPathBuffer;
 		wxSTStatus->SetLabel("Status: Detected appdata folder");
 
 		std::filesystem::path cammystatTempPath = appdataPath / "Cammystat";
@@ -1750,18 +1760,15 @@ void MainFrame::OnCreateNewWindow(wxThreadEvent& event) {
 
 void MainFrame::OnClose(wxCloseEvent& event)
 {
-	TCHAR tempPath[MAX_PATH];
-
-	if (GetTempPath(MAX_PATH, tempPath) == 0) {
-		wxMessageDialog dialog(NULL, "ERROR: Could not locate the appdata folder.", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
+	std::string pathToRemove;
+	try {
+		pathToRemove = (std::filesystem::temp_directory_path() / "Cammystat").string();
+	}
+	catch (...) {
+		wxMessageDialog dialog(NULL, "ERROR: Could not locate the temp folder.", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 		dialog.ShowModal();
 		return;
 	}
-
-	std::wstring wstr(tempPath);
-
-	std::string str(wstr.begin(), wstr.end());
-	std::string pathToRemove = str + "\\Cammystat\\";
 
 	if (wxFileName::DirExists(pathToRemove))
 	{

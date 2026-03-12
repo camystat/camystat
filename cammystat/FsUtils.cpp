@@ -61,16 +61,9 @@ std::wstring FsUtils::StringToWString(const std::string& str) {
 	return wstr;
 }
 
-bool FsUtils::FolderExists(const std::wstring& folderPath) {
-	DWORD fileAttributes = GetFileAttributes(folderPath.c_str());
-
-	if (fileAttributes == INVALID_FILE_ATTRIBUTES) {
-		// The folder does not exist if GetFileAttributes returns INVALID_FILE_ATTRIBUTES
-		return false;
-	}
-
-	// Check if the path is a directory
-	return (fileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+bool FsUtils::FolderExists(const fs::path& folderPath) {
+	std::error_code ec;
+	return fs::exists(folderPath, ec) && fs::is_directory(folderPath, ec);
 }
 
 void FsUtils::CreateDirectoryWithCheck(const fs::path& dirPath) {

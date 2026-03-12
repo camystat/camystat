@@ -3,18 +3,21 @@
 #include <iostream>
 #include <wx/wx.h>
 #include "wx/setup.h"
-#include <shlobj.h>
 #include <filesystem>
 #include <chrono>
 #include <iomanip>
 #include <sstream>
 #include <cmath>
-#include <Windows.h>
 #include <string>
 #include "Savgol.h"
 #include "Utils.h"
 #include "Cammystat.h"
 #include "MainFrame.h"
+
+#ifdef _WIN32
+  #include <Windows.h>
+  #include <tchar.h>
+#endif
 
 namespace fs = std::filesystem;
 
@@ -23,7 +26,9 @@ class Utils
 public:
 	static std::vector<double> clone_trimmed_list(const std::vector<double>& lst, size_t n, size_t x);
 	static std::vector<double> aggregate(const std::string& videoPath, const std::string& compressedPath, const std::string& heatmapPath, const std::string& coordPath, const std::string& resultPath);
+#ifdef _WIN32
 	static std::string TCHARToString(const TCHAR* tcharStr);
+#endif
 
 	static std::wstring s2ws(const std::string& s) {
 		return std::wstring(s.begin(), s.end());

@@ -406,3 +406,4 @@ cammystat/lib/opencv2
 cammystat/command.txt
 cammystat/plot.exe
 /opencv
+/build/
