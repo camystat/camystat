@@ -109,7 +109,9 @@ bool MainFrame::IsConsoleShown() {
 }
 
 void MainFrame::SyncToggleDebugWindowMenuItemLabel() {
+	#ifdef _WIN32
 	toggleDebugWindowMenuItem->SetItemLabel(MainFrame::IsConsoleShown() ? "Hide debug console" : "Show debug console");
+	#endif
 }
 
 void MainFrame::syncAutomaticRecognitionAnalysisFieldStates() {
@@ -507,10 +509,12 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title, 
 
 	wxMenuBar* menuBar = new wxMenuBar;
 
+	#if _WIN32
 	wxMenu* debugWindowMenu = new wxMenu;
 	toggleDebugWindowMenuItem = new wxMenuItem(debugWindowMenu, wxID_ANY, "Show debug console");
 	debugWindowMenu->Append(toggleDebugWindowMenuItem);
 	menuBar->Append(debugWindowMenu, "Debug console");
+	#endif
 
 	wxMenu* aboutAuthorsMenu = new wxMenu;
 	citeMeMenuItem = new wxMenuItem(aboutAuthorsMenu, wxID_ANY, "About the authors");
@@ -526,7 +530,9 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title, 
 
 	Bind(wxEVT_MENU, &MainFrame::OnCiteMe, this, citeMeMenuItem->GetId());
 	Bind(wxEVT_MENU, &MainFrame::OpenLicensesFolder, this, openLicensesFolderMenuItem->GetId());
+	#if _WIN32
 	Bind(wxEVT_MENU, &MainFrame::ToggleConsole, this, toggleDebugWindowMenuItem->GetId());
+	#endif
 	Bind(wxEVT_CREATE_NEW_WINDOW, &MainFrame::OnCreateNewWindow, this);
 	Bind(wxEVT_CLOSE_WINDOW, &MainFrame::OnClose, this);
 
@@ -1715,7 +1721,15 @@ void MainFrame::OpenLicensesFolder(wxCommandEvent& WXUNUSED(event)) {
 
 	wxString exeDirPath = exeFilePath.GetPath();
 
+	#ifdef _WIN32
 	wxString command = wxString::Format("explorer \"%s\\licenses\"", exeDirPath);
+	#else
+		#ifdef __APPLE__
+			wxString command = wxString::Format("open \"%s/licenses\"", exeDirPath);
+		#else
+			wxString command = wxString::Format("xdg-open \"%s/licenses\"", exeDirPath);
+		#endif
+	#endif
 
 	std::cout << "Opening licenses folder: " << command << std::endl;
 
