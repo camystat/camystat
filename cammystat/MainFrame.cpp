@@ -347,13 +347,25 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title, 
 	wxTCSizeOfFocusField->Bind(wxEVT_KILL_FOCUS, &MainFrame::OnKillFocus, this);
 	wxTCSizeOfFocusField->Bind(wxEVT_TEXT_PASTE, &MainFrame::OnPaste, this);
 	wxSTSizeOfFocusField = new wxStaticText(panel, wxID_ANY, "Size of the focus field", wxPoint(370, rightSideCoordY), wxSize(80, 30));
-	
-	wxTCPercentileOfTheHighestValues = new wxTextCtrl(panel, wxID_ANY, std::to_string(DEFAULT_PERCENTILE_OF_HIGHEST_VALUES), wxPoint(460, rightSideCoordY), wxSize(40, 20));
+
+{
+	#if _WIN32
+	auto tempRowXCoord = 370;
+	#else
+	auto tempRowXCoord = 420;
+	#endif
+
+	tempRowXCoord += 90;
+
+	wxTCPercentileOfTheHighestValues = new wxTextCtrl(panel, wxID_ANY, std::to_string(DEFAULT_PERCENTILE_OF_HIGHEST_VALUES), wxPoint(tempRowXCoord, rightSideCoordY), wxSize(40, 20));
 	wxTCPercentileOfTheHighestValues->Bind(wxEVT_CHAR, &MainFrame::OnCharNoDot, this);
 	wxTCPercentileOfTheHighestValues->Bind(wxEVT_KILL_FOCUS, &MainFrame::OnKillFocus, this);
 	wxTCPercentileOfTheHighestValues->Bind(wxEVT_TEXT_PASTE, &MainFrame::OnPaste, this);
-	wxSTPercentileOfTheHighestValues = new wxStaticText(panel, wxID_ANY, "Percentile of the highest values", wxPoint(510, rightSideCoordY), wxSize(80, 50));
 
+	tempRowXCoord += 50;
+
+	wxSTPercentileOfTheHighestValues = new wxStaticText(panel, wxID_ANY, "Percentile of the highest values", wxPoint(tempRowXCoord, rightSideCoordY), wxSize(80, 50));
+}
 	rightSideCoordY += 50;
 
 	wxSTAutomaticRecognitionAnalysis = new wxStaticText(panel, wxID_ANY, "Determine recognition analysis depth", wxPoint(320, rightSideCoordY));
@@ -521,6 +533,7 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title, 
 	{
 		int windowHeight = rightSideCoordY + 90;
 		SetSizeHints(MAIN_WINDOW_WIDTH, windowHeight, MAIN_WINDOW_WIDTH, windowHeight);
+		SetSize(MAIN_WINDOW_WIDTH, windowHeight);
 	}
 
 	wxBOutputPath->Bind(wxEVT_BUTTON, [this](wxCommandEvent& event)

@@ -24,7 +24,11 @@
 #include "IterativeReportWriter.h"
 
 #define STRING_STATUS_WAITING_FOR_INPUT "Status: Waiting for input"
+#ifdef _WIN32
 #define MAIN_WINDOW_WIDTH 640
+#else
+#define MAIN_WINDOW_WIDTH 880
+#endif
 
 #define DEFAULT_PERCENTILE_OF_HIGHEST_VALUES 90
 #define DEFAULT_SIZE_OF_FOCUS_FIELD 25

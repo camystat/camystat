@@ -35,6 +35,9 @@ add_custom_command(TARGET cammystat POST_BUILD
           "${CMAKE_CURRENT_SOURCE_DIR}/citeme.txt"
           "$<TARGET_FILE_DIR:cammystat>/citeme.txt"
   COMMAND ${CMAKE_COMMAND} -E copy_if_different
+          "${CMAKE_CURRENT_SOURCE_DIR}/icon.ico"
+          "$<TARGET_FILE_DIR:cammystat>/icon.ico"
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different
           "${CMAKE_CURRENT_SOURCE_DIR}/plot.exe"
           "$<TARGET_FILE_DIR:cammystat>/plot.exe"
   COMMAND ${CMAKE_COMMAND} -E copy_directory

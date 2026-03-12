@@ -32,6 +32,8 @@ Application::Application() {
 }
 
 bool Application::OnInit() {
+	wxInitAllImageHandlers();
+
 	MainFrame* mainFrame = new MainFrame("CamMyStat");
 
 	mainFrame->SetTitle("CamMyStat");
