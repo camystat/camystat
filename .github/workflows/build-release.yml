@@ -2,12 +2,15 @@ name: Build and Release
 
 on:
   push:
-    branches: [main, master]
-  workflow_dispatch:
+    tags:
+      - '*'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
+permissions:
+  contents: write
 
 jobs:
   build-linux:
@@ -21,8 +24,8 @@ jobs:
 
       - name: Setup and build
         run: |
-          chmod +x setup.sh build.bash
-          ./setup.sh
+          chmod +x setup.bash build.bash
+          ./setup.bash
           ./build.bash
 
       - name: Package build/cammystat (exclude CMakeFiles)
@@ -46,8 +49,8 @@ jobs:
 
       - name: Setup and build
         run: |
-          chmod +x setup.sh build.bash
-          ./setup.sh
+          chmod +x setup.bash build.bash
+          ./setup.bash
           ./build.bash
 
       - name: Package build/cammystat (exclude CMakeFiles)
