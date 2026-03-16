@@ -1826,7 +1826,7 @@ void MainFrame::OnCreateNewWindow(wxThreadEvent& event) {
 		buffer << "Failed to load citeme.txt";
 	}
 
-	wxTextCtrl* textCtrl = new wxTextCtrl(panel, wxID_ANY, buffer.str(), wxDefaultPosition, wxDefaultSize,
+	wxTextCtrl* textCtrl = new wxTextCtrl(panel, wxID_ANY, wxString::FromUTF8(buffer.str().c_str()), wxDefaultPosition, wxDefaultSize,
 		wxTE_MULTILINE | wxTE_READONLY | wxHSCROLL | wxVSCROLL);
 
 	textCtrl->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
