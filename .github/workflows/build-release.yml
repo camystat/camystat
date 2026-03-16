@@ -68,6 +68,9 @@ jobs:
       - name: Run setup.ps1
         run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File setup.ps1
 
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
       - name: Build solution
         run: |
           msbuild cammystat.sln /p:Configuration=Release /p:Platform=x64 /property:MultiProcessorCompilation=true
