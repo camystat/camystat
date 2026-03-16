@@ -1,6 +1,6 @@
 # camystat
 
-Research project.
+Software for binary differential analysis as a high-throughput method for analyzing recordings of contractile cardiomyocytes derived from human-induced pluripotent stem cells.
 
 ## Building from source
 
