@@ -63,6 +63,8 @@ public:
 	void wxMergeEvents(wxCommandEvent& evt);
 	void wxAutoSelectEvents(wxCommandEvent& evt);
 	void SetTaskBarIcon();
+	/** Runs the plot executable on the main thread (for macOS); safe to call from worker thread. */
+	void RunPlotOnMainThread(const std::string& exePath, const std::string& subCommand, const std::string& flags);
 	AnalysisResult RunAnalysis();
 	void UpdateUI(const std::optional<const AnalysisResult>& result = std::nullopt);
 	void OnTimer(wxTimerEvent& event);

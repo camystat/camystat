@@ -1,6 +1,13 @@
 #include "MainFrame.h"
 
 #include <thread>
+#include <mutex>
+#include <condition_variable>
+#if !defined(_WIN32)
+#include <cerrno>
+#include <unistd.h>
+#include <sys/wait.h>
+#endif
 
 //UNCOMMENT BELOW LINE WITH DEFINE TO INTRODUCE DEBUG MODE
 //IN DEBUG MODE EVERY STEP IS BEING LOGGED
@@ -185,15 +192,15 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title, 
 
 			std::thread([this]() {
 				AnalysisResult result = RunAnalysis();
-
+				// all UI updates must run on the main thread (required by macOS/AppKit).
+				this->CallAfter([this, result]() {
 				timer->Stop();
 				wxSTStatusDisplayed->SetLabel(wxSTStatus->GetLabel());
 				m_dotCount = 0;
-
 				stopAnalysisThreadFlag = false;
-
 				processingRunning = false;
 				UpdateUI(result);
+				});
 			}).detach();
 		});
 
@@ -720,6 +727,50 @@ void MainFrame::wxAutoSelectEvents(wxCommandEvent& evt) {
 	UpdateUI();
 }
 
+void MainFrame::RunPlotOnMainThread(const std::string& exePath, const std::string& subCommand, const std::string& flags)
+{
+#ifdef _WIN32
+	Utils::callPlotExe(exePath, subCommand, flags);
+#else
+	// Run plot in this (worker) thread via fork/exec so the main thread stays free and the UI does not freeze.
+	std::string command = "\"" + exePath + "\" \"" + subCommand + "\" " + flags;
+	std::cout << "Command: " << command << std::endl;
+
+	pid_t pid = fork();
+	if (pid == -1) {
+		std::cerr << "RunPlotOnMainThread: fork failed" << std::endl;
+		this->CallAfter([this]() {
+			wxMessageDialog dialog(NULL, "Failed to start plotting script (fork failed).", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
+			dialog.ShowModal();
+		});
+		return;
+	}
+	if (pid == 0) {
+		execl("/bin/sh", "sh", "-c", command.c_str(), static_cast<char*>(nullptr));
+		_exit(127);
+	}
+
+	int status = 0;
+	pid_t r;
+	while ((r = waitpid(pid, &status, 0)) == -1 && errno == EINTR) { }
+	int exitCode = (r == pid && WIFEXITED(status)) ? WEXITSTATUS(status) : -1;
+	std::cout << "Plot exit code: " << exitCode << std::endl;
+
+	if (exitCode != 0) {
+		this->CallAfter([this]() {
+			wxMessageDialog dialog(NULL, "Plotting script finished with a non-zero exit code!.", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
+			dialog.ShowModal();
+		});
+	}
+
+	std::ofstream outFile("command.txt");
+	if (outFile.is_open()) {
+		outFile << command;
+		outFile.close();
+	}
+#endif
+}
+
 void MainFrame::SetTaskBarIcon()
 {
 #ifdef _WIN32
@@ -999,7 +1050,8 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 	}
 
 	processingRunning = true;
-	UpdateUI();
+	// all UI updates must run on the main thread (macOS/AppKit).
+	this->CallAfter([this]() { UpdateUI(); });
 
 	std::string dateTime = MiscUtils::GetCurrentDateTime();
 	std::string thisRunFolderName = "camystat_output_" + dateTime;
@@ -1066,8 +1118,10 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 	std::cout << "Output - event chart: " << MiscUtils::BoolToStringDebug(outputEventChart) << std::endl;
 	std::cout << "---------------------------------------------------------" << std::endl << std::endl;
 
-	wxCommandEvent citeMeEvent;
-	OnCiteMe(citeMeEvent);
+	this->CallAfter([this]() {
+		wxCommandEvent citeMeEvent;
+		OnCiteMe(citeMeEvent);
+	});
 
 	for (wxString directory : directories) {
 		if (stopAnalysisThreadFlag) return MainFrame::AnalysisResult::ABORTED;
@@ -1262,7 +1316,7 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 				}
 
 				std::filesystem::path savePath = outputFolderPath / "auto_binarization_threshold";
-				Utils::callPlotExe(plotPath, "auto_binarization_thresh", "\"" + xorScoresForThresholdsPath.string() + "\" \"" + calculatedThresholdPath.string() + "\" \"" + savePath.string() + "\"");
+				RunPlotOnMainThread(plotPath, "auto_binarization_thresh", "\"" + xorScoresForThresholdsPath.string() + "\" \"" + calculatedThresholdPath.string() + "\" \"" + savePath.string() + "\"");
 			}
 			// Error handling
 			catch (const Cammystat::ProcessingAbortedException& e) {
@@ -1592,7 +1646,7 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 		if(outputLineChart || outputEventChart) wxSTStatus->SetLabel("Status: Saving plots");
 
 		if (outputLineChart) {
-			Utils::callPlotExe(plotPath, "video_events", JoinCommandLineArguments(valuesB4XORPath, "", fileName, outputFolderPath / "raw_chart", fps));
+			RunPlotOnMainThread(plotPath, "video_events", JoinCommandLineArguments(valuesB4XORPath, "", fileName, outputFolderPath / "raw_chart", fps));
 		}
 
 		if (stopAnalysisThreadFlag) {
@@ -1601,7 +1655,7 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 		}
 		
 		if (outputEventChart) {
-			Utils::callPlotExe(plotPath, "video_events", JoinCommandLineArguments(valuesPath, eventsPath, fileName, normalizedChartsPath, fps));
+			RunPlotOnMainThread(plotPath, "video_events", JoinCommandLineArguments(valuesPath, eventsPath, fileName, normalizedChartsPath, fps));
 		}
 
 		if (stopAnalysisThreadFlag) {
@@ -1611,7 +1665,7 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 
 		if (analyseContractionRelaxationEvents) {
 			std::filesystem::path contractionRelaxationPath = outputFolderPath / "contraction_relaxation_chart";
-			Utils::callPlotExe(plotPath, "contraction_relaxation_analysis", JoinCommandLineArguments(valuesPath, contractionRelaxationPhasesPath, fileName, contractionRelaxationPath, fps));
+			RunPlotOnMainThread(plotPath, "contraction_relaxation_analysis", JoinCommandLineArguments(valuesPath, contractionRelaxationPhasesPath, fileName, contractionRelaxationPath, fps));
 		}
 
 		reportWriter.finalizeRow();
