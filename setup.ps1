@@ -31,9 +31,12 @@ Copy-Item -Path opencv/opencv/build/bin/opencv_videoio_ffmpeg4100_64.dll -Destin
 Copy-Item -Path opencv/opencv/build/x64/vc16/bin/opencv_world4100.dll -Destination cammystat/lib/opencv2/opencv_world4100.dll -Recurse -Force
 Copy-Item -Path opencv/opencv/build/x64/vc16/bin/opencv_world4100.pdb -Destination cammystat/lib/opencv2/opencv_world4100.pdb -Recurse -Force
 
-Copy-Item -Path opencv/opencv/LICENSE.txt -Destination cammystat/misc/licenses/OPENCV_LICENSE.txt -Recurse -Force
-Copy-Item -Path opencv/opencv/LICENSE_FFMPEG.txt -Destination cammystat/misc/licenses/OPENCV_LICENSE_FFMPEG.txt -Recurse -Force
-Copy-Item -Path opencv/opencv/build/etc/licenses/* -Destination cammystat/misc/licenses -Recurse -Force
+Copy-Item -Path opencv/opencv/LICENSE.txt -Destination cammystat/misc/licenses/OPENCV_LICENSE.txt -Force
+Copy-Item -Path opencv/opencv/LICENSE_FFMPEG.txt -Destination cammystat/misc/licenses/OPENCV_LICENSE_FFMPEG.txt -Force
+$opencvEtcLicenses = "opencv/opencv/build/etc/licenses"
+if (Test-Path -PathType Container $opencvEtcLicenses) {
+    Copy-Item -Path "$opencvEtcLicenses/*" -Destination cammystat/misc/licenses -Recurse -Force
+}
 
 # copy eigen license files
 $directory = "eigen/"

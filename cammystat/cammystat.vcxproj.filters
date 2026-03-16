@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Pliki źródłowe">
@@ -84,9 +84,5 @@
     <CopyFileToFolders Include="lib\opencv2\opencv_videoio_ffmpeg4100_64.dll">
       <Filter>Pliki zasobów</Filter>
     </CopyFileToFolders>
-    <CopyFileToFolders Include="misc\PLOT_EXE_LICENSES.txt" />
-    <CopyFileToFolders Include="misc\WXWIDGETS_LICENSE.txt" />
-    <CopyFileToFolders Include="misc\OPENCV_LICENSE.txt" />
-    <CopyFileToFolders Include="misc\EIGEN_LICENSE.txt" />
   </ItemGroup>
 </Project>

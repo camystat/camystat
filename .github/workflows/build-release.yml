@@ -54,7 +54,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: cammystat-macos-x64
-          path: staging/cammystat-macos-x64
+          path: build/cammystat
 
   build-windows:
     name: Build (Windows)

@@ -118,6 +118,8 @@ say "Downloading OpenCV license..."
 if have curl; then
   curl -fsSL "https://raw.githubusercontent.com/opencv/opencv/refs/heads/master/LICENSE" \
     -o "${LICENSES_DIR}/OPENCV_LICENSE.txt"
+  curl -fsSL "https://raw.githubusercontent.com/opencv/opencv/refs/heads/master/3rdparty/ffmpeg/license.txt" \
+    -o "${LICENSES_DIR}/OPENCV_LICENSE_FFMPEG.txt"
 else
   say "curl not available; skipping OpenCV license download."
 fi
