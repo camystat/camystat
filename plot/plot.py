@@ -128,8 +128,13 @@ def plot_video_events(
             print("log: add_trace")
 
     # Update layout
+    suffix = (
+        f" - {len(events)} event{'' if len(events) == 1 else 's'}"
+        if events is not None
+        else ""
+    )
     fig.update_layout(
-        title=f'Plot for {video_name}{f" - {len(events)} event{'' if len(events) == 1 else 's'}" if events is not None else ""}',
+        title=f"Plot for {video_name}{suffix}",
         xaxis_title="Time (seconds)",
         yaxis_title="XOR Values",
         showlegend=True,
@@ -149,7 +154,7 @@ def plot_contraction_relaxation_phases(
     normalized_phases: List[Phase],
     video_name: str,
     save_path: str,
-    fps: int
+    fps: int,
 ) -> None:
     """
     Plots cardiomyocyte activity with contraction and relaxation phases highlighted, ensuring paired numbering. Y values are always 0 by design.
@@ -185,7 +190,13 @@ def plot_contraction_relaxation_phases(
         opacity = 0.2
         fig.add_trace(
             pgo.Scatter(
-                x=[start_index / fps, end_index / fps, end_index / fps, start_index / fps, start_index / fps],
+                x=[
+                    start_index / fps,
+                    end_index / fps,
+                    end_index / fps,
+                    start_index / fps,
+                    start_index / fps,
+                ],
                 y=[0, 0, 1, 1, 0],
                 fill="toself",
                 mode="lines",
@@ -358,7 +369,7 @@ if __name__ == "__main__":
                     ),
                     video_name=video_name,
                     save_path=save_path,
-                    fps=fps
+                    fps=fps,
                 )
 
             case "auto_binarization_thresh":
