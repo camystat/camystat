@@ -114,6 +114,14 @@ else
   say "curl not available; skipping wxWidgets license download."
 fi
 
+say "Downloading OpenCV license..."
+if have curl; then
+  curl -fsSL "https://raw.githubusercontent.com/opencv/opencv/refs/heads/master/LICENSE" \
+    -o "${LICENSES_DIR}/OPENCV_LICENSE.txt"
+else
+  say "curl not available; skipping OpenCV license download."
+fi
+
 say "Activating python venv..."
 cd "plot"
 PYTHON_BIN="${PYTHON_BIN:-}"

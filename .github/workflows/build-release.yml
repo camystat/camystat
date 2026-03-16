@@ -1,0 +1,107 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build-linux:
+    name: Build (Linux)
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup and build
+        run: |
+          chmod +x setup.sh build.bash
+          ./setup.sh
+          ./build.bash
+
+      - name: Package build/cammystat (exclude CMakeFiles)
+        run: |
+          rm -rf build/cammystat/CMakeFiles
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cammystat-linux-x64
+          path: build/cammystat
+
+  build-macos:
+    name: Build (macOS)
+    runs-on: macos-14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup and build
+        run: |
+          chmod +x setup.sh build.bash
+          ./setup.sh
+          ./build.bash
+
+      - name: Package build/cammystat (exclude CMakeFiles)
+        run: |
+          rm -rf build/cammystat/CMakeFiles
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cammystat-macos-x64
+          path: staging/cammystat-macos-x64
+
+  build-windows:
+    name: Build (Windows)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Run setup.ps1
+        run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File setup.ps1
+
+      - name: Build solution
+        run: |
+          msbuild cammystat.sln /p:Configuration=Release /p:Platform=x64 /property:MultiProcessorCompilation=true
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cammystat-windows-x64
+          path: x64/Release/
+
+  release:
+    name: Create release and publish artifacts
+    needs: [build-linux, build-macos, build-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create release archives
+        run: |
+          mkdir -p release-assets
+          (cd artifacts/cammystat-linux-x64 && zip -r ../../release-assets/cammystat-linux-x64.zip .)
+          (cd artifacts/cammystat-macos-x64 && zip -r ../../release-assets/cammystat-macos-x64.zip .)
+          (cd artifacts/cammystat-windows-x64 && zip -r ../../release-assets/cammystat-windows-x64.zip .)
+          ls -la release-assets/
+
+      - name: Create release and upload assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.sha }}
+          name: Build ${{ github.sha }}
+          generate_release_notes: true
+          files: release-assets/*.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

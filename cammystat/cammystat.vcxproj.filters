@@ -86,5 +86,7 @@
     </CopyFileToFolders>
     <CopyFileToFolders Include="misc\PLOT_EXE_LICENSES.txt" />
     <CopyFileToFolders Include="misc\WXWIDGETS_LICENSE.txt" />
+    <CopyFileToFolders Include="misc\OPENCV_LICENSE.txt" />
+    <CopyFileToFolders Include="misc\EIGEN_LICENSE.txt" />
   </ItemGroup>
 </Project>
