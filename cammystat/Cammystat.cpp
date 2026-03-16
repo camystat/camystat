@@ -133,7 +133,7 @@ std::pair<int, std::vector<int>> Cammystat::Preprocessing::calculateBinarization
 		// Below: retry (including first try) loop
 		while (true)
 		{
-			if (abortFlag) {
+			if (abortFlag.load()) {
 				throw Cammystat::ProcessingAbortedException();
 			}
 
@@ -158,7 +158,7 @@ std::pair<int, std::vector<int>> Cammystat::Preprocessing::calculateBinarization
 			// Move through the next frames and find pair of consecutive frames that has the max avg. brightness diff
 			while (true)
 			{
-				if (abortFlag) {
+				if (abortFlag.load()) {
 					throw Cammystat::ProcessingAbortedException();
 				}
 
@@ -204,7 +204,7 @@ std::pair<int, std::vector<int>> Cammystat::Preprocessing::calculateBinarization
 			// Find binarization threshold that maximizes the XOR score
 			for (int t = 0; t <= 255; t++)
 			{
-				if (abortFlag) {
+				if (abortFlag.load()) {
 					throw Cammystat::ProcessingAbortedException();
 				}
 
@@ -301,7 +301,7 @@ cv::Mat Cammystat::Preprocessing::createHeatmap(const std::filesystem::path& vid
 	try
 	{
 		while (true) {
-			if (abortFlag) {
+			if (abortFlag.load()) {
 				throw Cammystat::ProcessingAbortedException();
 			}
 
@@ -344,7 +344,7 @@ cv::Mat Cammystat::Preprocessing::createHeatmap(const std::filesystem::path& vid
 
 		pixelCount.convertTo(pixelCountU8, CV_8UC1);
 
-		if (abortFlag) {
+		if (abortFlag.load()) {
 			throw Cammystat::ProcessingAbortedException();
 		}
 
@@ -393,7 +393,7 @@ std::vector<std::pair<int, int>> Cammystat::Preprocessing::findMaxSumSquareCoord
 	// Find coordinates with the maximum sum
 	for (int i = 0; i <= rows - square_size; ++i) {
 		for (int j = 0; j <= cols - square_size; ++j) {
-			if (abortFlag) {
+			if (abortFlag.load()) {
 				throw Cammystat::ProcessingAbortedException();
 			}
 
@@ -426,7 +426,7 @@ std::vector<std::pair<int, int>> Cammystat::Preprocessing::findMaxSumSquareCoord
 		}
 	}
 
-	if (abortFlag) {
+	if (abortFlag.load()) {
 		throw Cammystat::ProcessingAbortedException();
 	}
 
@@ -436,7 +436,7 @@ std::vector<std::pair<int, int>> Cammystat::Preprocessing::findMaxSumSquareCoord
 			return a.first > b.first;
 		});
 
-	if (abortFlag) {
+	if (abortFlag.load()) {
 		throw Cammystat::ProcessingAbortedException();
 	}
 
@@ -448,7 +448,7 @@ std::vector<std::pair<int, int>> Cammystat::Preprocessing::findMaxSumSquareCoord
 		selected_coordinates.push_back({ x, y });
 	}
 
-	if (abortFlag) {
+	if (abortFlag.load()) {
 		throw Cammystat::ProcessingAbortedException();
 	}
 
@@ -603,14 +603,14 @@ std::vector<double> Cammystat::Smoothing::modifyMeans(const std::vector<double>&
 	std::vector<double> current_list = input_list;
 
 	for (int iter = 0; iter < x; ++iter) {		
-		if (abortFlag) {
+		if (abortFlag.load()) {
 			throw Cammystat::ProcessingAbortedException();
 		}
 
 		std::vector<double> modified_list;
 
 		for (size_t i = 0; i < current_list.size(); ++i) {
-			if (abortFlag) {
+			if (abortFlag.load()) {
 				throw Cammystat::ProcessingAbortedException();
 			}
 
@@ -731,7 +731,7 @@ std::vector<std::vector<double>> Cammystat::Detection::calculate_integrals_with_
 	for (size_t i = 0; i < values.size(); ++i) {
 		if (values[i] == 0) {
 			if (i > start_index) {
-				if (abortFlag) {
+				if (abortFlag.load()) {
 					throw Cammystat::ProcessingAbortedException();
 				}
 
@@ -814,7 +814,7 @@ std::vector<Cammystat::Detection::Phase> Cammystat::Detection::locate_contractio
 	std::vector<Phase> results;
 
 	for (const auto& contraction : integrals_results) {
-		if (abortFlag) {
+		if (abortFlag.load()) {
 			throw Cammystat::ProcessingAbortedException();
 		}
 

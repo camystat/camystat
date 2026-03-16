@@ -1,4 +1,5 @@
-﻿#pragma once
+#pragma once
+#include <atomic>
 #include <iostream>
 #include <vector>
 #include <algorithm>
@@ -15,6 +16,9 @@
 
 namespace Cammystat
 {
+    /** Used as default for abortFlag parameters (never aborts). */
+    inline std::atomic<bool> kNoAbort{false};
+
     class ProcessingAbortedException : public std::runtime_error
     {
     public:
@@ -76,7 +80,7 @@ namespace Cammystat
         // odpowiednim pikselom.Funkcja zlicza te zmiany dla każdego piksela i zwraca macierz odpowiadającą kształtem 
         // wideo z liczbą odnotowanych zmian dla każdego piksela.
 
-        static cv::Mat createHeatmap(const std::filesystem::path& videoPath, const int startFrame = 0, const int endFrame = -1, const int threshold = 128, const std::filesystem::path& resultPath = "", const std::atomic<bool>& abortFlag = false);
+        static cv::Mat createHeatmap(const std::filesystem::path& videoPath, const int startFrame = 0, const int endFrame = -1, const int threshold = 128, const std::filesystem::path& resultPath = "", const std::atomic<bool>& abortFlag = kNoAbort);
 
         // 1.2 Wyznaczanie obszaru zainteresowania
         // 
@@ -96,7 +100,7 @@ namespace Cammystat
             const double top_percent,
             const std::filesystem::path& resultPath,
             const std::filesystem::path& imagePath,
-            const std::atomic<bool>& abortFlag = false
+            const std::atomic<bool>& abortFlag = kNoAbort
         );
 
         // 1.3 Analiza aktywności na nagraniu
@@ -128,7 +132,7 @@ namespace Cammystat
             const std::vector<std::pair<int, int>>& coordinates = {},
             const int threshold = 128,
             const std::filesystem::path& resultPath = "",
-            const std::atomic<bool>& abortFlag = false
+            const std::atomic<bool>& abortFlag = kNoAbort
         );
     };
 
@@ -137,7 +141,7 @@ namespace Cammystat
 
         static std::vector<double> applySavgolFilter(const std::vector<double>& data, size_t window_length = 7, size_t polyorder = 5);
         static std::vector<double> smoothValues(const std::vector<double>&, float percentile);
-        static std::vector<double> modifyMeans(const std::vector<double>& input_list, size_t n = 2, size_t x = 1, const std::atomic<bool>& abortFlag = false);
+        static std::vector<double> modifyMeans(const std::vector<double>& input_list, size_t n = 2, size_t x = 1, const std::atomic<bool>& abortFlag = kNoAbort);
         static std::vector<double> cloneNormalizedValues(const std::vector<double>& values);
         static std::vector<double> cloneReplaceZerosValuesBelowThreshold(const std::vector<double>& lst, double threshold, std::filesystem::path resultPath);
     };

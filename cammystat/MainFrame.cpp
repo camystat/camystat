@@ -1787,7 +1787,7 @@ void MainFrame::OpenLicensesFolder(wxCommandEvent& WXUNUSED(event)) {
 
 	std::cout << "Opening licenses folder: " << command << std::endl;
 
-	system(command.c_str());
+	(void)system(command.c_str());
 }
 
 void MainFrame::ToggleConsole(wxCommandEvent& WXUNUSED(event)) {

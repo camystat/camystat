@@ -1,4 +1,5 @@
 #pragma once
+#include <atomic>
 #include <wx/wx.h>
 #include "wx/setup.h"
 #include <wx/wfstream.h>
