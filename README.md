@@ -4,19 +4,86 @@ Software for binary differential analysis as a high-throughput method for analyz
 
 ## Building from source
 
-### Prerequisites
+Clone the repository (with submodules):
 
-- MSVC along with Visual Studio
-- GIT
-- Python >= 3.10
+```bash
+git clone --recurse-submodules https://github.com/cammystat/cammystat.git
+cd cammystat
+```
 
-To build the project, first clone it along with submodules:
+If you already cloned without submodules:
 
-`git clone git@github.com:cammystat/cammystat.git --recurse-submodules`
+```bash
+git submodule update --init --recursive
+```
 
-And run the setup script:
+Then follow the instructions for your platform below.
 
-`powershell.exe -noprofile -executionpolicy bypass -file setup.ps1`
+---
 
-Finally, open `cammystat.sln` with Visual Studio, select a configuration (Debug with console window or Release without it) and build / run the program.
-You will then be able to find the outputs in `x64/{Debug,Release}`.
+### Linux
+
+**Prerequisites**
+
+- CMake (3.20+)
+- C++17 toolchain (`build-essential` on Debian/Ubuntu)
+- pkg-config, curl
+- Python 3.10 or newer (python3-venv, python3-pip)
+- [OpenCV](https://opencv.org/) (e.g. `libopencv-dev`)
+- [wxWidgets](https://www.wxwidgets.org/) 3.2 (e.g. `libwxgtk3.2-dev`)
+
+On Debian/Ubuntu the setup script can install these for you. Otherwise install manually, then run setup and build:
+
+```bash
+./setup.sh
+./build.bash
+```
+
+The executable and runtime files (licenses, `plot.exe`, etc.) will be in **`build/cammystat/`**. The app must be run from that directory so it finds its assets.
+
+---
+
+### macOS
+
+**Prerequisites**
+
+- CMake (3.20+)
+- pkg-config, curl
+- Python 3.10 or newer (e.g. `python@3.12` via Homebrew)
+- [OpenCV](https://opencv.org/) and [wxWidgets](https://www.wxwidgets.org/) (e.g. via Homebrew)
+
+The setup script can install dependencies via Homebrew. Then run setup and build:
+
+```bash
+./setup.sh
+./build.bash
+```
+
+The executable and runtime files will be in **`build/cammystat/`**. Run the app from that directory.
+
+---
+
+### Windows
+
+**Prerequisites**
+
+- [Visual Studio](https://visualstudio.microsoft.com/) with MSVC (e.g. Visual Studio 2022 with "Desktop development with C++")
+- [Git](https://git-scm.com/)
+- Python 3.10 or newer (on PATH)
+
+Setup downloads OpenCV binaries, builds wxWidgets, and builds the bundled plot tool (Python/PyInstaller). Run setup from the repository root in PowerShell:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File setup.ps1
+```
+
+Then build the solution:
+
+- **Visual Studio:** Open `cammystat.sln`, choose configuration (e.g. **Release | x64**), then Build / Run.
+- **Command line:** From the repo root (with MSBuild on PATH, e.g. from "Developer Command Prompt" or after `microsoft/setup-msbuild` in CI):
+
+  ```powershell
+  msbuild cammystat.sln /p:Configuration=Release /p:Platform=x64 /property:MultiProcessorCompilation=true
+  ```
+
+Outputs are in **`x64\Release\`** (or `x64\Debug\` for Debug). Run `cammystat.exe` from that folder so it finds `plot.exe`, DLLs, and other assets.
