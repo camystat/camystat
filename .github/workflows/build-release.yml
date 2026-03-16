@@ -109,8 +109,8 @@ jobs:
       - name: Create release and upload assets
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: build-${{ github.sha }}
-          name: Build ${{ github.sha }}
+          tag_name: ${{ github.ref_name }}
+          name: Build ${{ github.ref_name }}
           generate_release_notes: true
           files: release-assets/*.zip
         env:
