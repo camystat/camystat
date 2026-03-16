@@ -30,7 +30,7 @@ jobs:
           rm -rf build/cammystat/CMakeFiles
 
       - name: Upload Linux artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: cammystat-linux-x64
           path: build/cammystat
@@ -55,7 +55,7 @@ jobs:
           rm -rf build/cammystat/CMakeFiles
 
       - name: Upload macOS artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: cammystat-macos-x64
           path: build/cammystat
@@ -80,7 +80,7 @@ jobs:
           msbuild cammystat.sln /p:Configuration=Release /p:Platform=x64 /property:MultiProcessorCompilation=true
 
       - name: Upload Windows artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: cammystat-windows-x64
           path: x64/Release/
