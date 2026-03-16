@@ -2,6 +2,16 @@
 
 Software for binary differential analysis as a high-throughput method for analyzing recordings of contractile cardiomyocytes derived from human-induced pluripotent stem cells.
 
+## Running
+
+Please download the latest release from https://github.com/camystat/camystat/releases.
+
+> [!IMPORTANT]
+> After downloading, please always run the executable from the directory (CWD) where it is placed.
+
+> [!IMPORTANT]
+> For running on Linux, wxWidgets (GUI library used by camystat) library is required to be installed on the machine. The package name depends on your distribution and version, but generally you can search in your package manager for the `libwx*` package. For instance, for Ubuntu with apt and GTK, you can try searching: `sudo apt-cache search libwxgt*`. An example of a valid installation command may be: `sudo apt install libwxgtk3.0-gtk3-0v5`.
+
 ## Building from source
 
 Clone the repository (with submodules):
