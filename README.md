@@ -35,7 +35,7 @@ Then follow the instructions for your platform below.
 On Debian/Ubuntu the setup script can install these for you. Otherwise install manually, then run setup and build:
 
 ```bash
-./setup.sh
+./setup.bash
 ./build.bash
 ```
 
@@ -55,7 +55,7 @@ The executable and runtime files (licenses, `plot.exe`, etc.) will be in **`buil
 The setup script can install dependencies via Homebrew. Then run setup and build:
 
 ```bash
-./setup.sh
+./setup.bash
 ./build.bash
 ```
 
