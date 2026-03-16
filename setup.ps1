@@ -130,6 +130,7 @@ foreach ($filename in @(
 }
 
 Write-Host "Building plot.exe (this may take a while)..."
+python -m pip install pyinstaller
 pyinstaller --onefile plot.py
 Set-Location dist
 Copy-Item -Path plot.exe -Destination ../../cammystat/plot.exe -Force
