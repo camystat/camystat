@@ -23,6 +23,24 @@ target_link_libraries(cammystat PRIVATE ${wxWidgets_LIBRARIES})
 target_include_directories(cammystat PRIVATE ${wxWidgets_INCLUDE_DIRS})
 target_compile_definitions(cammystat PRIVATE ${wxWidgets_DEFINITIONS})
 
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        list(LENGTH wxWidgets_LIBRARIES wx_lib_count)
+        if(wx_lib_count GREATER 0)
+                list(GET wxWidgets_LIBRARIES 0 FIRST_LIB_PATH)
+                string(REGEX REPLACE "^-L" "" WX_LIB_DIR "${FIRST_LIB_PATH}")
+                string(REGEX REPLACE ";.*" "" WX_LIB_DIR "${WX_LIB_DIR}")
+
+                message(STATUS "wxWidgets library dir detected: ${WX_LIB_DIR}")
+                file(GLOB wx_so_files "${WX_LIB_DIR}/libwx_*")
+                foreach(wx_so ${wx_so_files})
+                        add_custom_command(TARGET cammystat POST_BUILD
+                                COMMAND ${CMAKE_COMMAND} -E copy_if_different "${wx_so}" "$<TARGET_FILE_DIR:cammystat>/"
+                                VERBATIM
+                        )
+                endforeach()
+        endif()
+endif()
+
 # OpenCV
 find_package(OpenCV REQUIRED)
 target_link_libraries(cammystat PRIVATE ${OpenCV_LIBS})
