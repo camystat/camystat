@@ -97,3 +97,27 @@ Then build the solution:
   ```
 
 Outputs are in **`x64\Release\`** (or `x64\Debug\` for Debug). Run `cammystat.exe` from that folder so it finds `plot.exe`, DLLs, and other assets.
+
+## Full article
+
+If you use this project, please cite:
+
+> Camystat: a high-throughput open-source software tool analysis of contractile cardiomyocytes recordings.
+
+You can read the full paper here:
+https://doi.org/10.1093/cvr/cvag103
+
+```latex
+@article{10.1093/cvr/cvag103,
+    author = {Rojek, Marcin A and Lewandowski, Piotr and Morys-Magiera, Artur and Pietryga, Filip and Kowalik, Aleksandra and Grzegorczyn, SĹ‚awomir and Wojnicz, Romuald},
+    title = {Camystat: a high-throughput open-source software tool analysis of contractile cardiomyocytes recordings},
+    journal = {Cardiovascular Research},
+    pages = {cvag103},
+    year = {2026},
+    month = {05},
+    issn = {1755-3245},
+    doi = {10.1093/cvr/cvag103},
+    url = {https://doi.org/10.1093/cvr/cvag103},
+    eprint = {https://academic.oup.com/cardiovascres/advance-article-pdf/doi/10.1093/cvr/cvag103/68246854/cvag103.pdf},
+}
+```
