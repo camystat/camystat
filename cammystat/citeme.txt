@@ -53,6 +53,7 @@
     Additional resources:
     https://github.com/MARROJEK/TIF_to_MOV
 
+    Original article: https://doi.org/10.1093/cvr/cvag103
     Your citation helps recognize our work and supports further research.
     
 
