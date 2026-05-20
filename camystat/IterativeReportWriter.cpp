@@ -13,7 +13,7 @@ static std::string serialize(const double value, const int precision = 20)
 	return serialized;
 }
 
-namespace Cammystat {
+namespace Camystat {
 	void IterativeReportWriterRow::reset() {
 		this->videoName = "";
 		this->videoDurationSeconds = 0;

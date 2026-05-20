@@ -14,7 +14,7 @@
 #include <Eigen/Dense>
 #include "Utils.h"
 
-namespace Cammystat
+namespace Camystat
 {
     /** Used as default for abortFlag parameters (never aborts). */
     inline std::atomic<bool> kNoAbort{false};
@@ -54,7 +54,7 @@ namespace Cammystat
             CALCULATING_XOR_SCORES
         };
 
-        using BinarizationThresholdCalcProgressCallback = std::function<void(Cammystat::Preprocessing::BinarizationThresholdCalcProgress, std::optional<double>, std::optional<int>)>;
+        using BinarizationThresholdCalcProgressCallback = std::function<void(Camystat::Preprocessing::BinarizationThresholdCalcProgress, std::optional<double>, std::optional<int>)>;
 
         // Binarization threshold
         // 
@@ -213,6 +213,6 @@ namespace Cammystat
         static std::vector<std::vector<double>> merge_events(const std::vector<std::vector<double>>& event_list, double distance_threshold);
         static std::vector<std::vector<double>> remove_events(const std::vector<std::vector<double>>& event_list, double threshold_value);
 
-        static std::vector<Cammystat::Detection::Phase> locate_contractions_and_relaxations(const std::vector<double>& values, const std::vector<std::vector<double>>& integrals_results, const std::atomic<bool>& abortFlag);
+        static std::vector<Camystat::Detection::Phase> locate_contractions_and_relaxations(const std::vector<double>& values, const std::vector<std::vector<double>>& integrals_results, const std::atomic<bool>& abortFlag);
     };
 };

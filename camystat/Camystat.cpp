@@ -1,4 +1,4 @@
-#include "Cammystat.h"
+#include "Camystat.h"
 
 /// <summary>
 /// Video conversion functionality - DEPRECATED
@@ -7,7 +7,7 @@
 /// <param name="inputPath">The path to the input video</param>
 /// <param name="outputPath">The path to the output video</param>
 /// <param name="scaleFactor">The scale factor for resizing</param>
-void Cammystat::Compression::resizeVideo(const std::filesystem::path& inputPath, const std::filesystem::path& outputPath, double scaleFactor) {
+void Camystat::Compression::resizeVideo(const std::filesystem::path& inputPath, const std::filesystem::path& outputPath, double scaleFactor) {
 	cv::VideoCapture cap(inputPath.string());
 
 	// Check whether the video was loaded
@@ -88,8 +88,8 @@ long double calcU8MatAvgBrightness(const cv::Mat& mat, std::map<int, long double
 /// <param name="progressCallback">Callback invoked when progress changes.</param>
 /// <param name="abortFlag">Flag that indicates whether to abort processing</param>
 /// <returns>The threshold & XOR scores vector for all tested threshold values (0-255).</returns>
-std::pair<int, std::vector<int>> Cammystat::Preprocessing::calculateBinarizationThreshold(const std::filesystem::path& videoPath, const int startFrame, const int endFrame, const Cammystat::Preprocessing::BinarizationThresholdCalcProgressCallback& progressCallback, const std::atomic<bool>& abortFlag) {
-	progressCallback(Cammystat::Preprocessing::BinarizationThresholdCalcProgress::STARTING, std::nullopt, std::nullopt);
+std::pair<int, std::vector<int>> Camystat::Preprocessing::calculateBinarizationThreshold(const std::filesystem::path& videoPath, const int startFrame, const int endFrame, const Camystat::Preprocessing::BinarizationThresholdCalcProgressCallback& progressCallback, const std::atomic<bool>& abortFlag) {
+	progressCallback(Camystat::Preprocessing::BinarizationThresholdCalcProgress::STARTING, std::nullopt, std::nullopt);
 
 	// For handling edge case when XOR operation returns 0s for the selected given pair of frames to retry with a next-in-turn pair of frames
 	std::set<int> retryFrameIndicesBlacklist;
@@ -134,7 +134,7 @@ std::pair<int, std::vector<int>> Cammystat::Preprocessing::calculateBinarization
 		while (true)
 		{
 			if (abortFlag.load()) {
-				throw Cammystat::ProcessingAbortedException();
+				throw Camystat::ProcessingAbortedException();
 			}
 
 			maxAvgBrightnessDiffStartFrameIdx = std::nullopt;
@@ -159,7 +159,7 @@ std::pair<int, std::vector<int>> Cammystat::Preprocessing::calculateBinarization
 			while (true)
 			{
 				if (abortFlag.load()) {
-					throw Cammystat::ProcessingAbortedException();
+					throw Camystat::ProcessingAbortedException();
 				}
 
 				// Load next frame
@@ -167,7 +167,7 @@ std::pair<int, std::vector<int>> Cammystat::Preprocessing::calculateBinarization
 					break;
 				}
 
-				progressCallback(Cammystat::Preprocessing::BinarizationThresholdCalcProgress::FINDING_MAX_BRIGHTNESS_DIFF_FRAMES, (double)frameIndex / (double)endFrame, maybeRetryNumber);
+				progressCallback(Camystat::Preprocessing::BinarizationThresholdCalcProgress::FINDING_MAX_BRIGHTNESS_DIFF_FRAMES, (double)frameIndex / (double)endFrame, maybeRetryNumber);
 
 				cv::cvtColor(currentFrame, currentFrameGray, cv::COLOR_BGR2GRAY);
 
@@ -205,10 +205,10 @@ std::pair<int, std::vector<int>> Cammystat::Preprocessing::calculateBinarization
 			for (int t = 0; t <= 255; t++)
 			{
 				if (abortFlag.load()) {
-					throw Cammystat::ProcessingAbortedException();
+					throw Camystat::ProcessingAbortedException();
 				}
 
-				progressCallback(Cammystat::Preprocessing::BinarizationThresholdCalcProgress::CALCULATING_XOR_SCORES, (double)t / 255.0, std::nullopt);
+				progressCallback(Camystat::Preprocessing::BinarizationThresholdCalcProgress::CALCULATING_XOR_SCORES, (double)t / 255.0, std::nullopt);
 				
 				cv::threshold(frame1Gray, frame1Binary, t, 255, cv::THRESH_BINARY);
 				cv::threshold(frame2Gray, frame2Binary, t, 255, cv::THRESH_BINARY);
@@ -246,7 +246,7 @@ std::pair<int, std::vector<int>> Cammystat::Preprocessing::calculateBinarization
 			}
 		}
 	}
-	catch (const Cammystat::ProcessingAbortedException& e) {
+	catch (const Camystat::ProcessingAbortedException& e) {
 		cap.release(); // release resources
 		throw e; // re-throw the exception
 	}
@@ -262,7 +262,7 @@ std::pair<int, std::vector<int>> Cammystat::Preprocessing::calculateBinarization
 /// <param name="resultPath">The path to the file where the result will be saved</param>
 /// <param name="abortFlag">The flag that indicates whether to abort processing</param>
 /// <returns>The matrix with pixel counts</returns>
-cv::Mat Cammystat::Preprocessing::createHeatmap(const std::filesystem::path& videoPath, const int startFrame, const int endFrame, const int threshold, const std::filesystem::path& resultPath, const std::atomic<bool>& abortFlag) {
+cv::Mat Camystat::Preprocessing::createHeatmap(const std::filesystem::path& videoPath, const int startFrame, const int endFrame, const int threshold, const std::filesystem::path& resultPath, const std::atomic<bool>& abortFlag) {
 	// Open the video
 	cv::VideoCapture cap(videoPath.string());
 
@@ -302,7 +302,7 @@ cv::Mat Cammystat::Preprocessing::createHeatmap(const std::filesystem::path& vid
 	{
 		while (true) {
 			if (abortFlag.load()) {
-				throw Cammystat::ProcessingAbortedException();
+				throw Camystat::ProcessingAbortedException();
 			}
 
 			// Load next frames
@@ -328,7 +328,7 @@ cv::Mat Cammystat::Preprocessing::createHeatmap(const std::filesystem::path& vid
 			frameIndex++;
 		}
 	}
-	catch (const Cammystat::ProcessingAbortedException& e) {
+	catch (const Camystat::ProcessingAbortedException& e) {
 		cap.release(); // release resources
 		throw e; // re-throw the exception
 	}
@@ -345,7 +345,7 @@ cv::Mat Cammystat::Preprocessing::createHeatmap(const std::filesystem::path& vid
 		pixelCount.convertTo(pixelCountU8, CV_8UC1);
 
 		if (abortFlag.load()) {
-			throw Cammystat::ProcessingAbortedException();
+			throw Camystat::ProcessingAbortedException();
 		}
 
 		// Apply color palette to the heatmap
@@ -369,7 +369,7 @@ cv::Mat Cammystat::Preprocessing::createHeatmap(const std::filesystem::path& vid
 /// <param name="imagePath">The path to the image file</param>
 /// <param name="abortFlag">The flag that indicates whether to abort processing</param>
 /// <returns>The coordinates of the selected cells</returns>
-std::vector<std::pair<int, int>> Cammystat::Preprocessing::findMaxSumSquareCoordinatesWithPercent(
+std::vector<std::pair<int, int>> Camystat::Preprocessing::findMaxSumSquareCoordinatesWithPercent(
 	const cv::Mat& pixel_count_array,
 	const double square_percent,
 	const double top_percent,
@@ -394,7 +394,7 @@ std::vector<std::pair<int, int>> Cammystat::Preprocessing::findMaxSumSquareCoord
 	for (int i = 0; i <= rows - square_size; ++i) {
 		for (int j = 0; j <= cols - square_size; ++j) {
 			if (abortFlag.load()) {
-				throw Cammystat::ProcessingAbortedException();
+				throw Camystat::ProcessingAbortedException();
 			}
 
 			int current_sum = cv::sum(pixel_count_array(cv::Rect(j, i, square_size, square_size)))[0];
@@ -427,7 +427,7 @@ std::vector<std::pair<int, int>> Cammystat::Preprocessing::findMaxSumSquareCoord
 	}
 
 	if (abortFlag.load()) {
-		throw Cammystat::ProcessingAbortedException();
+		throw Camystat::ProcessingAbortedException();
 	}
 
 	// Sort by values
@@ -437,7 +437,7 @@ std::vector<std::pair<int, int>> Cammystat::Preprocessing::findMaxSumSquareCoord
 		});
 
 	if (abortFlag.load()) {
-		throw Cammystat::ProcessingAbortedException();
+		throw Camystat::ProcessingAbortedException();
 	}
 
 	// Find the most important cells
@@ -449,7 +449,7 @@ std::vector<std::pair<int, int>> Cammystat::Preprocessing::findMaxSumSquareCoord
 	}
 
 	if (abortFlag.load()) {
-		throw Cammystat::ProcessingAbortedException();
+		throw Camystat::ProcessingAbortedException();
 	}
 
 	// Read the existing PNG image
@@ -480,7 +480,7 @@ std::vector<std::pair<int, int>> Cammystat::Preprocessing::findMaxSumSquareCoord
 /// <param name="resultPath">The path to the file where the results will be saved</param>
 /// <param name="abortFlag">The flag that indicates whether to abort processing</param>
 /// <returns>The percentage of ones in the XOR matrix over time</returns>
-std::vector<double> Cammystat::Preprocessing::countOnesInXorAtCoordinates(
+std::vector<double> Camystat::Preprocessing::countOnesInXorAtCoordinates(
 	const std::filesystem::path& videoPath,
 	const std::vector<std::pair<int, int>>& coordinates,
 	const int threshold,
@@ -569,7 +569,7 @@ std::vector<double> Cammystat::Preprocessing::countOnesInXorAtCoordinates(
 			frame_index++;
 		}
 	}
-	catch (const Cammystat::ProcessingAbortedException& e) {
+	catch (const Camystat::ProcessingAbortedException& e) {
 		cap.release(); // release resources
 		throw e; // re-throw the exception
 	}
@@ -595,7 +595,7 @@ std::vector<double> Cammystat::Preprocessing::countOnesInXorAtCoordinates(
 /// <param name="x"></param>
 /// <param name="abortFlag">Flag that indicates whether to abort processing</param>
 /// <returns></returns>
-std::vector<double> Cammystat::Smoothing::modifyMeans(const std::vector<double>& input_list, size_t n, size_t x, const std::atomic<bool>& abortFlag) {
+std::vector<double> Camystat::Smoothing::modifyMeans(const std::vector<double>& input_list, size_t n, size_t x, const std::atomic<bool>& abortFlag) {
 	if (n <= 0 || x <= 0) {
 		return input_list;
 	}
@@ -604,14 +604,14 @@ std::vector<double> Cammystat::Smoothing::modifyMeans(const std::vector<double>&
 
 	for (int iter = 0; iter < x; ++iter) {		
 		if (abortFlag.load()) {
-			throw Cammystat::ProcessingAbortedException();
+			throw Camystat::ProcessingAbortedException();
 		}
 
 		std::vector<double> modified_list;
 
 		for (size_t i = 0; i < current_list.size(); ++i) {
 			if (abortFlag.load()) {
-				throw Cammystat::ProcessingAbortedException();
+				throw Camystat::ProcessingAbortedException();
 			}
 
 			double mean_value = 0.0;
@@ -639,7 +639,7 @@ std::vector<double> Cammystat::Smoothing::modifyMeans(const std::vector<double>&
 /// </summary>
 /// <param name="values">The vector of values to create a copy of with normalized values from</param>
 /// <returns>Vector of normalized values (new object)</returns>
-std::vector<double> Cammystat::Smoothing::cloneNormalizedValues(const std::vector<double>& values) {
+std::vector<double> Camystat::Smoothing::cloneNormalizedValues(const std::vector<double>& values) {
 	if (values.empty()) {
 		return {};
 	}
@@ -664,7 +664,7 @@ std::vector<double> Cammystat::Smoothing::cloneNormalizedValues(const std::vecto
 /// <param name="threshold">The threshold value</param>
 /// <param name="resultPath">The path to the file where the result will be saved</param>
 /// <returns>The modified list of values (new object)</returns>
-std::vector<double> Cammystat::Smoothing::cloneReplaceZerosValuesBelowThreshold(const std::vector<double>& lst, double threshold, std::filesystem::path resultPath) {
+std::vector<double> Camystat::Smoothing::cloneReplaceZerosValuesBelowThreshold(const std::vector<double>& lst, double threshold, std::filesystem::path resultPath) {
 	std::vector<double> modified_values;
 	modified_values.reserve(lst.size());
 
@@ -692,7 +692,7 @@ std::vector<double> Cammystat::Smoothing::cloneReplaceZerosValuesBelowThreshold(
 /// </summary>
 /// <param name="input_list"></param>
 /// <returns></returns>
-std::vector<double> Cammystat::Detection::clone_padded_with_zeros(const std::vector<double>& input_list) {
+std::vector<double> Camystat::Detection::clone_padded_with_zeros(const std::vector<double>& input_list) {
 	if (input_list.empty()) {
 		return { 0 };
 	}
@@ -713,7 +713,7 @@ std::vector<double> Cammystat::Detection::clone_padded_with_zeros(const std::vec
 /// <param name="values">The list of values to calculate the integrals for</param>
 /// <param name="abortFlag">The flag that indicates whether to abort processing</param>
 /// <returns>The list of integrals with reference points (new object)</returns>
-std::vector<std::vector<double>> Cammystat::Detection::calculate_integrals_with_reference_points(const std::vector<double>& values, const std::atomic<bool>& abortFlag) {
+std::vector<std::vector<double>> Camystat::Detection::calculate_integrals_with_reference_points(const std::vector<double>& values, const std::atomic<bool>& abortFlag) {
 	std::vector<double> integrals; // List to store calculated integrals
 	std::vector<std::vector<double>> results; // List to store results in the specified format
 
@@ -732,7 +732,7 @@ std::vector<std::vector<double>> Cammystat::Detection::calculate_integrals_with_
 		if (values[i] == 0) {
 			if (i > start_index) {
 				if (abortFlag.load()) {
-					throw Cammystat::ProcessingAbortedException();
+					throw Camystat::ProcessingAbortedException();
 				}
 
 				// If zero occurred after non-zero values, calculate the integral between them
@@ -753,7 +753,7 @@ std::vector<std::vector<double>> Cammystat::Detection::calculate_integrals_with_
 /// <param name="event_list">The list of events to be merged</param>
 /// <param name="distance_threshold">The threshold distance for merging events</param>
 /// <returns>The merged list of events (new object)</returns>
-std::vector<std::vector<double>> Cammystat::Detection::merge_events(const std::vector<std::vector<double>>& event_list, double distance_threshold) {
+std::vector<std::vector<double>> Camystat::Detection::merge_events(const std::vector<std::vector<double>>& event_list, double distance_threshold) {
 	std::vector<std::vector<double>> merged_list;
 	size_t i = 0;
 
@@ -793,7 +793,7 @@ std::vector<std::vector<double>> Cammystat::Detection::merge_events(const std::v
 /// <param name="event_list">The list of events</param>
 /// <param name="threshold_value">The threshold value for removing events</param>
 /// <returns>The updated list of events (new object)</returns>
-std::vector<std::vector<double>> Cammystat::Detection::remove_events(const std::vector<std::vector<double>>& event_list, double threshold_value) {
+std::vector<std::vector<double>> Camystat::Detection::remove_events(const std::vector<std::vector<double>>& event_list, double threshold_value) {
 	std::vector<std::vector<double>> updated_list;
 
 	for (const auto& event : event_list) {
@@ -809,13 +809,13 @@ std::vector<std::vector<double>> Cammystat::Detection::remove_events(const std::
 	return updated_list;
 }
 
-std::vector<Cammystat::Detection::Phase> Cammystat::Detection::locate_contractions_and_relaxations(const std::vector<double>& values, const std::vector<std::vector<double>>& integrals_results, const std::atomic<bool>& abortFlag)
+std::vector<Camystat::Detection::Phase> Camystat::Detection::locate_contractions_and_relaxations(const std::vector<double>& values, const std::vector<std::vector<double>>& integrals_results, const std::atomic<bool>& abortFlag)
 {
 	std::vector<Phase> results;
 
 	for (const auto& contraction : integrals_results) {
 		if (abortFlag.load()) {
-			throw Cammystat::ProcessingAbortedException();
+			throw Camystat::ProcessingAbortedException();
 		}
 
 		int start_index = contraction[2], end_index = contraction[3];
@@ -862,8 +862,8 @@ std::vector<Cammystat::Detection::Phase> Cammystat::Detection::locate_contractio
 		double relaxation_value = trapezoidal_integral(relaxation_segment);
 
 		// Append results
-		results.push_back({ Cammystat::Detection::Phase::PhaseType::CONTRACTION, static_cast<int>(results.size()) + 1, contraction_value, start_index, min_index_absolute });
-		results.push_back({ Cammystat::Detection::Phase::PhaseType::RELAXATION, static_cast<int>(results.size()) + 1, relaxation_value, min_index_absolute, end_index });
+		results.push_back({ Camystat::Detection::Phase::PhaseType::CONTRACTION, static_cast<int>(results.size()) + 1, contraction_value, start_index, min_index_absolute });
+		results.push_back({ Camystat::Detection::Phase::PhaseType::RELAXATION, static_cast<int>(results.size()) + 1, relaxation_value, min_index_absolute, end_index });
 	}
 
 	return results;

@@ -2,13 +2,13 @@ Write-Host "Pulling submodules..."
 git submodule update --init
 
 Write-Host "Creating symlinks..."
-Set-Location cammystat/include
+Set-Location camystat/include
 cmd /c 'mklink /J wxWidgets "../../wxWidgets/include"'
 cmd /c 'mklink /J eigen "../../eigen"'
 Set-Location ../..
 
 # prepare licenses output directory
-$licensesDirectory = "cammystat/misc/licenses"
+$licensesDirectory = "camystat/misc/licenses"
 if(!(test-path -PathType container $licensesDirectory)) {
   New-Item -ItemType Directory -Path $licensesDirectory -Force | Out-Null
 }
@@ -24,23 +24,23 @@ If(!(test-path -PathType container ./opencv)) {
 }
 
 Write-Host "Copying OpenCV files..."
-Copy-Item -Path opencv/opencv/build/include/opencv2 -Destination cammystat/include/opencv2/opencv2 -Recurse -Force
-New-Item -ItemType Directory -Path cammystat/lib/opencv2 -Force | Out-Null
-Copy-Item -Path opencv/opencv/build/x64/vc16/lib/* -Destination cammystat/lib/opencv2 -Recurse -Force
-Copy-Item -Path opencv/opencv/build/bin/opencv_videoio_ffmpeg4100_64.dll -Destination cammystat/lib/opencv2/opencv_videoio_ffmpeg4100_64.dll -Recurse -Force
-Copy-Item -Path opencv/opencv/build/x64/vc16/bin/opencv_world4100.dll -Destination cammystat/lib/opencv2/opencv_world4100.dll -Recurse -Force
-Copy-Item -Path opencv/opencv/build/x64/vc16/bin/opencv_world4100.pdb -Destination cammystat/lib/opencv2/opencv_world4100.pdb -Recurse -Force
+Copy-Item -Path opencv/opencv/build/include/opencv2 -Destination camystat/include/opencv2/opencv2 -Recurse -Force
+New-Item -ItemType Directory -Path camystat/lib/opencv2 -Force | Out-Null
+Copy-Item -Path opencv/opencv/build/x64/vc16/lib/* -Destination camystat/lib/opencv2 -Recurse -Force
+Copy-Item -Path opencv/opencv/build/bin/opencv_videoio_ffmpeg4100_64.dll -Destination camystat/lib/opencv2/opencv_videoio_ffmpeg4100_64.dll -Recurse -Force
+Copy-Item -Path opencv/opencv/build/x64/vc16/bin/opencv_world4100.dll -Destination camystat/lib/opencv2/opencv_world4100.dll -Recurse -Force
+Copy-Item -Path opencv/opencv/build/x64/vc16/bin/opencv_world4100.pdb -Destination camystat/lib/opencv2/opencv_world4100.pdb -Recurse -Force
 
-Copy-Item -Path opencv/opencv/LICENSE.txt -Destination cammystat/misc/licenses/OPENCV_LICENSE.txt -Force
-Copy-Item -Path opencv/opencv/LICENSE_FFMPEG.txt -Destination cammystat/misc/licenses/OPENCV_LICENSE_FFMPEG.txt -Force
+Copy-Item -Path opencv/opencv/LICENSE.txt -Destination camystat/misc/licenses/OPENCV_LICENSE.txt -Force
+Copy-Item -Path opencv/opencv/LICENSE_FFMPEG.txt -Destination camystat/misc/licenses/OPENCV_LICENSE_FFMPEG.txt -Force
 $opencvEtcLicenses = "opencv/opencv/build/etc/licenses"
 if (Test-Path -PathType Container $opencvEtcLicenses) {
-    Copy-Item -Path "$opencvEtcLicenses/*" -Destination cammystat/misc/licenses -Recurse -Force
+    Copy-Item -Path "$opencvEtcLicenses/*" -Destination camystat/misc/licenses -Recurse -Force
 }
 
 # copy eigen license files
 $directory = "eigen/"
-$outputFile = "cammystat/misc/licenses/EIGEN_LICENSE.txt"
+$outputFile = "camystat/misc/licenses/EIGEN_LICENSE.txt"
 
 $files = Get-ChildItem -Path $directory -Filter "COPYING.*" -File | Where-Object { $_.Name -ne "COPYING.README" }
 
@@ -54,7 +54,7 @@ foreach ($file in $files) {
 
 # download wxWidgets license
 $wc = New-Object net.webclient
-$wc.Downloadfile("https://raw.githubusercontent.com/wxWidgets/wxWidgets/master/docs/licence.txt", "cammystat/misc/licenses/WXWIDGETS_LICENSE.txt")
+$wc.Downloadfile("https://raw.githubusercontent.com/wxWidgets/wxWidgets/master/docs/licence.txt", "camystat/misc/licenses/WXWIDGETS_LICENSE.txt")
 
 # build wxWidgets
 $VSWPath = "${Env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe"
@@ -85,7 +85,7 @@ msbuild wx_vc17.sln /p:Configuration=Release /property:MultiProcessorCompilation
 
 Set-Location ../..
 Write-Host "Copying wxWidgets lib files..."
-Copy-Item -Path lib/vc_x64_lib/* -Destination ../cammystat/lib/wxwidgets-MT -Force
+Copy-Item -Path lib/vc_x64_lib/* -Destination ../camystat/lib/wxwidgets-MT -Force
 Set-Location ..
 
 Write-Host "Activating python venv..."
@@ -103,7 +103,7 @@ $pythonPath = (Get-Command python).Source
 
 & python -m third_party_license_file_generator -r requirements.txt -p $pythonPath
 
-$outputFile = "../cammystat/misc/licenses/PLOT_EXE_LICENSES.txt"
+$outputFile = "../camystat/misc/licenses/PLOT_EXE_LICENSES.txt"
 
 Set-Content -Path $outputFile -Value ""
 
@@ -133,7 +133,7 @@ Write-Host "Building plot.exe (this may take a while)..."
 python -m pip install pyinstaller
 pyinstaller --onefile plot.py
 Set-Location dist
-Copy-Item -Path plot.exe -Destination ../../cammystat/plot.exe -Force
+Copy-Item -Path plot.exe -Destination ../../camystat/plot.exe -Force
 Set-Location ../..
 
 Write-Host "Done"

@@ -11,7 +11,7 @@
 #include <string>
 #include "Savgol.h"
 #include "Utils.h"
-#include "Cammystat.h"
+#include "Camystat.h"
 #include "MainFrame.h"
 
 #ifdef _WIN32

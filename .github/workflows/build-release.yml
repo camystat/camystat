@@ -28,15 +28,15 @@ jobs:
           ./setup.bash
           ./build.bash
 
-      - name: Package build/cammystat (exclude CMakeFiles)
+      - name: Package build/camystat (exclude CMakeFiles)
         run: |
-          rm -rf build/cammystat/CMakeFiles
+          rm -rf build/camystat/CMakeFiles
 
       - name: Upload Linux artifact
         uses: actions/upload-artifact@v6
         with:
-          name: cammystat-linux-x64
-          path: build/cammystat
+          name: camystat-linux-x64
+          path: build/camystat
 
   build-macos:
     name: Build (macOS)
@@ -53,15 +53,15 @@ jobs:
           ./setup.bash
           ./build.bash
 
-      - name: Package build/cammystat (exclude CMakeFiles)
+      - name: Package build/camystat (exclude CMakeFiles)
         run: |
-          rm -rf build/cammystat/CMakeFiles
+          rm -rf build/camystat/CMakeFiles
 
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v6
         with:
-          name: cammystat-macos-x64
-          path: build/cammystat
+          name: camystat-macos-x64
+          path: build/camystat
 
   build-windows:
     name: Build (Windows)
@@ -80,12 +80,12 @@ jobs:
 
       - name: Build solution
         run: |
-          msbuild cammystat.sln /p:Configuration=Release /p:Platform=x64 /property:MultiProcessorCompilation=true
+          msbuild camystat.sln /p:Configuration=Release /p:Platform=x64 /property:MultiProcessorCompilation=true
 
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v6
         with:
-          name: cammystat-windows-x64
+          name: camystat-windows-x64
           path: x64/Release/
 
   release:
@@ -101,9 +101,9 @@ jobs:
       - name: Create release archives
         run: |
           mkdir -p release-assets
-          (cd artifacts/cammystat-linux-x64 && zip -r ../../release-assets/cammystat-linux-x64.zip .)
-          (cd artifacts/cammystat-macos-x64 && zip -r ../../release-assets/cammystat-macos-x64.zip .)
-          (cd artifacts/cammystat-windows-x64 && zip -r ../../release-assets/cammystat-windows-x64.zip .)
+          (cd artifacts/camystat-linux-x64 && zip -r ../../release-assets/camystat-linux-x64.zip .)
+          (cd artifacts/camystat-macos-x64 && zip -r ../../release-assets/camystat-macos-x64.zip .)
+          (cd artifacts/camystat-windows-x64 && zip -r ../../release-assets/camystat-windows-x64.zip .)
           ls -la release-assets/
 
       - name: Create release and upload assets

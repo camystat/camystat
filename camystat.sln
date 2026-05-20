@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.33026.149
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cammystat", "cammystat\cammystat.vcxproj", "{599C9624-3187-47F9-BF39-0DE956FB005B}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "camystat", "camystat\camystat.vcxproj", "{599C9624-3187-47F9-BF39-0DE956FB005B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

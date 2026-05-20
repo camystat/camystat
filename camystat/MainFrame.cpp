@@ -1155,7 +1155,7 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 		FsUtils::CreateDirectoryWithCheck(outputFolderPath);
 
 		std::filesystem::path reportOutputPath = outputFolderPath / "report.csv";
-		Cammystat::IterativeReportWriter reportWriter(reportOutputPath, analyseContractionRelaxationEvents);
+		Camystat::IterativeReportWriter reportWriter(reportOutputPath, analyseContractionRelaxationEvents);
 
 		if (!reportWriter.isOpen()) {
 			std::cerr << "Error: IterativeReportWriter could not open file " << reportOutputPath << " for writing!" << std::endl;
@@ -1220,18 +1220,18 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 		}
 		wxSTStatus->SetLabel("Status: Detected appdata folder");
 
-		std::filesystem::path cammystatTempPath = appdataPath / "Cammystat";
-		wxSTStatus->SetLabel("Status: Cammystat folder located");
+		std::filesystem::path camystatTempPath = appdataPath / "Camystat";
+		wxSTStatus->SetLabel("Status: Camystat folder located");
 
-		if (!FsUtils::FolderExists(cammystatTempPath)) {
-			FsUtils::CreateDirectoryWithCheck(cammystatTempPath);
-			wxSTStatus->SetLabel("Status: Cammystat appdata folder has been created");
+		if (!FsUtils::FolderExists(camystatTempPath)) {
+			FsUtils::CreateDirectoryWithCheck(camystatTempPath);
+			wxSTStatus->SetLabel("Status: Camystat appdata folder has been created");
 		}
 
 		std::filesystem::path heatmapPath = outputFolderPath / "activity_heatmap" / (fileName + ".png");
-		std::filesystem::path thisFileTempPath = cammystatTempPath / fileName;
+		std::filesystem::path thisFileTempPath = camystatTempPath / fileName;
 
-		if (FsUtils::FolderExists(cammystatTempPath)) {
+		if (FsUtils::FolderExists(camystatTempPath)) {
 			FsUtils::CreateDirectoryWithCheck(thisFileTempPath);
 		}
 
@@ -1263,25 +1263,25 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 
 			try {
 				std::vector<int> xorScoresForThresholds;
-				std::tie(threshold, xorScoresForThresholds) = Cammystat::Preprocessing::calculateBinarizationThreshold(
+				std::tie(threshold, xorScoresForThresholds) = Camystat::Preprocessing::calculateBinarizationThreshold(
 					inputPath,
 					startFrame,
 					endFrame,
-					[this](Cammystat::Preprocessing::BinarizationThresholdCalcProgress stage, std::optional<double> maybeProgress, std::optional<int> maybeRetryNumber)
+					[this](Camystat::Preprocessing::BinarizationThresholdCalcProgress stage, std::optional<double> maybeProgress, std::optional<int> maybeRetryNumber)
 					{
 						std::stringstream status;
 						status << "Status: Calc. bin. thresh. ";
 
 						switch(stage){
-							case Cammystat::Preprocessing::BinarizationThresholdCalcProgress::STARTING:
+							case Camystat::Preprocessing::BinarizationThresholdCalcProgress::STARTING:
 								status << "starting";
 								break;
 
-							case Cammystat::Preprocessing::BinarizationThresholdCalcProgress::FINDING_MAX_BRIGHTNESS_DIFF_FRAMES:
+							case Camystat::Preprocessing::BinarizationThresholdCalcProgress::FINDING_MAX_BRIGHTNESS_DIFF_FRAMES:
 								status << "max diff. frames";
 								break;
 
-							case Cammystat::Preprocessing::BinarizationThresholdCalcProgress::CALCULATING_XOR_SCORES:
+							case Camystat::Preprocessing::BinarizationThresholdCalcProgress::CALCULATING_XOR_SCORES:
 								status << "XOR scores";
 								break;
 						}
@@ -1319,7 +1319,7 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 				RunPlotOnMainThread(plotPath, "auto_binarization_thresh", "\"" + xorScoresForThresholdsPath.string() + "\" \"" + calculatedThresholdPath.string() + "\" \"" + savePath.string() + "\"");
 			}
 			// Error handling
-			catch (const Cammystat::ProcessingAbortedException& e) {
+			catch (const Camystat::ProcessingAbortedException& e) {
 				internalCleanup();
 				return MainFrame::AnalysisResult::ABORTED;
 			}
@@ -1359,10 +1359,10 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 			cv::Mat heatmap11;
 			try
 			{
-				heatmap11 = Cammystat::Preprocessing::createHeatmap(inputPath, startFrame, endFrame, threshold, heatmapPath, stopAnalysisThreadFlag);
+				heatmap11 = Camystat::Preprocessing::createHeatmap(inputPath, startFrame, endFrame, threshold, heatmapPath, stopAnalysisThreadFlag);
 			}
 			// Error handling
-			catch (const Cammystat::ProcessingAbortedException& e) {
+			catch (const Camystat::ProcessingAbortedException& e) {
 				internalCleanup();
 				return MainFrame::AnalysisResult::ABORTED;
 			}
@@ -1380,11 +1380,11 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 			wxSTStatus->SetLabel("Status: Finding max sum squares");
 			try
 			{
-				maxSumCoords12 = Cammystat::Preprocessing::findMaxSumSquareCoordinatesWithPercent(
+				maxSumCoords12 = Camystat::Preprocessing::findMaxSumSquareCoordinatesWithPercent(
 					heatmap11, squarePercent, topPercent, heatmapCoordinatesPath.string(), heatmapPath.string(), stopAnalysisThreadFlag
 				);
 			}
-			catch (const Cammystat::ProcessingAbortedException& e) {
+			catch (const Camystat::ProcessingAbortedException& e) {
 				internalCleanup();
 				return MainFrame::AnalysisResult::ABORTED;
 			}
@@ -1400,9 +1400,9 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 				wxSTStatus->SetLabel("Status: Couting ones in xor");
 				try
 				{
-					passedDoubleVector = Cammystat::Preprocessing::countOnesInXorAtCoordinates(inputPath, maxSumCoords12, threshold, rawCSVPath, stopAnalysisThreadFlag);
+					passedDoubleVector = Camystat::Preprocessing::countOnesInXorAtCoordinates(inputPath, maxSumCoords12, threshold, rawCSVPath, stopAnalysisThreadFlag);
 				}
-				catch (const Cammystat::ProcessingAbortedException& e) {
+				catch (const Camystat::ProcessingAbortedException& e) {
 					internalCleanup();
 					return MainFrame::AnalysisResult::ABORTED;
 				}
@@ -1416,7 +1416,7 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 			else {
 				std::vector<std::pair<int, int>> coordinates;
 				wxSTStatus->SetLabel("Status: Couting ones in xor without coords");
-				passedDoubleVector = Cammystat::Preprocessing::countOnesInXorAtCoordinates(inputPath, coordinates, threshold, rawCSVPath, stopAnalysisThreadFlag);
+				passedDoubleVector = Camystat::Preprocessing::countOnesInXorAtCoordinates(inputPath, coordinates, threshold, rawCSVPath, stopAnalysisThreadFlag);
 #if SHOW_DEBUG_DIALOGS
 				{
 					wxMessageDialog dialog(NULL, "LOG: no coordinates XOR calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
@@ -1445,7 +1445,7 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 			{
 				passedDoubleVector = Savgol::savgolFilter(passedDoubleVector, savitzkyGolayWindowLength, polyorder);
 			}
-			catch (const Cammystat::ProcessingAbortedException& e) {
+			catch (const Camystat::ProcessingAbortedException& e) {
 				internalCleanup();
 				return MainFrame::AnalysisResult::ABORTED;
 			}
@@ -1461,9 +1461,9 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 			wxSTStatus->SetLabel("Status: Modifying means");
 			try
 			{
-				passedDoubleVector = Cammystat::Smoothing::modifyMeans(passedDoubleVector, movingAverageWindowLength, numberOfRepetitions, stopAnalysisThreadFlag);
+				passedDoubleVector = Camystat::Smoothing::modifyMeans(passedDoubleVector, movingAverageWindowLength, numberOfRepetitions, stopAnalysisThreadFlag);
 			}
-			catch (const Cammystat::ProcessingAbortedException& e) {
+			catch (const Camystat::ProcessingAbortedException& e) {
 				internalCleanup();
 				return MainFrame::AnalysisResult::ABORTED;
 			}
@@ -1476,7 +1476,7 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 		}
 
 		wxSTStatus->SetLabel("Status: Normalizing values");
-		passedDoubleVector = Cammystat::Smoothing::cloneNormalizedValues(passedDoubleVector);
+		passedDoubleVector = Camystat::Smoothing::cloneNormalizedValues(passedDoubleVector);
 #if SHOW_DEBUG_DIALOGS
 		{
 			wxMessageDialog dialog(NULL, "LOG: Normalize values calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
@@ -1485,7 +1485,7 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 #endif
 
 		wxSTStatus->SetLabel("Status: Trimming");
-		passedDoubleVector = Cammystat::Detection::trim_list(passedDoubleVector, leftTrim, rightTrim);
+		passedDoubleVector = Camystat::Detection::trim_list(passedDoubleVector, leftTrim, rightTrim);
 #if SHOW_DEBUG_DIALOGS
 		{
 			wxMessageDialog dialog(NULL, "LOG: Trim_list calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
@@ -1499,7 +1499,7 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 
 		std::filesystem::path rawChartPath = outputFolderPath / "csv_stats" / (fileName + ".csv");
 		wxSTStatus->SetLabel("Status: Replacing zeros");
-		passedDoubleVector = Cammystat::Smoothing::cloneReplaceZerosValuesBelowThreshold(passedDoubleVector, movementThreshold, rawChartPath);
+		passedDoubleVector = Camystat::Smoothing::cloneReplaceZerosValuesBelowThreshold(passedDoubleVector, movementThreshold, rawChartPath);
 #if SHOW_DEBUG_DIALOGS
 		{
 			wxMessageDialog dialog(NULL, "LOG: Replace zeros values below threshold calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
@@ -1508,7 +1508,7 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 #endif
 
 		wxSTStatus->SetLabel("Status: Adding zeros");
-		passedDoubleVector = Cammystat::Detection::clone_padded_with_zeros(passedDoubleVector);
+		passedDoubleVector = Camystat::Detection::clone_padded_with_zeros(passedDoubleVector);
 		wxSTStatus->SetLabel("Status: Zeros has been added to a list.");
 #if SHOW_DEBUG_DIALOGS
 		{
@@ -1522,9 +1522,9 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 			wxSTStatus->SetLabel("Status: Calculating integrals");
 			try
 			{
-				events = Cammystat::Detection::calculate_integrals_with_reference_points(passedDoubleVector, stopAnalysisThreadFlag);
+				events = Camystat::Detection::calculate_integrals_with_reference_points(passedDoubleVector, stopAnalysisThreadFlag);
 			}
-			catch (const Cammystat::ProcessingAbortedException& e) {
+			catch (const Camystat::ProcessingAbortedException& e) {
 				internalCleanup();
 				return MainFrame::AnalysisResult::ABORTED;
 			}
@@ -1536,7 +1536,7 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 #endif
 
 			wxSTStatus->SetLabel("Status: Merging events");
-			events = Cammystat::Detection::merge_events(events, autoMergeEvents);
+			events = Camystat::Detection::merge_events(events, autoMergeEvents);
 #if SHOW_DEBUG_DIALOGS
 			{
 				wxMessageDialog dialog(NULL, "LOG: merge_events calculation has been finished successfully", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
@@ -1545,7 +1545,7 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 #endif
 
 			wxSTStatus->SetLabel("Status: Removing events");
-			events = Cammystat::Detection::remove_events(events, autoSelectEvents);
+			events = Camystat::Detection::remove_events(events, autoSelectEvents);
 #if SHOW_DEBUG_DIALOGS
 			{
 				wxMessageDialog dialog(NULL, "LOG: remove_events calculation has been finished successfully", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
@@ -1558,7 +1558,7 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 			{
 				events = Utils::normalizeSecondColumnInCopy(events);
 			}
-			catch (const Cammystat::ProcessingAbortedException& e) {
+			catch (const Camystat::ProcessingAbortedException& e) {
 				internalCleanup();
 				return MainFrame::AnalysisResult::ABORTED;
 			}
@@ -1603,7 +1603,7 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 			wxSTStatus->SetLabel("Status: Contraction-relaxation analysis");
 			try
 			{
-				std::vector<Cammystat::Detection::Phase> contractionRelaxationPhases = Cammystat::Detection::locate_contractions_and_relaxations(passedDoubleVector, events, stopAnalysisThreadFlag);
+				std::vector<Camystat::Detection::Phase> contractionRelaxationPhases = Camystat::Detection::locate_contractions_and_relaxations(passedDoubleVector, events, stopAnalysisThreadFlag);
 				Utils::writeVectorToFile(contractionRelaxationPhasesPath.string(), contractionRelaxationPhases);
 
 				double avgContractionDurationFrames = 0, avgRelaxationDurationFrames = 0;
@@ -1611,7 +1611,7 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 				for (const auto& phase : contractionRelaxationPhases) {
 					int lenFrames = phase.end_index - phase.start_index + 1;
 
-					if (phase.phase_type == Cammystat::Detection::Phase::PhaseType::CONTRACTION) {
+					if (phase.phase_type == Camystat::Detection::Phase::PhaseType::CONTRACTION) {
 						avgContractionDurationFrames += lenFrames;
 						contractionCount++;
 					}
@@ -1633,7 +1633,7 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 				assert(contractionCount == relaxationCount);
 				reportWriter.rowBuffer.approvedEventsForContrRelaxAnalysis = contractionCount;
 			}
-			catch (const Cammystat::ProcessingAbortedException& e) {
+			catch (const Camystat::ProcessingAbortedException& e) {
 				internalCleanup();
 				return MainFrame::AnalysisResult::ABORTED;
 			}
@@ -1843,7 +1843,7 @@ void MainFrame::OnClose(wxCloseEvent& event)
 {
 	std::string pathToRemove;
 	try {
-		pathToRemove = (std::filesystem::temp_directory_path() / "Cammystat").string();
+		pathToRemove = (std::filesystem::temp_directory_path() / "Camystat").string();
 	}
 	catch (...) {
 		wxMessageDialog dialog(NULL, "ERROR: Could not locate the temp folder.", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);

@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <filesystem>
 
-namespace Cammystat {
+namespace Camystat {
 	class IterativeReportWriterRow {
 	public:
 		bool contractionRelaxationAnalysis;

@@ -17,8 +17,8 @@ Please download the latest release from https://github.com/camystat/camystat/rel
 Clone the repository (with submodules):
 
 ```bash
-git clone --recurse-submodules https://github.com/cammystat/cammystat.git
-cd cammystat
+git clone --recurse-submodules https://github.com/camystat/camystat.git
+cd camystat
 ```
 
 If you already cloned without submodules:
@@ -49,7 +49,7 @@ On Debian/Ubuntu the setup script can install these for you. Otherwise install m
 ./build.bash
 ```
 
-The executable and runtime files (licenses, `plot.exe`, etc.) will be in **`build/cammystat/`**. The app must be run from that directory so it finds its assets.
+The executable and runtime files (licenses, `plot.exe`, etc.) will be in **`build/camystat/`**. The app must be run from that directory so it finds its assets.
 
 ---
 
@@ -69,7 +69,7 @@ The setup script can install dependencies via Homebrew. Then run setup and build
 ./build.bash
 ```
 
-The executable and runtime files will be in **`build/cammystat/`**. Run the app from that directory.
+The executable and runtime files will be in **`build/camystat/`**. Run the app from that directory.
 
 ---
 
@@ -89,14 +89,14 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File setup.ps1
 
 Then build the solution:
 
-- **Visual Studio:** Open `cammystat.sln`, choose configuration (e.g. **Release | x64**), then Build / Run.
+- **Visual Studio:** Open `camystat.sln`, choose configuration (e.g. **Release | x64**), then Build / Run.
 - **Command line:** From the repo root (with MSBuild on PATH, e.g. from "Developer Command Prompt" or after `microsoft/setup-msbuild` in CI):
 
   ```powershell
-  msbuild cammystat.sln /p:Configuration=Release /p:Platform=x64 /property:MultiProcessorCompilation=true
+  msbuild camystat.sln /p:Configuration=Release /p:Platform=x64 /property:MultiProcessorCompilation=true
   ```
 
-Outputs are in **`x64\Release\`** (or `x64\Debug\` for Debug). Run `cammystat.exe` from that folder so it finds `plot.exe`, DLLs, and other assets.
+Outputs are in **`x64\Release\`** (or `x64\Debug\` for Debug). Run `camystat.exe` from that folder so it finds `plot.exe`, DLLs, and other assets.
 
 ## Full article
 

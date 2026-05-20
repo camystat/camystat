@@ -91,12 +91,12 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)cammystat\include\wxwidgets;$(SolutionDir)cammystat\include\wxwidgets\msvc;$(SolutionDir)cammystat\include\opencv2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)camystat\include\wxwidgets;$(SolutionDir)camystat\include\wxwidgets\msvc;$(SolutionDir)camystat\include\opencv2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)cammystat\lib\wxwidgets\vc_lib;$(SolutionDir)cammystat\lib\opencv2</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)camystat\lib\wxwidgets\vc_lib;$(SolutionDir)camystat\lib\opencv2</AdditionalLibraryDirectories>
       <AdditionalDependencies>wxbase32u.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -108,7 +108,7 @@
       <Optimization>MaxSpeed</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)cammystat\include\wxwidgets;$(SolutionDir)cammystat\include\wxwidgets\msvc;$(SolutionDir)cammystat\include\opencv2;$(SolutionDir)cammystat\include\eigen;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)camystat\include\wxwidgets;$(SolutionDir)camystat\include\wxwidgets\msvc;$(SolutionDir)camystat\include\opencv2;$(SolutionDir)camystat\include\eigen;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <BufferSecurityCheck>true</BufferSecurityCheck>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
@@ -120,7 +120,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)cammystat\lib\wxwidgets-MT;$(SolutionDir)cammystat\lib\opencv2</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)camystat\lib\wxwidgets-MT;$(SolutionDir)camystat\lib\opencv2</AdditionalLibraryDirectories>
       <AdditionalDependencies>opencv_world4100.lib;MSVCRT.lib;wxbase32u.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>LIBCMT</IgnoreSpecificDefaultLibraries>
     </Link>
@@ -136,14 +136,14 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)cammystat\include\wxwidgets;$(SolutionDir)cammystat\include\wxwidgets\msvc;$(SolutionDir)cammystat\include\opencv2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)camystat\include\wxwidgets;$(SolutionDir)camystat\include\wxwidgets\msvc;$(SolutionDir)camystat\include\opencv2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)cammystat\lib\wxwidgets\vc_lib;$(SolutionDir)cammystat\lib\opencv2</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)camystat\lib\wxwidgets\vc_lib;$(SolutionDir)camystat\lib\opencv2</AdditionalLibraryDirectories>
       <AdditionalDependencies>wxbase32u.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -157,7 +157,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)cammystat\include\wxwidgets;$(SolutionDir)cammystat\include\wxwidgets\msvc;$(SolutionDir)cammystat\include\opencv2;$(SolutionDir)cammystat\include\eigen;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)camystat\include\wxwidgets;$(SolutionDir)camystat\include\wxwidgets\msvc;$(SolutionDir)camystat\include\opencv2;$(SolutionDir)camystat\include\eigen;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <BufferSecurityCheck>true</BufferSecurityCheck>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -175,7 +175,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)cammystat\lib\wxwidgets-MT;$(SolutionDir)cammystat\lib\opencv2</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)camystat\lib\wxwidgets-MT;$(SolutionDir)camystat\lib\opencv2</AdditionalLibraryDirectories>
       <AdditionalDependencies>opencv_world4100.lib;MSVCRT.lib;wxbase32u.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>
       </IgnoreAllDefaultLibraries>
@@ -190,7 +190,7 @@
     <ClCompile Include="MiscUtils.cpp" />
     <ClCompile Include="Savgol.cpp" />
     <ClCompile Include="Utils.cpp" />
-    <ClCompile Include="Cammystat.cpp" />
+    <ClCompile Include="Camystat.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h" />
@@ -201,7 +201,7 @@
     <ClInclude Include="resource.h" />
     <ClInclude Include="Savgol.h" />
     <ClInclude Include="Utils.h" />
-    <ClInclude Include="Cammystat.h" />
+    <ClInclude Include="Camystat.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="icon.rc" />

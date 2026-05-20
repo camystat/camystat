@@ -397,13 +397,13 @@ FodyWeavers.xsd
 # JetBrains Rider
 *.sln.iml
 
-# cammystat
-cammystat/sandbox
-cammystat/include/wxWidgets
-cammystat/include/eigen
-cammystat/include/opencv2
-cammystat/lib/opencv2
-cammystat/command.txt
-cammystat/plot.exe
+# camystat
+camystat/sandbox
+camystat/include/wxWidgets
+camystat/include/eigen
+camystat/include/opencv2
+camystat/lib/opencv2
+camystat/command.txt
+camystat/plot.exe
 /opencv
 /build/

@@ -34,9 +34,9 @@ Application::Application() {
 bool Application::OnInit() {
 	wxInitAllImageHandlers();
 
-	MainFrame* mainFrame = new MainFrame("CamMyStat");
+	MainFrame* mainFrame = new MainFrame("Camystat");
 
-	mainFrame->SetTitle("CamMyStat");
+	mainFrame->SetTitle("Camystat");
 #ifdef _WIN32
 	wxIcon icon(wxICON(IDI_APP_ICON));
 	mainFrame->SetIcon(icon);

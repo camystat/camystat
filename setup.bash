@@ -12,14 +12,14 @@ say "Pulling submodules..."
 git submodule update --init --recursive
 
 say "Creating symlinks..."
-mkdir -p "cammystat/include"
+mkdir -p "camystat/include"
 (
-  cd "cammystat/include"
+  cd "camystat/include"
   ln -sfn "../../wxWidgets/include" "wxWidgets"
   ln -sfn "../../eigen" "eigen"
 )
 
-LICENSES_DIR="cammystat/misc/licenses"
+LICENSES_DIR="camystat/misc/licenses"
 mkdir -p "$LICENSES_DIR"
 
 install_deps_macos() {
@@ -51,7 +51,7 @@ case "$UNAME" in
 esac
 
 say "Preparing OpenCV headers..."
-mkdir -p "cammystat/include/opencv2"
+mkdir -p "camystat/include/opencv2"
 
 opencv_include_dir=""
 if have pkg-config && pkg-config --exists opencv4; then
@@ -69,15 +69,15 @@ if [[ -z "${opencv_include_dir}" ]]; then
 fi
 
 if [[ -n "${opencv_include_dir}" && -d "${opencv_include_dir}/opencv2" ]]; then
-  rm -rf "cammystat/include/opencv2/opencv2"
-  cp -R "${opencv_include_dir}/opencv2" "cammystat/include/opencv2/opencv2"
+  rm -rf "camystat/include/opencv2/opencv2"
+  cp -R "${opencv_include_dir}/opencv2" "camystat/include/opencv2/opencv2"
   say "Copied OpenCV headers from ${opencv_include_dir}/opencv2"
 else
   say "OpenCV headers not found. Install OpenCV (e.g. brew/apt) and re-run if needed."
 fi
 
 say "Preparing OpenCV libs (best effort)..."
-mkdir -p "cammystat/lib/opencv2"
+mkdir -p "camystat/lib/opencv2"
 opencv_lib_dir=""
 if have pkg-config && pkg-config --exists opencv4; then
   opencv_lib_dir="$(pkg-config --variable=libdir opencv4 2>/dev/null || true)"
@@ -86,7 +86,7 @@ fi
 if [[ -n "${opencv_lib_dir}" && -d "${opencv_lib_dir}" ]]; then
   shopt -s nullglob
   for f in "${opencv_lib_dir}"/libopencv*.so* "${opencv_lib_dir}"/libopencv*.dylib; do
-    cp -f "$f" "cammystat/lib/opencv2/" || true
+    cp -f "$f" "camystat/lib/opencv2/" || true
   done
   shopt -u nullglob
 fi
@@ -169,8 +169,8 @@ else
   die "third-party-license-file-generator installed but not runnable in this Python environment."
 fi
 
-PLOT_LICENSE_OUT="../cammystat/misc/licenses/PLOT_EXE_LICENSES.txt"
-mkdir -p "../cammystat/misc/licenses"
+PLOT_LICENSE_OUT="../camystat/misc/licenses/PLOT_EXE_LICENSES.txt"
+mkdir -p "../camystat/misc/licenses"
 cp -f "THIRDPARTYLICENSES" "$PLOT_LICENSE_OUT"
 
 if have curl; then
@@ -209,9 +209,9 @@ mkdir -p "$MPLCONFIGDIR"
 pyinstaller --onefile plot.py
 
 if [[ -f "dist/plot" ]]; then
-  cp -f "dist/plot" "../cammystat/plot.exe"
+  cp -f "dist/plot" "../camystat/plot.exe"
 elif [[ -f "dist/plot.exe" ]]; then
-  cp -f "dist/plot.exe" "../cammystat/plot.exe"
+  cp -f "dist/plot.exe" "../camystat/plot.exe"
 else
   die "PyInstaller output not found in plot/dist/"
 fi
