@@ -69,7 +69,10 @@ enum IDs {
 	ID_MERGE_EVENTS,
 	ID_AUTO_SELECT_EVENTS,
 	ID_Timer,
-	ID_AUTOMATIC_BINARIZATION_THRESHOLD
+	ID_AUTOMATIC_BINARIZATION_THRESHOLD,
+	ID_MENU_CITE_ME,
+	ID_MENU_OPEN_LICENSES,
+	ID_MENU_TOGGLE_CONSOLE
 };
 
 wxBEGIN_EVENT_TABLE(MainFrame, wxFrame)
@@ -82,7 +85,6 @@ EVT_TIMER(ID_Timer, MainFrame::OnTimer)
 EVT_CHAR(MainFrame::OnChar)
 EVT_KILL_FOCUS(MainFrame::OnKillFocus)
 EVT_TEXT_PASTE(wxID_ANY, MainFrame::OnPaste)
-EVT_MENU(wxID_ANY, MainFrame::OnCiteMe)
 EVT_THREAD(wxEVT_CREATE_NEW_WINDOW, MainFrame::OnCreateNewWindow)
 wxEND_EVENT_TABLE()
 
@@ -518,18 +520,18 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title, 
 
 	#if _WIN32
 	wxMenu* debugWindowMenu = new wxMenu;
-	toggleDebugWindowMenuItem = new wxMenuItem(debugWindowMenu, wxID_ANY, "Show debug console");
+	toggleDebugWindowMenuItem = new wxMenuItem(debugWindowMenu, ID_MENU_TOGGLE_CONSOLE, "Show debug console");
 	debugWindowMenu->Append(toggleDebugWindowMenuItem);
 	menuBar->Append(debugWindowMenu, "Debug console");
 	#endif
 
 	wxMenu* aboutAuthorsMenu = new wxMenu;
-	citeMeMenuItem = new wxMenuItem(aboutAuthorsMenu, wxID_ANY, "About the authors");
+	citeMeMenuItem = new wxMenuItem(aboutAuthorsMenu, ID_MENU_CITE_ME, "About the authors");
 	aboutAuthorsMenu->Append(citeMeMenuItem);
 	menuBar->Append(aboutAuthorsMenu, "Cite me");
 
 	wxMenu* licensesMenu = new wxMenu;
-	openLicensesFolderMenuItem = new wxMenuItem(licensesMenu, wxID_ANY, "Open licenses folder");
+	openLicensesFolderMenuItem = new wxMenuItem(licensesMenu, ID_MENU_OPEN_LICENSES, "Open licenses folder");
 	licensesMenu->Append(openLicensesFolderMenuItem);
 	menuBar->Append(licensesMenu, "Licenses");
 
