@@ -22,6 +22,28 @@ if(APPLE)
     MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
     MACOSX_BUNDLE_COPYRIGHT "Camystat contributors"
   )
+
+  set(_camystat_icon_png "${CMAKE_CURRENT_SOURCE_DIR}/misc/ikona.png")
+  if(EXISTS "${_camystat_icon_png}")
+    set(_camystat_icns "${CMAKE_CURRENT_BINARY_DIR}/Camystat.icns")
+    set(_camystat_icon_script "${CMAKE_SOURCE_DIR}/cmake/generate-macos-icon.sh")
+    add_custom_command(
+      OUTPUT "${_camystat_icns}"
+      COMMAND chmod +x "${_camystat_icon_script}"
+      COMMAND "${_camystat_icon_script}" "${_camystat_icon_png}" "${_camystat_icns}"
+      DEPENDS "${_camystat_icon_png}" "${_camystat_icon_script}"
+      COMMENT "Generating Camystat.icns for app bundle"
+      VERBATIM
+    )
+    target_sources(camystat PRIVATE "${_camystat_icns}")
+    set_source_files_properties("${_camystat_icns}" PROPERTIES
+      MACOSX_PACKAGE_LOCATION Resources
+      GENERATED TRUE
+    )
+    set_target_properties(camystat PROPERTIES MACOSX_BUNDLE_ICON_FILE Camystat.icns)
+  else()
+    message(WARNING "misc/ikona.png not found; Camystat.app will have no bundle icon")
+  endif()
 endif()
 
 target_include_directories(camystat
