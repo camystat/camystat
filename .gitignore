@@ -407,3 +407,5 @@ camystat/command.txt
 camystat/plot.exe
 /opencv
 /build/
+
+.DS_Store

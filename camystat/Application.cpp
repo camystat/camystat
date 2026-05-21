@@ -2,6 +2,7 @@
 #include <filesystem>
 #include "MainFrame.h"
 #include "resource.h"
+#include "FsUtils.h"
 
 wxIMPLEMENT_APP(Application);
 
@@ -41,9 +42,8 @@ bool Application::OnInit() {
 	wxIcon icon(wxICON(IDI_APP_ICON));
 	mainFrame->SetIcon(icon);
 #else
-	// Best-effort: allow running from build dir where we copy icon.ico
 	wxIcon icon;
-	if (icon.LoadFile("icon.ico", wxBITMAP_TYPE_ICO)) {
+	if (FsUtils::LoadAppIcon(icon)) {
 		mainFrame->SetIcon(icon);
 	}
 #endif

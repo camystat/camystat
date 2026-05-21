@@ -53,15 +53,16 @@ jobs:
           ./setup.bash
           ./build.bash
 
-      - name: Package build/camystat (exclude CMakeFiles)
+      - name: Package Camystat.app
         run: |
-          rm -rf build/camystat/CMakeFiles
+          test -d build/camystat/Camystat.app
+          ditto -c -k --keepParent build/camystat/Camystat.app camystat-macos.zip
 
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v6
         with:
           name: camystat-macos-x64
-          path: build/camystat
+          path: camystat-macos.zip
 
   build-windows:
     name: Build (Windows)
@@ -102,7 +103,7 @@ jobs:
         run: |
           mkdir -p release-assets
           (cd artifacts/camystat-linux-x64 && zip -r ../../release-assets/camystat-linux-x64.zip .)
-          (cd artifacts/camystat-macos-x64 && zip -r ../../release-assets/camystat-macos-x64.zip .)
+          cp artifacts/camystat-macos-x64/camystat-macos.zip release-assets/camystat-macos-x64.zip
           (cd artifacts/camystat-windows-x64 && zip -r ../../release-assets/camystat-windows-x64.zip .)
           ls -la release-assets/
 

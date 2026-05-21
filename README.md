@@ -7,10 +7,13 @@ Software for binary differential analysis as a high-throughput method for analyz
 Please download the latest release from https://github.com/camystat/camystat/releases.
 
 > [!IMPORTANT]
-> After downloading, please always run the executable from the directory (CWD) where it is placed.
+> On macOS, the app uses **Homebrew** OpenCV and wxWidgets at runtime (they are not copied into the `.app`). Install them before running: `brew install opencv wxwidgets`.
 
 > [!IMPORTANT]
-> For running on Linux, OpenCV 4.0.6 libraries are required. You can install them using your package manager ro download the artifacts manually from OpenCV's homepage.
+> For Linux & Windows: after downloading, please always run the executable from the directory (CWD) where it is placed.
+
+> [!IMPORTANT]
+> For running on Linux, OpenCV 4.0.6 libraries are required. You can install them using your package manager or download the artifacts manually from OpenCV's homepage.
 
 ## Building from source
 
@@ -69,7 +72,11 @@ The setup script can install dependencies via Homebrew. Then run setup and build
 ./build.bash
 ```
 
-The executable and runtime files will be in **`build/camystat/`**. Run the app from that directory.
+**`./build.bash`** builds **`build/camystat/Camystat.app`**. The bundle contains Camystat and bundled assets; **OpenCV and wxWidgets must be installed via Homebrew** on the machine where you run the app. Open from Finder or run:
+
+```bash
+open build/camystat/Camystat.app
+```
 
 ---
 

@@ -188,7 +188,7 @@ if have curl; then
     LICENSE_YORICK
   do
     tmp="$(mktemp)"
-    if curl -fsSL "https://raw.githubusercontent.com/matplotlib/matplotlib/refs/heads/main/LICENSE/${filename}" -o "$tmp"; then
+    if curl -fsSL "https://raw.githubusercontent.com/matplotlib/matplotlib/refs/heads/v3.10.x/LICENSE/${filename}" -o "$tmp"; then
       {
         printf '\n====== matplotlib/LICENSE/%s ======\n\n' "$filename"
         cat "$tmp"

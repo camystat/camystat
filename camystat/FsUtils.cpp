@@ -1,5 +1,8 @@
 #include "FsUtils.h"
 
+#include <wx/filename.h>
+#include <wx/stdpaths.h>
+
 void FsUtils::RemoveFilesAndFolder(const fs::path& folderPath) {
 	// Check if the folder exists
 	if (fs::exists(folderPath) && fs::is_directory(folderPath)) {
@@ -76,4 +79,27 @@ void FsUtils::CreateDirectoryWithCheck(const fs::path& dirPath) {
 	else {
 		std::cerr << "Failed to create folder: " << dirPath << std::endl;
 	}
+}
+
+std::filesystem::path FsUtils::RuntimeResourcePath(const std::string& filename) {
+#ifdef __APPLE__
+	const wxString path = wxFileName(
+		wxStandardPaths::Get().GetResourcesDir(), filename).GetFullPath();
+#else
+	const wxString exePath = wxStandardPaths::Get().GetExecutablePath();
+	const wxString path = wxFileName(wxFileName(exePath).GetPath(), filename).GetFullPath();
+#endif
+	return std::filesystem::path(path.ToUTF8().data());
+}
+
+bool FsUtils::LoadAppIcon(wxIcon& icon) {
+	const std::filesystem::path iconIco = RuntimeResourcePath("icon.ico");
+	if (icon.LoadFile(iconIco.string(), wxBITMAP_TYPE_ICO)) {
+		return true;
+	}
+	const std::filesystem::path iconPng = RuntimeResourcePath("ikona.png");
+	if (std::filesystem::exists(iconPng) && icon.LoadFile(iconPng.string(), wxBITMAP_TYPE_PNG)) {
+		return true;
+	}
+	return false;
 }

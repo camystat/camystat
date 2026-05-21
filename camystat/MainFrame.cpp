@@ -1195,10 +1195,10 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 			FsUtils::CreateDirectoryWithCheck(outputFolderPath / "auto_binarization_threshold");
 		}
 
-		wxSTStatus->SetLabel("Status: Reading current path");
-		std::filesystem::path cwd = std::filesystem::current_path();
 		wxSTStatus->SetLabel("Status: Calculating path to plot");
-		std::string plotPath = (cwd / "plot.exe").string();
+		std::filesystem::path plotBasePath;
+		plotBasePath = FsUtils::RuntimeResourcePath("plot.exe").parent_path();
+		std::string plotPath = (plotBasePath / "plot.exe").string();
 #if SHOW_DEBUG_DIALOGS
 		{
 			wxMessageDialog dialog(NULL, "LOG: path to the plot.exe: " + plotPath, wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
@@ -1770,18 +1770,15 @@ void MainFrame::OnCiteMe(wxCommandEvent& WXUNUSED(event)) {
 }
 
 void MainFrame::OpenLicensesFolder(wxCommandEvent& WXUNUSED(event)) {
-	wxString exePath = wxStandardPaths::Get().GetExecutablePath();
-	wxFileName exeFilePath(exePath);
-
-	wxString exeDirPath = exeFilePath.GetPath();
+	const wxString licensesPath = FsUtils::RuntimeResourcePath("licenses").string();
 
 	#ifdef _WIN32
-	wxString command = wxString::Format("explorer \"%s\\licenses\"", exeDirPath);
+	wxString command = wxString::Format("explorer \"%s\"", licensesPath);
 	#else
 		#ifdef __APPLE__
-			wxString command = wxString::Format("open \"%s/licenses\"", exeDirPath);
+			wxString command = wxString::Format("open \"%s\"", licensesPath);
 		#else
-			wxString command = wxString::Format("xdg-open \"%s/licenses\"", exeDirPath);
+			wxString command = wxString::Format("xdg-open \"%s\"", licensesPath);
 		#endif
 	#endif
 
@@ -1806,17 +1803,17 @@ void MainFrame::ToggleConsole(wxCommandEvent& WXUNUSED(event)) {
 void MainFrame::OnCreateNewWindow(wxThreadEvent& event) {
 	wxFrame* aboutFrame = new wxFrame(this, wxID_ANY, "About the Authors", wxDefaultPosition, wxSize(500, 600));
 	wxIcon icon;
-	if (icon.LoadFile("icon.ico", wxBITMAP_TYPE_ICO)) {
-		aboutFrame->SetIcon(icon);
+	if (!FsUtils::LoadAppIcon(icon)) {
+		wxLogError("Failed to load icon file.");
 	}
 	else {
-		wxLogError("Failed to load icon file.");
+		aboutFrame->SetIcon(icon);
 	}
 
 	wxPanel* panel = new wxPanel(aboutFrame, wxID_ANY, wxDefaultPosition, wxDefaultSize);
 	panel->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
 
-	std::ifstream file("citeme.txt");
+	std::ifstream file(FsUtils::RuntimeResourcePath("citeme.txt"));
 	std::stringstream buffer;
 	if (file.is_open()) {
 		buffer << file.rdbuf();
