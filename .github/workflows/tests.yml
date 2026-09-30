@@ -1,0 +1,49 @@
+name: Unit tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Unit tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-14]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      # Only Eigen is needed; the wxWidgets submodule is not used by the CMake build
+      - name: Checkout Eigen submodule
+        run: git submodule update --init --depth 1 eigen
+
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake pkg-config libopencv-dev libwxgtk3.2-dev
+
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install opencv wxwidgets
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCAMYSTAT_BUILD_TESTS=ON
+
+      - name: Build tests
+        run: cmake --build build --target camystat_tests -j
+
+      - name: Run tests
+        run: ctest --test-dir build --output-on-failure
