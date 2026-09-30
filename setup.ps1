@@ -83,7 +83,8 @@ foreach ($file in $vcxprojFiles) {
     Set-Content -Path $file.FullName -Value $modifiedContent
 }
 
-msbuild wx_vc17.sln /p:Configuration=Release /property:MultiProcessorCompilation=true /p:Platform=x64
+# wxWidgets' project files don't set a toolset; newer MSBuild then falls back to v100 (MSB8020). Use the same toolset as camystat.vcxproj.
+msbuild wx_vc17.sln /p:Configuration=Release /p:PlatformToolset=v143 /property:MultiProcessorCompilation=true /p:Platform=x64
 if ($LASTEXITCODE -ne 0) {
   throw "Building wxWidgets failed (msbuild exit code $LASTEXITCODE)"
 }
