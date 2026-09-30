@@ -1028,7 +1028,7 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 	}
 
 	if (autoMergeEvents < 0.0) {
-		errorMessage += "Right trim value should be non-negative.\n";
+		errorMessage += "Auto merge events value should be non-negative.\n";
 	}
 
 	strTemp = wxTCAutoSelectEvents->GetValue();

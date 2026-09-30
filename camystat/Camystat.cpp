@@ -64,7 +64,7 @@ long double calcU8MatAvgBrightness(const cv::Mat& mat, std::map<int, long double
 		return cacheIt->second;
 	}
 
-	long int sum = 0;
+	long long sum = 0;
 
 	for(int i = 0; i < mat.rows; i++){
 		for(int j = 0; j < mat.cols; j++){
@@ -191,7 +191,7 @@ std::pair<int, std::vector<int>> Camystat::Preprocessing::calculateBinarizationT
 					break;
 				}
 
-				progressCallback(Camystat::Preprocessing::BinarizationThresholdCalcProgress::FINDING_MAX_BRIGHTNESS_DIFF_FRAMES, (double)frameIndex / (double)endFrame, maybeRetryNumber);
+				progressCallback(Camystat::Preprocessing::BinarizationThresholdCalcProgress::FINDING_MAX_BRIGHTNESS_DIFF_FRAMES, endFrame > startFrame ? std::optional<double>((double)(frameIndex - startFrame) / (double)(endFrame - startFrame)) : std::nullopt, maybeRetryNumber);
 
 				cv::cvtColor(currentFrame, currentFrameGray, cv::COLOR_BGR2GRAY);
 

@@ -108,3 +108,48 @@ TEST(FindMaxSumSquare, LowTopPercentStillSelectsACell)
 	ASSERT_EQ(cells.size(), 1u);
 	EXPECT_EQ(cells[0], (std::pair<int, int>{ 5, 4 }));
 }
+
+namespace
+{
+	std::vector<std::optional<double>> collectBrightnessDiffProgress(const std::filesystem::path& video, int startFrame, int endFrame)
+	{
+		std::vector<std::optional<double>> progress;
+		Preprocessing::calculateBinarizationThreshold(video, startFrame, endFrame,
+			[&progress](Preprocessing::BinarizationThresholdCalcProgress stage, std::optional<double> value, std::optional<int>) {
+				if (stage == Preprocessing::BinarizationThresholdCalcProgress::FINDING_MAX_BRIGHTNESS_DIFF_FRAMES) {
+					progress.push_back(value);
+				}
+			},
+			Camystat::kNoAbort);
+		return progress;
+	}
+}
+
+TEST(CalculateBinarizationThreshold, ProgressIsRelativeToFrameRange)
+{
+	TempDir dir;
+	const auto video = dir.path() / "video.avi";
+	writeGreyVideo(video, { 10, 20, 30, 200, 40, 50, 60, 70 });
+
+	auto progress = collectBrightnessDiffProgress(video, 2, 6);
+
+	ASSERT_EQ(progress.size(), 4u);
+	for (size_t i = 0; i < progress.size(); ++i) {
+		ASSERT_TRUE(progress[i].has_value());
+		EXPECT_DOUBLE_EQ(progress[i].value(), (i + 1) / 4.0);
+	}
+}
+
+TEST(CalculateBinarizationThreshold, NoProgressFractionWithoutEndFrame)
+{
+	TempDir dir;
+	const auto video = dir.path() / "video.avi";
+	writeGreyVideo(video, { 10, 20, 200, 40 });
+
+	auto progress = collectBrightnessDiffProgress(video, 0, -1);
+
+	ASSERT_EQ(progress.size(), 3u);
+	for (const auto& value : progress) {
+		EXPECT_FALSE(value.has_value());
+	}
+}
