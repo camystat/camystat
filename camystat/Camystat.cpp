@@ -664,6 +664,10 @@ std::vector<double> Camystat::Smoothing::cloneNormalizedValues(const std::vector
 	double min_value = *std::min_element(values.begin(), values.end());
 	double max_value = *std::max_element(values.begin(), values.end());
 
+	if (max_value == min_value) {
+		return std::vector<double>(values.size(), 0.0);
+	}
+
 	std::vector<double> normalized_values;
 	normalized_values.reserve(values.size());
 

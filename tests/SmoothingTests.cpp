@@ -71,3 +71,18 @@ TEST(ModifyMeans, ThrowsWhenAborted)
 
 	EXPECT_THROW(Smoothing::modifyMeans({ 1, 2, 3 }, 2, 1, abort), Camystat::ProcessingAbortedException);
 }
+
+TEST(CloneNormalizedValues, ScalesToUnitRange)
+{
+	expectVectorNear(Smoothing::cloneNormalizedValues({ 2, 4, 6, 3 }), { 0, 0.5, 1, 0.25 });
+}
+
+TEST(CloneNormalizedValues, ConstantSignalBecomesZeros)
+{
+	expectVectorNear(Smoothing::cloneNormalizedValues({ 2, 2, 2 }), { 0, 0, 0 });
+}
+
+TEST(CloneNormalizedValues, EmptyInput)
+{
+	EXPECT_TRUE(Smoothing::cloneNormalizedValues({}).empty());
+}
