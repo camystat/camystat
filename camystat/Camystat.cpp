@@ -744,28 +744,15 @@ std::vector<std::vector<double>> Camystat::Detection::calculate_integrals_with_r
 /// <returns>The merged list of events (new object)</returns>
 std::vector<std::vector<double>> Camystat::Detection::merge_events(const std::vector<std::vector<double>>& event_list, double distance_threshold) {
 	std::vector<std::vector<double>> merged_list;
-	size_t i = 0;
 
-	while (i < event_list.size()) {
-		if (i == event_list.size() - 1) {
-			merged_list.push_back(event_list[i]);
-			i += 1;
+	for (const auto& event : event_list) {
+		if (!merged_list.empty() && event[2] - merged_list.back()[3] <= distance_threshold) {
+			// Extend the previous (possibly already merged) event
+			merged_list.back()[1] += event[1];
+			merged_list.back()[3] = event[3];
 		}
 		else {
-			const std::vector<double>& current_event = event_list[i];
-			const std::vector<double>& next_event = event_list[i + 1];
-
-			double distance = next_event[2] - current_event[3];
-
-			if (distance <= distance_threshold) {
-				std::vector<double> merged_event = { current_event[0], current_event[1] + next_event[1], current_event[2], next_event[3] };
-				merged_list.push_back(merged_event);
-				i += 2;
-			}
-			else {
-				merged_list.push_back(current_event);
-				i += 1;
-			}
+			merged_list.push_back(event);
 		}
 	}
 

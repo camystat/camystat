@@ -17,6 +17,7 @@ set(_camystat_src "${CMAKE_SOURCE_DIR}/camystat")
 add_executable(camystat_tests
   SavgolTests.cpp
   SmoothingTests.cpp
+  DetectionTests.cpp
   "${_camystat_src}/Camystat.cpp"
   "${_camystat_src}/Savgol.cpp"
 )
