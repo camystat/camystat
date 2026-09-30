@@ -588,48 +588,37 @@ std::vector<double> Camystat::Preprocessing::countOnesInXorAtCoordinates(
 }
 
 /// <summary>
-/// 
+/// Applies a centred moving average <paramref name="x"/> times. Each output sample is the mean of the samples
+/// from i - n/2 to i + n/2 (so an even <paramref name="n"/> yields a window of n + 1 samples), truncated at the
+/// signal edges; the sum is always divided by the number of samples actually averaged.
 /// </summary>
-/// <param name="input_list"></param>
-/// <param name="n"></param>
-/// <param name="x"></param>
+/// <param name="input_list">The input signal</param>
+/// <param name="n">Window length</param>
+/// <param name="x">Number of repetitions</param>
 /// <param name="abortFlag">Flag that indicates whether to abort processing</param>
-/// <returns></returns>
+/// <returns>The smoothed signal (new object)</returns>
 std::vector<double> Camystat::Smoothing::modifyMeans(const std::vector<double>& input_list, size_t n, size_t x, const std::atomic<bool>& abortFlag) {
-	if (n <= 0 || x <= 0) {
+	if (n == 0 || x == 0 || input_list.empty()) {
 		return input_list;
 	}
 
+	const size_t half = n / 2;
 	std::vector<double> current_list = input_list;
+	std::vector<double> modified_list(current_list.size());
 
-	for (int iter = 0; iter < x; ++iter) {		
+	for (size_t iter = 0; iter < x; ++iter) {
 		if (abortFlag.load()) {
 			throw Camystat::ProcessingAbortedException();
 		}
 
-		std::vector<double> modified_list;
-
 		for (size_t i = 0; i < current_list.size(); ++i) {
-			if (abortFlag.load()) {
-				throw Camystat::ProcessingAbortedException();
-			}
+			size_t lo = i >= half ? i - half : 0;
+			size_t hi = std::min(i + half, current_list.size() - 1);
 
-			double mean_value = 0.0;
-
-			if (i < n / 2) {
-				mean_value = std::accumulate(current_list.begin() + i, current_list.begin() + std::min(i + n, current_list.size()), 0.0) / n;
-			}
-			else if (i >= current_list.size() - n / 2) {
-				mean_value = std::accumulate(current_list.begin() + std::max(i - n + 1, size_t(0)), current_list.begin() + i + 1, 0.0) / n;
-			}
-			else {
-				mean_value = std::accumulate(current_list.begin() + i - n / 2, current_list.begin() + i + n / 2 + 1, 0.0) / n;
-			}
-
-			modified_list.push_back(mean_value);
+			modified_list[i] = std::accumulate(current_list.begin() + lo, current_list.begin() + hi + 1, 0.0) / static_cast<double>(hi - lo + 1);
 		}
 
-		current_list = modified_list;
+		std::swap(current_list, modified_list);
 	}
 	return current_list;
 }
