@@ -409,7 +409,7 @@ std::vector<std::pair<int, int>> Camystat::Preprocessing::findMaxSumSquareCoordi
 	int rows = pixel_count_array.rows;
 	int cols = pixel_count_array.cols;
 	int shorter_edge = std::min(rows, cols);
-	int square_size = static_cast<int>(shorter_edge * (square_percent / 100.0));
+	int square_size = std::max(1, static_cast<int>(shorter_edge * (square_percent / 100.0)));
 
 	int max_sum = std::numeric_limits<int>::min();
 	cv::Point max_sum_coords = { -1, -1 };
@@ -438,7 +438,7 @@ std::vector<std::pair<int, int>> Camystat::Preprocessing::findMaxSumSquareCoordi
 	int start_i = max_sum_coords.y;
 	int start_j = max_sum_coords.x;
 	int total_cells = square_size * square_size;
-	int num_cells_to_choose = static_cast<int>(top_percent / 100.0 * total_cells);
+	int num_cells_to_choose = std::max(1, static_cast<int>(top_percent / 100.0 * total_cells));
 
 	std::vector<std::pair<int, int>> selected_coordinates;
 	std::vector<std::pair<int, int>> values_inside_square;

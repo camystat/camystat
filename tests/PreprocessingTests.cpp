@@ -57,3 +57,54 @@ TEST(CountOnesInXor, ThrowsWhenAborted)
 
 	EXPECT_THROW(Preprocessing::countOnesInXorAtCoordinates(video, {}, 128, dir.path() / "result.csv", abort), Camystat::ProcessingAbortedException);
 }
+
+namespace
+{
+	std::vector<std::pair<int, int>> findFocusCells(const cv::Mat& heatmap, double squarePercent, double topPercent, const TempDir& dir)
+	{
+		const auto imagePath = dir.path() / "heatmap.png";
+		cv::imwrite(imagePath.string(), cv::Mat(heatmap.size(), CV_8UC3, cv::Scalar(0, 0, 0)));
+
+		return Preprocessing::findMaxSumSquareCoordinatesWithPercent(heatmap, squarePercent, topPercent, dir.path() / "overlay.png", imagePath);
+	}
+}
+
+TEST(FindMaxSumSquare, SelectsTopCellsOfHottestSquare)
+{
+	TempDir dir;
+	cv::Mat heatmap = cv::Mat::zeros(10, 10, CV_32SC1);
+	heatmap.at<int>(6, 7) = 100;
+	heatmap.at<int>(6, 8) = 90;
+	heatmap.at<int>(7, 7) = 80;
+	heatmap.at<int>(1, 1) = 50;
+
+	// 20% of 10 px -> 2x2 square; 50% of its 4 cells -> 2 cells, as (x, y)
+	auto cells = findFocusCells(heatmap, 20, 50, dir);
+
+	EXPECT_EQ(cells, (std::vector<std::pair<int, int>>{ { 7, 6 }, { 8, 6 } }));
+}
+
+TEST(FindMaxSumSquare, TinySquareStillSelectsACell)
+{
+	TempDir dir;
+	cv::Mat heatmap = cv::Mat::zeros(50, 80, CV_32SC1);
+	heatmap.at<int>(20, 30) = 255;
+
+	// 1% of 50 px rounds down to a 0 px square
+	auto cells = findFocusCells(heatmap, 1, 90, dir);
+
+	EXPECT_EQ(cells, (std::vector<std::pair<int, int>>{ { 30, 20 } }));
+}
+
+TEST(FindMaxSumSquare, LowTopPercentStillSelectsACell)
+{
+	TempDir dir;
+	cv::Mat heatmap = cv::Mat::zeros(10, 10, CV_32SC1);
+	heatmap.at<int>(4, 5) = 255;
+
+	// 10% of a 2x2 square rounds down to 0 cells
+	auto cells = findFocusCells(heatmap, 20, 10, dir);
+
+	ASSERT_EQ(cells.size(), 1u);
+	EXPECT_EQ(cells[0], (std::pair<int, int>{ 5, 4 }));
+}
