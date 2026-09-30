@@ -1443,6 +1443,10 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 #endif
 				}
 			}
+			catch (const Camystat::ProcessingAbortedException& e) {
+				internalCleanup();
+				return MainFrame::AnalysisResult::ABORTED;
+			}
 			// Error handling
 			catch (const std::exception& e) {
 				wxMessageDialog dialog1(NULL, "ERROR: (countOnesInXorAtCoordinates) An error occurred during counting ones in XOR at coordinates", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_ERROR | wxDIALOG_NO_PARENT);

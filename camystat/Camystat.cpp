@@ -551,6 +551,10 @@ std::vector<double> Camystat::Preprocessing::countOnesInXorAtCoordinates(
 	// Loop through all frames
 	try {
 		while (true) {
+			if (abortFlag.load()) {
+				throw Camystat::ProcessingAbortedException();
+			}
+
 			// Read the current frame
 			cv::Mat current_frame;
 			ret = cap.read(current_frame);
