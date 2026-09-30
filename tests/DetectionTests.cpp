@@ -50,7 +50,8 @@ TEST(PhaseStatistics, AveragesOverAllPhases)
 	EXPECT_EQ(stats.contractionCount, 3);
 	EXPECT_EQ(stats.relaxationCount, 3);
 	EXPECT_DOUBLE_EQ(stats.avgContractionLengthFrames, (10.0 + 10.0 + 4.0) / 3.0);
-	EXPECT_DOUBLE_EQ(stats.avgRelaxationLengthFrames, (8.0 + 8.0 + 6.0) / 3.0);
+	// relaxation end index is the terminating zero, which is not part of the phase
+	EXPECT_DOUBLE_EQ(stats.avgRelaxationLengthFrames, (7.0 + 7.0 + 5.0) / 3.0);
 }
 
 TEST(PhaseStatistics, NoPhases)
@@ -61,4 +62,56 @@ TEST(PhaseStatistics, NoPhases)
 	EXPECT_EQ(stats.relaxationCount, 0);
 	EXPECT_DOUBLE_EQ(stats.avgContractionLengthFrames, 0.0);
 	EXPECT_DOUBLE_EQ(stats.avgRelaxationLengthFrames, 0.0);
+}
+
+namespace
+{
+	Events detectEvents(const std::vector<double>& signal)
+	{
+		return Detection::calculate_integrals_with_reference_points(Detection::clone_padded_with_zeros(signal), Camystat::kNoAbort);
+	}
+}
+
+TEST(EventStatistics, LengthsMatchNonZeroRunsAndGaps)
+{
+	// Non-zero runs of 3 and 2 samples, separated by 3 zeros
+	Events events = detectEvents({ 0, 1, 1, 1, 0, 0, 0, 1, 1, 0 });
+	ASSERT_EQ(events.size(), 2u);
+
+	auto stats = Detection::calculate_event_statistics(events);
+
+	EXPECT_DOUBLE_EQ(stats.avgEventLengthFrames, 2.5);
+	EXPECT_DOUBLE_EQ(stats.avgRestLengthFrames, 3.0);
+}
+
+TEST(EventStatistics, SingleEventHasNoRest)
+{
+	auto stats = Detection::calculate_event_statistics(detectEvents({ 0, 2, 2, 2, 2, 0 }));
+
+	EXPECT_DOUBLE_EQ(stats.avgEventLengthFrames, 4.0);
+	EXPECT_DOUBLE_EQ(stats.avgRestLengthFrames, 0.0);
+}
+
+TEST(EventStatistics, NoEvents)
+{
+	auto stats = Detection::calculate_event_statistics({});
+
+	EXPECT_DOUBLE_EQ(stats.avgEventLengthFrames, 0.0);
+	EXPECT_DOUBLE_EQ(stats.avgRestLengthFrames, 0.0);
+}
+
+TEST(PhaseStatistics, LengthsMatchPhaseSpans)
+{
+	// Two events of 5 samples each, with a local minimum in the middle
+	std::vector<double> padded = Detection::clone_padded_with_zeros({ 0, 5, 3, 1, 3, 5, 0, 0, 5, 3, 1, 3, 5, 0 });
+	Events events = Detection::calculate_integrals_with_reference_points(padded, Camystat::kNoAbort);
+
+	auto phases = Detection::locate_contractions_and_relaxations(padded, events, Camystat::kNoAbort);
+	ASSERT_EQ(phases.size(), 4u);
+
+	auto stats = Detection::calculate_phase_statistics(phases);
+
+	// Contraction covers the samples 5, 3, 1; relaxation covers 1, 3, 5 (the minimum belongs to both)
+	EXPECT_DOUBLE_EQ(stats.avgContractionLengthFrames, 3.0);
+	EXPECT_DOUBLE_EQ(stats.avgRelaxationLengthFrames, 3.0);
 }

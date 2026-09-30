@@ -846,6 +846,35 @@ std::vector<Camystat::Detection::Phase> Camystat::Detection::locate_contractions
 }
 
 /// <summary>
+/// Calculates the average lengths (in frames) of events and of rests between consecutive events
+/// </summary>
+/// <param name="events">The events, as returned by calculate_integrals_with_reference_points</param>
+/// <returns>The average event and rest lengths</returns>
+Camystat::Detection::EventStatistics Camystat::Detection::calculate_event_statistics(const std::vector<std::vector<double>>& events)
+{
+	EventStatistics stats{ 0.0, 0.0 };
+	std::optional<double> lastEventEnd = std::nullopt;
+	int restsCount = 0;
+
+	for (const auto& event : events) {
+		// event[2] is the first non-zero sample (inclusive), event[3] is the terminating zero (exclusive)
+		stats.avgEventLengthFrames += event[3] - event[2];
+
+		if (lastEventEnd.has_value()) {
+			stats.avgRestLengthFrames += event[2] - lastEventEnd.value(); // zeros span [previous event[3], event[2])
+			restsCount++;
+		}
+
+		lastEventEnd = event[3];
+	}
+
+	stats.avgEventLengthFrames /= static_cast<double>(std::max(static_cast<int>(events.size()), 1));
+	stats.avgRestLengthFrames /= static_cast<double>(std::max(restsCount, 1));
+
+	return stats;
+}
+
+/// <summary>
 /// Calculates the average lengths (in frames) of contraction and relaxation phases
 /// </summary>
 /// <param name="phases">The phases, as returned by locate_contractions_and_relaxations</param>
@@ -855,7 +884,8 @@ Camystat::Detection::PhaseStatistics Camystat::Detection::calculate_phase_statis
 	PhaseStatistics stats{ 0.0, 0.0, 0, 0 };
 
 	for (const auto& phase : phases) {
-		int lenFrames = phase.end_index - phase.start_index + 1;
+		// contraction: [start, min] inclusive; relaxation: [min, end) with end being the terminating zero
+		int lenFrames = phase.end_index - phase.start_index + (phase.phase_type == Phase::PhaseType::CONTRACTION ? 1 : 0);
 
 		if (phase.phase_type == Phase::PhaseType::CONTRACTION) {
 			stats.avgContractionLengthFrames += lenFrames;

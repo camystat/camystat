@@ -1575,28 +1575,10 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 
 		reportWriter.rowBuffer.eventsDetected = events.size();
 		{
-			double avgEventLengthFrames = 0, avgRestLengthFrames = 0;
-			std::optional<int> lastEventEndFrame = std::nullopt;
-			int restsCount = 0;
-			for (const auto &event : events)
-			{
-				avgEventLengthFrames += event[3] - event[2] + 1;
+			Camystat::Detection::EventStatistics eventStats = Camystat::Detection::calculate_event_statistics(events);
 
-				if (lastEventEndFrame.has_value()) {
-					avgRestLengthFrames += event[2] - lastEventEndFrame.value() - 1; // exclusive on both ends, thus diff + 1 - 2 = diff - 1
-					restsCount++;
-				}
-
-				lastEventEndFrame = event[3];
-			}
-			avgEventLengthFrames /= static_cast<double>(std::max(static_cast<int>(events.size()), 1));
-			avgRestLengthFrames /= static_cast<double>(std::max(restsCount, 1));
-			
-			double avgEventLengthSeconds = avgEventLengthFrames / static_cast<double>(fps);
-			reportWriter.rowBuffer.avgEventDurationSeconds = avgEventLengthSeconds;
-
-			double avgRestLengthSeconds = avgRestLengthFrames / static_cast<double>(fps);
-			reportWriter.rowBuffer.avgRestDurationSeconds = avgRestLengthSeconds;
+			reportWriter.rowBuffer.avgEventDurationSeconds = eventStats.avgEventLengthFrames / static_cast<double>(fps);
+			reportWriter.rowBuffer.avgRestDurationSeconds = eventStats.avgRestLengthFrames / static_cast<double>(fps);
 		}
 		
 		std::filesystem::path contractionRelaxationPhasesPath = thisFileTempPath / ("contractionRelaxationPhases" + fileName + ".csv");

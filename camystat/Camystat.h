@@ -213,6 +213,13 @@ namespace Camystat
         static std::vector<std::vector<double>> merge_events(const std::vector<std::vector<double>>& event_list, double distance_threshold);
         static std::vector<std::vector<double>> remove_events(const std::vector<std::vector<double>>& event_list, double threshold_value);
 
+        struct EventStatistics {
+            double avgEventLengthFrames;
+            double avgRestLengthFrames;
+        };
+
+        static EventStatistics calculate_event_statistics(const std::vector<std::vector<double>>& events);
+
         struct PhaseStatistics {
             double avgContractionLengthFrames;
             double avgRelaxationLengthFrames;
