@@ -105,6 +105,16 @@ Then build the solution:
 
 Outputs are in **`x64\Release\`** (or `x64\Debug\` for Debug). Run `camystat.exe` from that folder so it finds `plot.exe`, DLLs, and other assets.
 
+### Unit tests
+
+After running setup, configure with tests enabled (GoogleTest is downloaded at configure time), build and run them with CTest:
+
+```bash
+cmake -S . -B build -DCAMYSTAT_BUILD_TESTS=ON
+cmake --build build -j
+ctest --test-dir build --output-on-failure
+```
+
 ## Full article
 
 If you use this project, please cite:

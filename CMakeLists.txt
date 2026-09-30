@@ -6,5 +6,12 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+option(CAMYSTAT_BUILD_TESTS "Build the unit tests" OFF)
+
 add_subdirectory(camystat)
+
+if(CAMYSTAT_BUILD_TESTS)
+  enable_testing()
+  add_subdirectory(tests)
+endif()
 
