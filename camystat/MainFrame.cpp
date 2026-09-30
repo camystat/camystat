@@ -193,7 +193,18 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title, 
 			timer->Start(1300);
 
 			std::thread([this]() {
-				AnalysisResult result = RunAnalysis();
+				AnalysisResult result;
+				try {
+					result = RunAnalysis();
+				}
+				catch (const std::exception& e) {
+					std::cerr << "RunAnalysis: unhandled exception: " << e.what() << std::endl;
+					result = AnalysisResult::FAILED;
+				}
+				catch (...) {
+					std::cerr << "RunAnalysis: unhandled unknown exception" << std::endl;
+					result = AnalysisResult::FAILED;
+				}
 				// all UI updates must run on the main thread (required by macOS/AppKit).
 				this->CallAfter([this, result]() {
 				timer->Stop();
@@ -1130,273 +1141,327 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 
 		std::string inputPath = std::string(directory.mb_str());
 
-		if (inputPath == "") {
-			wxSTStatus->SetLabel("Status: List of files .mov shouldn't be empty.");
-			wxMessageDialog dialog(NULL, "ERROR: List of files .mov shouldn't be empty.", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_ERROR | wxDIALOG_NO_PARENT);
-			dialog.ShowModal();
-			return MainFrame::AnalysisResult::INVALID_PARAMETERS;
-		}
-
-		fs::path pathObj(inputPath);
-
-		wxSTStatus->SetLabel("Status: Initializing...");
-
-		std::string fileName = pathObj.stem().string();
-
-		std::string outputPath = std::string(wxCTOutputPath->GetValue().mb_str());
-
-		if (!fs::exists(outputPath)) {
-			return MainFrame::AnalysisResult::FAILED;
-		}
-
-		std::string thisFileFolderName = "camystat_output_" + fileName;
-		wxSTStatusVideo->SetLabel("Video: " + fileName);
-		fs::path outputFolderPath = fs::path(outputPath) / thisRunFolderName / thisFileFolderName;
-
-		// Create the main output folder
-		FsUtils::CreateDirectoryWithCheck(outputFolderPath);
-
-		std::filesystem::path reportOutputPath = outputFolderPath / "report.csv";
-		Camystat::IterativeReportWriter reportWriter(reportOutputPath, analyseContractionRelaxationEvents);
-
-		if (!reportWriter.isOpen()) {
-			std::cerr << "Error: IterativeReportWriter could not open file " << reportOutputPath << " for writing!" << std::endl;
-			return MainFrame::AnalysisResult::FAILED;
-		}
-
-		reportWriter.rowBuffer.videoName = fileName;
-		{
-			cv::VideoCapture cap(inputPath);
-			reportWriter.rowBuffer.videoDurationSeconds = cap.get(cv::CAP_PROP_FRAME_COUNT) / static_cast<double>(fps);
-			cap.release();
-		}
-
-		wxSTStatus->SetLabel("Status: Preparing output folders");
-
-		// Create the subfolders
-		if (isAnyAutomaticAnalysisOptionActive) {
-			FsUtils::CreateDirectoryWithCheck(outputFolderPath / "activity_heatmap");
-			FsUtils::CreateDirectoryWithCheck(outputFolderPath / "heatmap_coordinates");
-		}
-		if (outputCsvStats) {
-			FsUtils::CreateDirectoryWithCheck(outputFolderPath / "csv_stats");
-		}
-		if (outputCsvRaw) {
-			FsUtils::CreateDirectoryWithCheck(outputFolderPath / "csv_raw");
-		}
-		if (outputLineChart) {
-			FsUtils::CreateDirectoryWithCheck(outputFolderPath / "raw_chart");
-		}
-		if (outputEventChart) {
-			FsUtils::CreateDirectoryWithCheck(outputFolderPath / "normalized_chart");
-		}
-		if (analyseContractionRelaxationEvents) {
-			FsUtils::CreateDirectoryWithCheck(outputFolderPath / "contraction_relaxation_chart");
-		}
-		if (wxCBAutomaticBinarizationThreshold->IsChecked()) {
-			FsUtils::CreateDirectoryWithCheck(outputFolderPath / "auto_binarization_threshold");
-		}
-
-		wxSTStatus->SetLabel("Status: Calculating path to plot");
-		std::filesystem::path plotBasePath;
-		plotBasePath = FsUtils::RuntimeResourcePath("plot.exe").parent_path();
-		std::string plotPath = (plotBasePath / "plot.exe").string();
-#if SHOW_DEBUG_DIALOGS
-		{
-			wxMessageDialog dialog(NULL, "LOG: path to the plot.exe: " + plotPath, wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
-			dialog.ShowModal();
-			wxMessageDialog dialog(NULL, plotPath, wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
-			dialog.ShowModal();
-		}
-#endif
-
-		std::filesystem::path appdataPath;
-		try {
-			appdataPath = std::filesystem::temp_directory_path();
-		}
-		catch (...) {
-			wxSTStatus->SetLabel("Status: ERROR: Could not locate temp folder!");
-			wxMessageDialog dialog(NULL, "ERROR: Could not locate the temp folder.", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
-			dialog.ShowModal();
-			return MainFrame::AnalysisResult::FAILED;
-		}
-		wxSTStatus->SetLabel("Status: Detected appdata folder");
-
-		std::filesystem::path camystatTempPath = appdataPath / "Camystat";
-		wxSTStatus->SetLabel("Status: Camystat folder located");
-
-		if (!FsUtils::FolderExists(camystatTempPath)) {
-			FsUtils::CreateDirectoryWithCheck(camystatTempPath);
-			wxSTStatus->SetLabel("Status: Camystat appdata folder has been created");
-		}
-
-		std::filesystem::path heatmapPath = outputFolderPath / "activity_heatmap" / (fileName + ".png");
-		std::filesystem::path thisFileTempPath = camystatTempPath / fileName;
-
-		if (FsUtils::FolderExists(camystatTempPath)) {
-			FsUtils::CreateDirectoryWithCheck(thisFileTempPath);
-		}
-
-		std::string pathToRemove = (thisFileTempPath).string();
-		const auto internalCleanup = [&pathToRemove]() {
-			// clean up the files after analysis is completed or aborted
-			if (wxFileName::DirExists(pathToRemove))
-			{
-				FsUtils::RemoveDirectoryRecursively(pathToRemove);
+		// Set once this file's temp folder is known, so that it can be removed if processing fails unexpectedly
+		std::optional<std::string> tempFolderToRemoveOnError;
+		const auto removeTempFolderOnError = [&tempFolderToRemoveOnError]() {
+			if (tempFolderToRemoveOnError.has_value() && wxFileName::DirExists(tempFolderToRemoveOnError.value())) {
+				FsUtils::RemoveDirectoryRecursively(tempFolderToRemoveOnError.value());
 			}
 		};
 
-		wxSTStatus->SetLabel("Status: Reading form's parameters...");
-
-		double scaleFactor = 2.0;
-
-		std::vector<std::string> inputPaths;
-		std::stringstream ss(inputPath);
-		std::string line;
-
-		// Use std::getline to extract each line separated by '\n'
-		while (std::getline(ss, line)) {
-			inputPaths.push_back(line);
-		}
-
-		int threshold;
-		if (wxCBAutomaticBinarizationThreshold->IsChecked()) {
-			// automatically calculate binarization threshold as per Marcin's algorithm design
-
-			try {
-				std::vector<int> xorScoresForThresholds;
-				std::tie(threshold, xorScoresForThresholds) = Camystat::Preprocessing::calculateBinarizationThreshold(
-					inputPath,
-					startFrame,
-					endFrame,
-					[this](Camystat::Preprocessing::BinarizationThresholdCalcProgress stage, std::optional<double> maybeProgress, std::optional<int> maybeRetryNumber)
-					{
-						std::stringstream status;
-						status << "Status: Calc. bin. thresh. ";
-
-						switch(stage){
-							case Camystat::Preprocessing::BinarizationThresholdCalcProgress::STARTING:
-								status << "starting";
-								break;
-
-							case Camystat::Preprocessing::BinarizationThresholdCalcProgress::FINDING_MAX_BRIGHTNESS_DIFF_FRAMES:
-								status << "max diff. frames";
-								break;
-
-							case Camystat::Preprocessing::BinarizationThresholdCalcProgress::CALCULATING_XOR_SCORES:
-								status << "XOR scores";
-								break;
-						}
-
-						if (maybeProgress.has_value()) {
-							status << " " << (int) std::round(maybeProgress.value() * 100) << "%";
-						}
-
-						if (maybeRetryNumber.has_value()) {
-							status << " (retry " << maybeRetryNumber.value() << ")";
-						}
-
-						wxSTStatus->SetLabel(status.str());
-					},
-					stopAnalysisThreadFlag
-				);
-
-				wxTCBinarizationThreshold->SetValue(std::to_string(threshold));
-
-				std::filesystem::path xorScoresForThresholdsPath = thisFileTempPath / ("autoBinarizationThresholdXOR_" + fileName + ".csv");
-				wxSTStatus->SetLabel("Status: Saving threshold calculation results");
-				Utils::writeVectorToFile(xorScoresForThresholdsPath.string(), xorScoresForThresholds);
-
-				std::filesystem::path calculatedThresholdPath = thisFileTempPath / ("autoBinarizationThreshold_" + fileName + ".txt");
-				std::ofstream outFile(calculatedThresholdPath);
-				if (outFile.is_open()) {
-					outFile << threshold;
-					outFile.close();
-				}
-				else {
-					std::cerr << "Failed to open file for writing: " << calculatedThresholdPath << std::endl;
-				}
-
-				std::filesystem::path savePath = outputFolderPath / "auto_binarization_threshold";
-				RunPlotOnMainThread(plotPath, "auto_binarization_thresh", "\"" + xorScoresForThresholdsPath.string() + "\" \"" + calculatedThresholdPath.string() + "\" \"" + savePath.string() + "\"");
-			}
-			// Error handling
-			catch (const Camystat::ProcessingAbortedException& e) {
-				internalCleanup();
-				return MainFrame::AnalysisResult::ABORTED;
-			}
-			catch (const std::exception& e) {
-				wxMessageDialog dialog1(NULL, "ERROR: (calculateBinarizationThreshold) An error occurred during the binarization threshold calculation", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_ERROR | wxDIALOG_NO_PARENT);
-				dialog1.ShowModal();
-
-				wxSTStatus->SetLabel(STRING_STATUS_WAITING_FOR_INPUT);
-				
-				continue; // process the next image
-			}
-		}
-		else {
-			std::optional<int> parsedThreshold = Camystat::Preprocessing::parseBinarizationThreshold(wxTCBinarizationThreshold->GetValue().ToStdString());
-			if (!parsedThreshold.has_value()) {
-				wxMessageDialog dialog(NULL, "Binarization threshold should be an integer in range 0-255.", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_ERROR | wxDIALOG_NO_PARENT);
-				dialog.ShowModal();
-				internalCleanup();
-				return MainFrame::AnalysisResult::INVALID_PARAMETERS;
-			}
-			threshold = parsedThreshold.value();
-		}
-
-		std::cout << "Using binarization threshold: " << threshold << std::endl;
-
-		// Create heatmap
-		std::vector<std::pair<int, int>> maxSumCoords12;
-		if (isAnyAutomaticAnalysisOptionActive) {
-			wxSTStatus->SetLabel("Status: Creating heatmaps");
-
-			cv::Mat heatmap11;
-			try
-			{
-				heatmap11 = Camystat::Preprocessing::createHeatmap(inputPath, startFrame, endFrame, threshold, heatmapPath, stopAnalysisThreadFlag);
-			}
-			// Error handling
-			catch (const Camystat::ProcessingAbortedException& e) {
-				internalCleanup();
-				return MainFrame::AnalysisResult::ABORTED;
-			}
-			catch (const std::exception& e) {
-				wxMessageDialog dialog1(NULL, "ERROR: (createHeatmap) An error occurred during heatmap creation", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_ERROR | wxDIALOG_NO_PARENT);
-				dialog1.ShowModal();
-
-				wxSTStatus->SetLabel(STRING_STATUS_WAITING_FOR_INPUT);
-				
-				continue; // process the next image
-			}
-
-			std::filesystem::path heatmapCoordinatesPath = outputFolderPath / "heatmap_coordinates" / (fileName + ".png");
-
-			wxSTStatus->SetLabel("Status: Finding max sum squares");
-			try
-			{
-				maxSumCoords12 = Camystat::Preprocessing::findMaxSumSquareCoordinatesWithPercent(
-					heatmap11, squarePercent, topPercent, heatmapCoordinatesPath.string(), heatmapPath.string(), stopAnalysisThreadFlag
-				);
-			}
-			catch (const Camystat::ProcessingAbortedException& e) {
-				internalCleanup();
-				return MainFrame::AnalysisResult::ABORTED;
-			}
-		}
-
-		std::filesystem::path rawCSVPath = outputFolderPath / "csv_raw" / (fileName + ".csv");
-
-		// Count ones in XOR at coordinates
-		std::vector<double> passedDoubleVector;
 		try
 		{
+			if (inputPath == "") {
+				wxSTStatus->SetLabel("Status: List of files .mov shouldn't be empty.");
+				wxMessageDialog dialog(NULL, "ERROR: List of files .mov shouldn't be empty.", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_ERROR | wxDIALOG_NO_PARENT);
+				dialog.ShowModal();
+				return MainFrame::AnalysisResult::INVALID_PARAMETERS;
+			}
+
+			fs::path pathObj(inputPath);
+
+			wxSTStatus->SetLabel("Status: Initializing...");
+
+			std::string fileName = pathObj.stem().string();
+
+			std::string outputPath = std::string(wxCTOutputPath->GetValue().mb_str());
+
+			if (!fs::exists(outputPath)) {
+				return MainFrame::AnalysisResult::FAILED;
+			}
+
+			std::string thisFileFolderName = "camystat_output_" + fileName;
+			wxSTStatusVideo->SetLabel("Video: " + fileName);
+			fs::path outputFolderPath = fs::path(outputPath) / thisRunFolderName / thisFileFolderName;
+
+			// Create the main output folder
+			FsUtils::CreateDirectoryWithCheck(outputFolderPath);
+
+			std::filesystem::path reportOutputPath = outputFolderPath / "report.csv";
+			Camystat::IterativeReportWriter reportWriter(reportOutputPath, analyseContractionRelaxationEvents);
+
+			if (!reportWriter.isOpen()) {
+				std::cerr << "Error: IterativeReportWriter could not open file " << reportOutputPath << " for writing!" << std::endl;
+				return MainFrame::AnalysisResult::FAILED;
+			}
+
+			reportWriter.rowBuffer.videoName = fileName;
+			{
+				cv::VideoCapture cap(inputPath);
+				reportWriter.rowBuffer.videoDurationSeconds = cap.get(cv::CAP_PROP_FRAME_COUNT) / static_cast<double>(fps);
+				cap.release();
+			}
+
+			wxSTStatus->SetLabel("Status: Preparing output folders");
+
+			// Create the subfolders
 			if (isAnyAutomaticAnalysisOptionActive) {
-				wxSTStatus->SetLabel("Status: Couting ones in xor");
+				FsUtils::CreateDirectoryWithCheck(outputFolderPath / "activity_heatmap");
+				FsUtils::CreateDirectoryWithCheck(outputFolderPath / "heatmap_coordinates");
+			}
+			if (outputCsvStats) {
+				FsUtils::CreateDirectoryWithCheck(outputFolderPath / "csv_stats");
+			}
+			if (outputCsvRaw) {
+				FsUtils::CreateDirectoryWithCheck(outputFolderPath / "csv_raw");
+			}
+			if (outputLineChart) {
+				FsUtils::CreateDirectoryWithCheck(outputFolderPath / "raw_chart");
+			}
+			if (outputEventChart) {
+				FsUtils::CreateDirectoryWithCheck(outputFolderPath / "normalized_chart");
+			}
+			if (analyseContractionRelaxationEvents) {
+				FsUtils::CreateDirectoryWithCheck(outputFolderPath / "contraction_relaxation_chart");
+			}
+			if (wxCBAutomaticBinarizationThreshold->IsChecked()) {
+				FsUtils::CreateDirectoryWithCheck(outputFolderPath / "auto_binarization_threshold");
+			}
+
+			wxSTStatus->SetLabel("Status: Calculating path to plot");
+			std::filesystem::path plotBasePath;
+			plotBasePath = FsUtils::RuntimeResourcePath("plot.exe").parent_path();
+			std::string plotPath = (plotBasePath / "plot.exe").string();
+#if SHOW_DEBUG_DIALOGS
+			{
+				wxMessageDialog dialog(NULL, "LOG: path to the plot.exe: " + plotPath, wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
+				dialog.ShowModal();
+				wxMessageDialog dialog(NULL, plotPath, wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
+				dialog.ShowModal();
+			}
+#endif
+
+			std::filesystem::path appdataPath;
+			try {
+				appdataPath = std::filesystem::temp_directory_path();
+			}
+			catch (...) {
+				wxSTStatus->SetLabel("Status: ERROR: Could not locate temp folder!");
+				wxMessageDialog dialog(NULL, "ERROR: Could not locate the temp folder.", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
+				dialog.ShowModal();
+				return MainFrame::AnalysisResult::FAILED;
+			}
+			wxSTStatus->SetLabel("Status: Detected appdata folder");
+
+			std::filesystem::path camystatTempPath = appdataPath / "Camystat";
+			wxSTStatus->SetLabel("Status: Camystat folder located");
+
+			if (!FsUtils::FolderExists(camystatTempPath)) {
+				FsUtils::CreateDirectoryWithCheck(camystatTempPath);
+				wxSTStatus->SetLabel("Status: Camystat appdata folder has been created");
+			}
+
+			std::filesystem::path heatmapPath = outputFolderPath / "activity_heatmap" / (fileName + ".png");
+			std::filesystem::path thisFileTempPath = camystatTempPath / fileName;
+
+			if (FsUtils::FolderExists(camystatTempPath)) {
+				FsUtils::CreateDirectoryWithCheck(thisFileTempPath);
+			}
+
+			std::string pathToRemove = (thisFileTempPath).string();
+			tempFolderToRemoveOnError = pathToRemove;
+			const auto internalCleanup = [&pathToRemove]() {
+				// clean up the files after analysis is completed or aborted
+				if (wxFileName::DirExists(pathToRemove))
+				{
+					FsUtils::RemoveDirectoryRecursively(pathToRemove);
+				}
+			};
+
+			wxSTStatus->SetLabel("Status: Reading form's parameters...");
+
+			double scaleFactor = 2.0;
+
+			std::vector<std::string> inputPaths;
+			std::stringstream ss(inputPath);
+			std::string line;
+
+			// Use std::getline to extract each line separated by '\n'
+			while (std::getline(ss, line)) {
+				inputPaths.push_back(line);
+			}
+
+			int threshold;
+			if (wxCBAutomaticBinarizationThreshold->IsChecked()) {
+				// automatically calculate binarization threshold as per Marcin's algorithm design
+
+				try {
+					std::vector<int> xorScoresForThresholds;
+					std::tie(threshold, xorScoresForThresholds) = Camystat::Preprocessing::calculateBinarizationThreshold(
+						inputPath,
+						startFrame,
+						endFrame,
+						[this](Camystat::Preprocessing::BinarizationThresholdCalcProgress stage, std::optional<double> maybeProgress, std::optional<int> maybeRetryNumber)
+						{
+							std::stringstream status;
+							status << "Status: Calc. bin. thresh. ";
+
+							switch(stage){
+								case Camystat::Preprocessing::BinarizationThresholdCalcProgress::STARTING:
+									status << "starting";
+									break;
+
+								case Camystat::Preprocessing::BinarizationThresholdCalcProgress::FINDING_MAX_BRIGHTNESS_DIFF_FRAMES:
+									status << "max diff. frames";
+									break;
+
+								case Camystat::Preprocessing::BinarizationThresholdCalcProgress::CALCULATING_XOR_SCORES:
+									status << "XOR scores";
+									break;
+							}
+
+							if (maybeProgress.has_value()) {
+								status << " " << (int) std::round(maybeProgress.value() * 100) << "%";
+							}
+
+							if (maybeRetryNumber.has_value()) {
+								status << " (retry " << maybeRetryNumber.value() << ")";
+							}
+
+							wxSTStatus->SetLabel(status.str());
+						},
+						stopAnalysisThreadFlag
+					);
+
+					wxTCBinarizationThreshold->SetValue(std::to_string(threshold));
+
+					std::filesystem::path xorScoresForThresholdsPath = thisFileTempPath / ("autoBinarizationThresholdXOR_" + fileName + ".csv");
+					wxSTStatus->SetLabel("Status: Saving threshold calculation results");
+					Utils::writeVectorToFile(xorScoresForThresholdsPath.string(), xorScoresForThresholds);
+
+					std::filesystem::path calculatedThresholdPath = thisFileTempPath / ("autoBinarizationThreshold_" + fileName + ".txt");
+					std::ofstream outFile(calculatedThresholdPath);
+					if (outFile.is_open()) {
+						outFile << threshold;
+						outFile.close();
+					}
+					else {
+						std::cerr << "Failed to open file for writing: " << calculatedThresholdPath << std::endl;
+					}
+
+					std::filesystem::path savePath = outputFolderPath / "auto_binarization_threshold";
+					RunPlotOnMainThread(plotPath, "auto_binarization_thresh", "\"" + xorScoresForThresholdsPath.string() + "\" \"" + calculatedThresholdPath.string() + "\" \"" + savePath.string() + "\"");
+				}
+				// Error handling
+				catch (const Camystat::ProcessingAbortedException& e) {
+					internalCleanup();
+					return MainFrame::AnalysisResult::ABORTED;
+				}
+				catch (const std::exception& e) {
+					wxMessageDialog dialog1(NULL, "ERROR: (calculateBinarizationThreshold) An error occurred during the binarization threshold calculation", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_ERROR | wxDIALOG_NO_PARENT);
+					dialog1.ShowModal();
+
+					wxSTStatus->SetLabel(STRING_STATUS_WAITING_FOR_INPUT);
+				
+					continue; // process the next image
+				}
+			}
+			else {
+				std::optional<int> parsedThreshold = Camystat::Preprocessing::parseBinarizationThreshold(wxTCBinarizationThreshold->GetValue().ToStdString());
+				if (!parsedThreshold.has_value()) {
+					wxMessageDialog dialog(NULL, "Binarization threshold should be an integer in range 0-255.", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_ERROR | wxDIALOG_NO_PARENT);
+					dialog.ShowModal();
+					internalCleanup();
+					return MainFrame::AnalysisResult::INVALID_PARAMETERS;
+				}
+				threshold = parsedThreshold.value();
+			}
+
+			std::cout << "Using binarization threshold: " << threshold << std::endl;
+
+			// Create heatmap
+			std::vector<std::pair<int, int>> maxSumCoords12;
+			if (isAnyAutomaticAnalysisOptionActive) {
+				wxSTStatus->SetLabel("Status: Creating heatmaps");
+
+				cv::Mat heatmap11;
 				try
 				{
-					passedDoubleVector = Camystat::Preprocessing::countOnesInXorAtCoordinates(inputPath, maxSumCoords12, threshold, rawCSVPath, stopAnalysisThreadFlag);
+					heatmap11 = Camystat::Preprocessing::createHeatmap(inputPath, startFrame, endFrame, threshold, heatmapPath, stopAnalysisThreadFlag);
+				}
+				// Error handling
+				catch (const Camystat::ProcessingAbortedException& e) {
+					internalCleanup();
+					return MainFrame::AnalysisResult::ABORTED;
+				}
+				catch (const std::exception& e) {
+					wxMessageDialog dialog1(NULL, "ERROR: (createHeatmap) An error occurred during heatmap creation", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_ERROR | wxDIALOG_NO_PARENT);
+					dialog1.ShowModal();
+
+					wxSTStatus->SetLabel(STRING_STATUS_WAITING_FOR_INPUT);
+				
+					continue; // process the next image
+				}
+
+				std::filesystem::path heatmapCoordinatesPath = outputFolderPath / "heatmap_coordinates" / (fileName + ".png");
+
+				wxSTStatus->SetLabel("Status: Finding max sum squares");
+				try
+				{
+					maxSumCoords12 = Camystat::Preprocessing::findMaxSumSquareCoordinatesWithPercent(
+						heatmap11, squarePercent, topPercent, heatmapCoordinatesPath.string(), heatmapPath.string(), stopAnalysisThreadFlag
+					);
+				}
+				catch (const Camystat::ProcessingAbortedException& e) {
+					internalCleanup();
+					return MainFrame::AnalysisResult::ABORTED;
+				}
+			}
+
+			std::filesystem::path rawCSVPath = outputFolderPath / "csv_raw" / (fileName + ".csv");
+
+			// Count ones in XOR at coordinates
+			std::vector<double> passedDoubleVector;
+			try
+			{
+				if (isAnyAutomaticAnalysisOptionActive) {
+					wxSTStatus->SetLabel("Status: Couting ones in xor");
+					try
+					{
+						passedDoubleVector = Camystat::Preprocessing::countOnesInXorAtCoordinates(inputPath, maxSumCoords12, threshold, rawCSVPath, stopAnalysisThreadFlag);
+					}
+					catch (const Camystat::ProcessingAbortedException& e) {
+						internalCleanup();
+						return MainFrame::AnalysisResult::ABORTED;
+					}
+#if SHOW_DEBUG_DIALOGS
+					{
+						wxMessageDialog dialog(NULL, "LOG: XOR (with coords) calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
+						dialog.ShowModal();
+					}
+#endif
+				}
+				else {
+					std::vector<std::pair<int, int>> coordinates;
+					wxSTStatus->SetLabel("Status: Couting ones in xor without coords");
+					passedDoubleVector = Camystat::Preprocessing::countOnesInXorAtCoordinates(inputPath, coordinates, threshold, rawCSVPath, stopAnalysisThreadFlag);
+#if SHOW_DEBUG_DIALOGS
+					{
+						wxMessageDialog dialog(NULL, "LOG: no coordinates XOR calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
+						dialog.ShowModal();
+					}
+#endif
+				}
+			}
+			// Error handling
+			catch (const std::exception& e) {
+				wxMessageDialog dialog1(NULL, "ERROR: (countOnesInXorAtCoordinates) An error occurred during counting ones in XOR at coordinates", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_ERROR | wxDIALOG_NO_PARENT);
+				dialog1.ShowModal();
+
+				wxSTStatus->SetLabel(STRING_STATUS_WAITING_FOR_INPUT);
+			
+				continue; // process the next image
+			}
+
+			std::filesystem::path valuesB4XORPath = thisFileTempPath / ("valuesB4XOR" + fileName + ".csv");
+			wxSTStatus->SetLabel("Status: Saving vectors before xor");
+			Utils::writeVectorToFile(valuesB4XORPath.string(), passedDoubleVector);
+
+			if (wxCBSavitzkyGolayFilter->IsChecked()) {
+				wxSTStatus->SetLabel("Status: Filtering (Savgol)");
+				try
+				{
+					passedDoubleVector = Savgol::savgolFilter(passedDoubleVector, savitzkyGolayWindowLength, polyorder);
 				}
 				catch (const Camystat::ProcessingAbortedException& e) {
 					internalCleanup();
@@ -1404,231 +1469,204 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 				}
 #if SHOW_DEBUG_DIALOGS
 				{
-					wxMessageDialog dialog(NULL, "LOG: XOR (with coords) calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
+					wxMessageDialog dialog(NULL, "LOG: Savgol (Savitzky-Golay) filter has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 					dialog.ShowModal();
 				}
 #endif
 			}
-			else {
-				std::vector<std::pair<int, int>> coordinates;
-				wxSTStatus->SetLabel("Status: Couting ones in xor without coords");
-				passedDoubleVector = Camystat::Preprocessing::countOnesInXorAtCoordinates(inputPath, coordinates, threshold, rawCSVPath, stopAnalysisThreadFlag);
+
+			if (wxCBMovingAverage->IsChecked()) {
+				wxSTStatus->SetLabel("Status: Modifying means");
+				try
+				{
+					passedDoubleVector = Camystat::Smoothing::modifyMeans(passedDoubleVector, movingAverageWindowLength, numberOfRepetitions, stopAnalysisThreadFlag);
+				}
+				catch (const Camystat::ProcessingAbortedException& e) {
+					internalCleanup();
+					return MainFrame::AnalysisResult::ABORTED;
+				}
 #if SHOW_DEBUG_DIALOGS
 				{
-					wxMessageDialog dialog(NULL, "LOG: no coordinates XOR calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
+					wxMessageDialog dialog(NULL, "LOG: Moving Average calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
 					dialog.ShowModal();
 				}
 #endif
 			}
+
+			wxSTStatus->SetLabel("Status: Normalizing values");
+			passedDoubleVector = Camystat::Smoothing::cloneNormalizedValues(passedDoubleVector);
+#if SHOW_DEBUG_DIALOGS
+			{
+				wxMessageDialog dialog(NULL, "LOG: Normalize values calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
+				dialog.ShowModal();
+			}
+#endif
+
+			wxSTStatus->SetLabel("Status: Trimming");
+			passedDoubleVector = Camystat::Detection::trim_list(passedDoubleVector, leftTrim, rightTrim);
+#if SHOW_DEBUG_DIALOGS
+			{
+				wxMessageDialog dialog(NULL, "LOG: Trim_list calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
+				dialog.ShowModal();
+			}
+#endif
+
+			std::filesystem::path valuesPath = thisFileTempPath / ("values" + fileName + ".csv");
+			wxSTStatus->SetLabel("Status: Saving vectors");
+			Utils::writeVectorToFile(valuesPath.string(), passedDoubleVector);
+
+			std::filesystem::path rawChartPath = outputFolderPath / "csv_stats" / (fileName + ".csv");
+			wxSTStatus->SetLabel("Status: Replacing zeros");
+			passedDoubleVector = Camystat::Smoothing::cloneReplaceZerosValuesBelowThreshold(passedDoubleVector, movementThreshold, rawChartPath);
+#if SHOW_DEBUG_DIALOGS
+			{
+				wxMessageDialog dialog(NULL, "LOG: Replace zeros values below threshold calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
+				dialog.ShowModal();
+			}
+#endif
+
+			wxSTStatus->SetLabel("Status: Adding zeros");
+			passedDoubleVector = Camystat::Detection::clone_padded_with_zeros(passedDoubleVector);
+			wxSTStatus->SetLabel("Status: Zeros has been added to a list.");
+#if SHOW_DEBUG_DIALOGS
+			{
+				wxMessageDialog dialog(NULL, "LOG: add_zeros_to_list calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
+				dialog.ShowModal();
+			}
+#endif
+
+			std::vector<std::vector<double>> events;
+			if (wxCBAutoDetectEvents->GetValue()) {
+				wxSTStatus->SetLabel("Status: Calculating integrals");
+				try
+				{
+					events = Camystat::Detection::calculate_integrals_with_reference_points(passedDoubleVector, stopAnalysisThreadFlag);
+				}
+				catch (const Camystat::ProcessingAbortedException& e) {
+					internalCleanup();
+					return MainFrame::AnalysisResult::ABORTED;
+				}
+#if SHOW_DEBUG_DIALOGS
+				{
+					wxMessageDialog dialog(NULL, "LOG: calculate_integrals_with_reference_points calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
+					dialog.ShowModal();
+				}
+#endif
+
+				wxSTStatus->SetLabel("Status: Merging events");
+				events = Camystat::Detection::merge_events(events, autoMergeEvents);
+#if SHOW_DEBUG_DIALOGS
+				{
+					wxMessageDialog dialog(NULL, "LOG: merge_events calculation has been finished successfully", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
+					dialog.ShowModal();
+				}
+#endif
+
+				wxSTStatus->SetLabel("Status: Removing events");
+				events = Camystat::Detection::remove_events(events, autoSelectEvents);
+#if SHOW_DEBUG_DIALOGS
+				{
+					wxMessageDialog dialog(NULL, "LOG: remove_events calculation has been finished successfully", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
+					dialog.ShowModal();
+				}
+#endif
+
+				wxSTStatus->SetLabel("Status: Normalizing second column");
+				try
+				{
+					events = Utils::normalizeSecondColumnInCopy(events);
+				}
+				catch (const Camystat::ProcessingAbortedException& e) {
+					internalCleanup();
+					return MainFrame::AnalysisResult::ABORTED;
+				}
+			}
+			std::filesystem::path normalizedChartsPath = outputFolderPath / "normalized_chart";
+#if SHOW_DEBUG_DIALOGS
+			{
+				wxMessageDialog dialog(NULL, fileName + " " + normalizedChartsPath + " " + std::to_string(fps), wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
+				dialog.ShowModal();
+			}
+#endif
+
+			reportWriter.rowBuffer.eventsDetected = events.size();
+			{
+				Camystat::Detection::EventStatistics eventStats = Camystat::Detection::calculate_event_statistics(events);
+
+				reportWriter.rowBuffer.avgEventDurationSeconds = eventStats.avgEventLengthFrames / static_cast<double>(fps);
+				reportWriter.rowBuffer.avgRestDurationSeconds = eventStats.avgRestLengthFrames / static_cast<double>(fps);
+			}
+		
+			std::filesystem::path contractionRelaxationPhasesPath = thisFileTempPath / ("contractionRelaxationPhases" + fileName + ".csv");
+		
+			if (analyseContractionRelaxationEvents) {
+				wxSTStatus->SetLabel("Status: Contraction-relaxation analysis");
+				try
+				{
+					std::vector<Camystat::Detection::Phase> contractionRelaxationPhases = Camystat::Detection::locate_contractions_and_relaxations(passedDoubleVector, events, stopAnalysisThreadFlag);
+					Utils::writeVectorToFile(contractionRelaxationPhasesPath.string(), contractionRelaxationPhases);
+
+					Camystat::Detection::PhaseStatistics phaseStats = Camystat::Detection::calculate_phase_statistics(contractionRelaxationPhases);
+
+					reportWriter.rowBuffer.avgContractionDurationSeconds = phaseStats.avgContractionLengthFrames / static_cast<double>(fps);
+					reportWriter.rowBuffer.avgRelaxationDurationSeconds = phaseStats.avgRelaxationLengthFrames / static_cast<double>(fps);
+
+					assert(phaseStats.contractionCount == phaseStats.relaxationCount);
+					reportWriter.rowBuffer.approvedEventsForContrRelaxAnalysis = phaseStats.contractionCount;
+				}
+				catch (const Camystat::ProcessingAbortedException& e) {
+					internalCleanup();
+					return MainFrame::AnalysisResult::ABORTED;
+				}
+			}
+
+			wxSTStatus->SetLabel("Status: Saving vector of vectors");
+			std::filesystem::path eventsPath = thisFileTempPath / ("events" + fileName + ".csv");
+			Utils::writeVectorOfVectorsToFile(eventsPath.string(), events);
+
+			if(outputLineChart || outputEventChart) wxSTStatus->SetLabel("Status: Saving plots");
+
+			if (outputLineChart) {
+				RunPlotOnMainThread(plotPath, "video_events", JoinCommandLineArguments(valuesB4XORPath, "", fileName, outputFolderPath / "raw_chart", fps));
+			}
+
+			if (stopAnalysisThreadFlag) {
+				internalCleanup();
+				return MainFrame::AnalysisResult::ABORTED;
+			}
+		
+			if (outputEventChart) {
+				RunPlotOnMainThread(plotPath, "video_events", JoinCommandLineArguments(valuesPath, eventsPath, fileName, normalizedChartsPath, fps));
+			}
+
+			if (stopAnalysisThreadFlag) {
+				internalCleanup();
+				return MainFrame::AnalysisResult::ABORTED;
+			}
+
+			if (analyseContractionRelaxationEvents) {
+				std::filesystem::path contractionRelaxationPath = outputFolderPath / "contraction_relaxation_chart";
+				RunPlotOnMainThread(plotPath, "contraction_relaxation_analysis", JoinCommandLineArguments(valuesPath, contractionRelaxationPhasesPath, fileName, contractionRelaxationPath, fps));
+			}
+
+			reportWriter.finalizeRow();
+			wxSTStatus->SetLabel("Status: Finished");
 		}
-		// Error handling
+		catch (const Camystat::ProcessingAbortedException&) {
+			removeTempFolderOnError();
+			return MainFrame::AnalysisResult::ABORTED;
+		}
 		catch (const std::exception& e) {
-			wxMessageDialog dialog1(NULL, "ERROR: (countOnesInXorAtCoordinates) An error occurred during counting ones in XOR at coordinates", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_ERROR | wxDIALOG_NO_PARENT);
-			dialog1.ShowModal();
+			// Unexpected error (e.g. trims longer than the signal): report it and continue with the next file
+			std::cerr << "RunAnalysis: processing " << inputPath << " failed: " << e.what() << std::endl;
+			removeTempFolderOnError();
 
-			wxSTStatus->SetLabel(STRING_STATUS_WAITING_FOR_INPUT);
-			
-			continue; // process the next image
-		}
-
-		std::filesystem::path valuesB4XORPath = thisFileTempPath / ("valuesB4XOR" + fileName + ".csv");
-		wxSTStatus->SetLabel("Status: Saving vectors before xor");
-		Utils::writeVectorToFile(valuesB4XORPath.string(), passedDoubleVector);
-
-		if (wxCBSavitzkyGolayFilter->IsChecked()) {
-			wxSTStatus->SetLabel("Status: Filtering (Savgol)");
-			try
-			{
-				passedDoubleVector = Savgol::savgolFilter(passedDoubleVector, savitzkyGolayWindowLength, polyorder);
-			}
-			catch (const Camystat::ProcessingAbortedException& e) {
-				internalCleanup();
-				return MainFrame::AnalysisResult::ABORTED;
-			}
-#if SHOW_DEBUG_DIALOGS
-			{
-				wxMessageDialog dialog(NULL, "LOG: Savgol (Savitzky-Golay) filter has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
-				dialog.ShowModal();
-			}
-#endif
-		}
-
-		if (wxCBMovingAverage->IsChecked()) {
-			wxSTStatus->SetLabel("Status: Modifying means");
-			try
-			{
-				passedDoubleVector = Camystat::Smoothing::modifyMeans(passedDoubleVector, movingAverageWindowLength, numberOfRepetitions, stopAnalysisThreadFlag);
-			}
-			catch (const Camystat::ProcessingAbortedException& e) {
-				internalCleanup();
-				return MainFrame::AnalysisResult::ABORTED;
-			}
-#if SHOW_DEBUG_DIALOGS
-			{
-				wxMessageDialog dialog(NULL, "LOG: Moving Average calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
-				dialog.ShowModal();
-			}
-#endif
-		}
-
-		wxSTStatus->SetLabel("Status: Normalizing values");
-		passedDoubleVector = Camystat::Smoothing::cloneNormalizedValues(passedDoubleVector);
-#if SHOW_DEBUG_DIALOGS
-		{
-			wxMessageDialog dialog(NULL, "LOG: Normalize values calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
+			wxSTStatus->SetLabel("Status: ERROR: Processing failed");
+			wxMessageDialog dialog(NULL, "ERROR: Processing " + inputPath + " failed:\n\n" + e.what(), wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_ERROR | wxDIALOG_NO_PARENT);
 			dialog.ShowModal();
+
+			continue; // process the next file
 		}
-#endif
-
-		wxSTStatus->SetLabel("Status: Trimming");
-		passedDoubleVector = Camystat::Detection::trim_list(passedDoubleVector, leftTrim, rightTrim);
-#if SHOW_DEBUG_DIALOGS
-		{
-			wxMessageDialog dialog(NULL, "LOG: Trim_list calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
-			dialog.ShowModal();
-		}
-#endif
-
-		std::filesystem::path valuesPath = thisFileTempPath / ("values" + fileName + ".csv");
-		wxSTStatus->SetLabel("Status: Saving vectors");
-		Utils::writeVectorToFile(valuesPath.string(), passedDoubleVector);
-
-		std::filesystem::path rawChartPath = outputFolderPath / "csv_stats" / (fileName + ".csv");
-		wxSTStatus->SetLabel("Status: Replacing zeros");
-		passedDoubleVector = Camystat::Smoothing::cloneReplaceZerosValuesBelowThreshold(passedDoubleVector, movementThreshold, rawChartPath);
-#if SHOW_DEBUG_DIALOGS
-		{
-			wxMessageDialog dialog(NULL, "LOG: Replace zeros values below threshold calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
-			dialog.ShowModal();
-		}
-#endif
-
-		wxSTStatus->SetLabel("Status: Adding zeros");
-		passedDoubleVector = Camystat::Detection::clone_padded_with_zeros(passedDoubleVector);
-		wxSTStatus->SetLabel("Status: Zeros has been added to a list.");
-#if SHOW_DEBUG_DIALOGS
-		{
-			wxMessageDialog dialog(NULL, "LOG: add_zeros_to_list calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
-			dialog.ShowModal();
-		}
-#endif
-
-		std::vector<std::vector<double>> events;
-		if (wxCBAutoDetectEvents->GetValue()) {
-			wxSTStatus->SetLabel("Status: Calculating integrals");
-			try
-			{
-				events = Camystat::Detection::calculate_integrals_with_reference_points(passedDoubleVector, stopAnalysisThreadFlag);
-			}
-			catch (const Camystat::ProcessingAbortedException& e) {
-				internalCleanup();
-				return MainFrame::AnalysisResult::ABORTED;
-			}
-#if SHOW_DEBUG_DIALOGS
-			{
-				wxMessageDialog dialog(NULL, "LOG: calculate_integrals_with_reference_points calculation has been finished successfully!", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
-				dialog.ShowModal();
-			}
-#endif
-
-			wxSTStatus->SetLabel("Status: Merging events");
-			events = Camystat::Detection::merge_events(events, autoMergeEvents);
-#if SHOW_DEBUG_DIALOGS
-			{
-				wxMessageDialog dialog(NULL, "LOG: merge_events calculation has been finished successfully", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
-				dialog.ShowModal();
-			}
-#endif
-
-			wxSTStatus->SetLabel("Status: Removing events");
-			events = Camystat::Detection::remove_events(events, autoSelectEvents);
-#if SHOW_DEBUG_DIALOGS
-			{
-				wxMessageDialog dialog(NULL, "LOG: remove_events calculation has been finished successfully", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
-				dialog.ShowModal();
-			}
-#endif
-
-			wxSTStatus->SetLabel("Status: Normalizing second column");
-			try
-			{
-				events = Utils::normalizeSecondColumnInCopy(events);
-			}
-			catch (const Camystat::ProcessingAbortedException& e) {
-				internalCleanup();
-				return MainFrame::AnalysisResult::ABORTED;
-			}
-		}
-		std::filesystem::path normalizedChartsPath = outputFolderPath / "normalized_chart";
-#if SHOW_DEBUG_DIALOGS
-		{
-			wxMessageDialog dialog(NULL, fileName + " " + normalizedChartsPath + " " + std::to_string(fps), wxMessageBoxCaptionStr, wxOK | wxCENTER | wxDIALOG_NO_PARENT);
-			dialog.ShowModal();
-		}
-#endif
-
-		reportWriter.rowBuffer.eventsDetected = events.size();
-		{
-			Camystat::Detection::EventStatistics eventStats = Camystat::Detection::calculate_event_statistics(events);
-
-			reportWriter.rowBuffer.avgEventDurationSeconds = eventStats.avgEventLengthFrames / static_cast<double>(fps);
-			reportWriter.rowBuffer.avgRestDurationSeconds = eventStats.avgRestLengthFrames / static_cast<double>(fps);
-		}
-		
-		std::filesystem::path contractionRelaxationPhasesPath = thisFileTempPath / ("contractionRelaxationPhases" + fileName + ".csv");
-		
-		if (analyseContractionRelaxationEvents) {
-			wxSTStatus->SetLabel("Status: Contraction-relaxation analysis");
-			try
-			{
-				std::vector<Camystat::Detection::Phase> contractionRelaxationPhases = Camystat::Detection::locate_contractions_and_relaxations(passedDoubleVector, events, stopAnalysisThreadFlag);
-				Utils::writeVectorToFile(contractionRelaxationPhasesPath.string(), contractionRelaxationPhases);
-
-				Camystat::Detection::PhaseStatistics phaseStats = Camystat::Detection::calculate_phase_statistics(contractionRelaxationPhases);
-
-				reportWriter.rowBuffer.avgContractionDurationSeconds = phaseStats.avgContractionLengthFrames / static_cast<double>(fps);
-				reportWriter.rowBuffer.avgRelaxationDurationSeconds = phaseStats.avgRelaxationLengthFrames / static_cast<double>(fps);
-
-				assert(phaseStats.contractionCount == phaseStats.relaxationCount);
-				reportWriter.rowBuffer.approvedEventsForContrRelaxAnalysis = phaseStats.contractionCount;
-			}
-			catch (const Camystat::ProcessingAbortedException& e) {
-				internalCleanup();
-				return MainFrame::AnalysisResult::ABORTED;
-			}
-		}
-
-		wxSTStatus->SetLabel("Status: Saving vector of vectors");
-		std::filesystem::path eventsPath = thisFileTempPath / ("events" + fileName + ".csv");
-		Utils::writeVectorOfVectorsToFile(eventsPath.string(), events);
-
-		if(outputLineChart || outputEventChart) wxSTStatus->SetLabel("Status: Saving plots");
-
-		if (outputLineChart) {
-			RunPlotOnMainThread(plotPath, "video_events", JoinCommandLineArguments(valuesB4XORPath, "", fileName, outputFolderPath / "raw_chart", fps));
-		}
-
-		if (stopAnalysisThreadFlag) {
-			internalCleanup();
-			return MainFrame::AnalysisResult::ABORTED;
-		}
-		
-		if (outputEventChart) {
-			RunPlotOnMainThread(plotPath, "video_events", JoinCommandLineArguments(valuesPath, eventsPath, fileName, normalizedChartsPath, fps));
-		}
-
-		if (stopAnalysisThreadFlag) {
-			internalCleanup();
-			return MainFrame::AnalysisResult::ABORTED;
-		}
-
-		if (analyseContractionRelaxationEvents) {
-			std::filesystem::path contractionRelaxationPath = outputFolderPath / "contraction_relaxation_chart";
-			RunPlotOnMainThread(plotPath, "contraction_relaxation_analysis", JoinCommandLineArguments(valuesPath, contractionRelaxationPhasesPath, fileName, contractionRelaxationPath, fps));
-		}
-
-		reportWriter.finalizeRow();
-		wxSTStatus->SetLabel("Status: Finished");
 	}
 
 	return MainFrame::AnalysisResult::FINISHED;
