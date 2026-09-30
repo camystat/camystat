@@ -213,6 +213,15 @@ namespace Camystat
         static std::vector<std::vector<double>> merge_events(const std::vector<std::vector<double>>& event_list, double distance_threshold);
         static std::vector<std::vector<double>> remove_events(const std::vector<std::vector<double>>& event_list, double threshold_value);
 
+        struct PhaseStatistics {
+            double avgContractionLengthFrames;
+            double avgRelaxationLengthFrames;
+            int contractionCount;
+            int relaxationCount;
+        };
+
+        static PhaseStatistics calculate_phase_statistics(const std::vector<Phase>& phases);
+
         static std::vector<Camystat::Detection::Phase> locate_contractions_and_relaxations(const std::vector<double>& values, const std::vector<std::vector<double>>& integrals_results, const std::atomic<bool>& abortFlag);
     };
 };

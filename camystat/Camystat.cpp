@@ -844,3 +844,31 @@ std::vector<Camystat::Detection::Phase> Camystat::Detection::locate_contractions
 
 	return results;
 }
+
+/// <summary>
+/// Calculates the average lengths (in frames) of contraction and relaxation phases
+/// </summary>
+/// <param name="phases">The phases, as returned by locate_contractions_and_relaxations</param>
+/// <returns>The average phase lengths and phase counts</returns>
+Camystat::Detection::PhaseStatistics Camystat::Detection::calculate_phase_statistics(const std::vector<Phase>& phases)
+{
+	PhaseStatistics stats{ 0.0, 0.0, 0, 0 };
+
+	for (const auto& phase : phases) {
+		int lenFrames = phase.end_index - phase.start_index + 1;
+
+		if (phase.phase_type == Phase::PhaseType::CONTRACTION) {
+			stats.avgContractionLengthFrames += lenFrames;
+			stats.contractionCount++;
+		}
+		else {
+			stats.avgRelaxationLengthFrames += lenFrames;
+			stats.relaxationCount++;
+		}
+	}
+
+	stats.avgContractionLengthFrames /= static_cast<double>(std::max(stats.contractionCount, 1));
+	stats.avgRelaxationLengthFrames /= static_cast<double>(std::max(stats.relaxationCount, 1));
+
+	return stats;
+}

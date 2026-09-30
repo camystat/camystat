@@ -1608,32 +1608,13 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 				std::vector<Camystat::Detection::Phase> contractionRelaxationPhases = Camystat::Detection::locate_contractions_and_relaxations(passedDoubleVector, events, stopAnalysisThreadFlag);
 				Utils::writeVectorToFile(contractionRelaxationPhasesPath.string(), contractionRelaxationPhases);
 
-				double avgContractionDurationFrames = 0, avgRelaxationDurationFrames = 0;
-				int contractionCount = 0, relaxationCount = 0;
-				for (const auto& phase : contractionRelaxationPhases) {
-					int lenFrames = phase.end_index - phase.start_index + 1;
+				Camystat::Detection::PhaseStatistics phaseStats = Camystat::Detection::calculate_phase_statistics(contractionRelaxationPhases);
 
-					if (phase.phase_type == Camystat::Detection::Phase::PhaseType::CONTRACTION) {
-						avgContractionDurationFrames += lenFrames;
-						contractionCount++;
-					}
-					else {
-						avgRelaxationDurationFrames += lenFrames;
-						relaxationCount++;
-					}
+				reportWriter.rowBuffer.avgContractionDurationSeconds = phaseStats.avgContractionLengthFrames / static_cast<double>(fps);
+				reportWriter.rowBuffer.avgRelaxationDurationSeconds = phaseStats.avgRelaxationLengthFrames / static_cast<double>(fps);
 
-					avgContractionDurationFrames /= static_cast<double>(std::max(contractionCount, 1));
-					avgRelaxationDurationFrames /= static_cast<double>(std::max(relaxationCount, 1));
-
-					double avgContractionDurationSeconds = avgContractionDurationFrames / static_cast<double>(fps);
-					double avgRelaxationDurationSeconds = avgRelaxationDurationFrames / static_cast<double>(fps);
-
-					reportWriter.rowBuffer.avgContractionDurationSeconds = avgContractionDurationSeconds;
-					reportWriter.rowBuffer.avgRelaxationDurationSeconds = avgRelaxationDurationSeconds;
-				}
-
-				assert(contractionCount == relaxationCount);
-				reportWriter.rowBuffer.approvedEventsForContrRelaxAnalysis = contractionCount;
+				assert(phaseStats.contractionCount == phaseStats.relaxationCount);
+				reportWriter.rowBuffer.approvedEventsForContrRelaxAnalysis = phaseStats.contractionCount;
 			}
 			catch (const Camystat::ProcessingAbortedException& e) {
 				internalCleanup();

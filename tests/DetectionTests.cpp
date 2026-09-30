@@ -31,3 +31,34 @@ TEST(MergeEvents, EmptyInput)
 {
 	EXPECT_TRUE(Detection::merge_events({}, 3).empty());
 }
+
+using Phase = Detection::Phase;
+
+TEST(PhaseStatistics, AveragesOverAllPhases)
+{
+	std::vector<Phase> phases = {
+		{ Phase::CONTRACTION, 1, 0, 0, 9 },
+		{ Phase::RELAXATION, 2, 0, 9, 16 },
+		{ Phase::CONTRACTION, 3, 0, 20, 29 },
+		{ Phase::RELAXATION, 4, 0, 29, 36 },
+		{ Phase::CONTRACTION, 5, 0, 40, 43 },
+		{ Phase::RELAXATION, 6, 0, 43, 48 },
+	};
+
+	auto stats = Detection::calculate_phase_statistics(phases);
+
+	EXPECT_EQ(stats.contractionCount, 3);
+	EXPECT_EQ(stats.relaxationCount, 3);
+	EXPECT_DOUBLE_EQ(stats.avgContractionLengthFrames, (10.0 + 10.0 + 4.0) / 3.0);
+	EXPECT_DOUBLE_EQ(stats.avgRelaxationLengthFrames, (8.0 + 8.0 + 6.0) / 3.0);
+}
+
+TEST(PhaseStatistics, NoPhases)
+{
+	auto stats = Detection::calculate_phase_statistics({});
+
+	EXPECT_EQ(stats.contractionCount, 0);
+	EXPECT_EQ(stats.relaxationCount, 0);
+	EXPECT_DOUBLE_EQ(stats.avgContractionLengthFrames, 0.0);
+	EXPECT_DOUBLE_EQ(stats.avgRelaxationLengthFrames, 0.0);
+}
