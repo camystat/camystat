@@ -24,7 +24,7 @@ namespace Savgol
 
 
 	// Savitzky-Golay signal padding mode specifier
-	// MIRROR uses the adjacent value for padding signal samples
+	// MIRROR reflects the signal about the edge sample, without repeating it (x[-1] = x[1], x[n] = x[n-2])
 	// CONSTANT uses a constant value (passed as separate argument) for padding signal samples
 	enum SignalPadding {
 		MIRROR,
