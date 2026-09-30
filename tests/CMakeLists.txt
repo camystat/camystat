@@ -18,6 +18,7 @@ add_executable(camystat_tests
   SavgolTests.cpp
   SmoothingTests.cpp
   DetectionTests.cpp
+  PreprocessingTests.cpp
   "${_camystat_src}/Camystat.cpp"
   "${_camystat_src}/Savgol.cpp"
 )

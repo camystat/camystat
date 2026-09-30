@@ -1335,20 +1335,14 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 			}
 		}
 		else {
-			if (wxTCBinarizationThreshold->GetValue().ToLong(&longTemp)) {
-				threshold = static_cast<int>(longTemp);
-			}
-			else {
-#if SHOW_DEBUG_DIALOGS
-				wxMessageDialog dialog(NULL, "WARNING: Binarization threshold not specified, it is assumed to be 158", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_WARNING | wxDIALOG_NO_PARENT);
+			std::optional<int> parsedThreshold = Camystat::Preprocessing::parseBinarizationThreshold(wxTCBinarizationThreshold->GetValue().ToStdString());
+			if (!parsedThreshold.has_value()) {
+				wxMessageDialog dialog(NULL, "Binarization threshold should be an integer in range 0-255.", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_ERROR | wxDIALOG_NO_PARENT);
 				dialog.ShowModal();
-#endif
-				errorMessage += "Empty or wrong format value of threshold.\n";
+				internalCleanup();
+				return MainFrame::AnalysisResult::INVALID_PARAMETERS;
 			}
-		}
-
-		if (!(threshold >= 0 && threshold <= 255)) {
-			errorMessage += "Threshold value should be (O-255).\n";
+			threshold = parsedThreshold.value();
 		}
 
 		std::cout << "Using binarization threshold: " << threshold << std::endl;

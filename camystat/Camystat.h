@@ -1,5 +1,6 @@
 #pragma once
 #include <atomic>
+#include <charconv>
 #include <iostream>
 #include <vector>
 #include <algorithm>
@@ -59,6 +60,9 @@ namespace Camystat
         // Binarization threshold
         // 
         // Calculates an automatic binarization threshold for the given video file using frames from the specified range, based on Marcin's algorithm design.
+
+        // Parses a binarization threshold entered by the user; returns std::nullopt unless it is an integer in range 0-255
+        static std::optional<int> parseBinarizationThreshold(const std::string& text);
 
         static std::pair<int, std::vector<int>> calculateBinarizationThreshold(const std::filesystem::path& videoPath, const int startFrame, const int endFrame, const BinarizationThresholdCalcProgressCallback& progressCallback, const std::atomic<bool>& abortFlag);
         

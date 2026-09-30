@@ -80,6 +80,30 @@ long double calcU8MatAvgBrightness(const cv::Mat& mat, std::map<int, long double
 }
 
 /// <summary>
+/// Parses a binarization threshold entered by the user
+/// </summary>
+/// <param name="text">The text to parse; surrounding whitespace is ignored</param>
+/// <returns>The threshold, or std::nullopt if the text is not an integer in range 0-255</returns>
+std::optional<int> Camystat::Preprocessing::parseBinarizationThreshold(const std::string& text) {
+	const size_t first = text.find_first_not_of(" \t\r\n");
+	if (first == std::string::npos) {
+		return std::nullopt;
+	}
+	const size_t last = text.find_last_not_of(" \t\r\n");
+
+	const char* begin = text.data() + first;
+	const char* end = text.data() + last + 1;
+
+	int value = 0;
+	auto [ptr, ec] = std::from_chars(begin, end, value);
+	if (ec != std::errc() || ptr != end || value < 0 || value > 255) {
+		return std::nullopt;
+	}
+
+	return value;
+}
+
+/// <summary>
 /// Calculates a binarization threshold as per Marcin's algorithm design
 /// </summary>
 /// <param name="videoPath">The path to the video file</param>
