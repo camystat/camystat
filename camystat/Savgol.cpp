@@ -13,7 +13,7 @@
 		throw std::invalid_argument("deriv (received: " + std::to_string(deriv) + ") must be <= polyorder (received: " + std::to_string(polyorder) + ")");
 	}
 
-	int half_window = window_length / 2;
+	int half_window = static_cast<int>(window_length / 2);
 
 	// Create the Vandermonde matrix over sample positions -half_window..half_window
 	MatrixXd A(window_length, polyorder + 1);

@@ -1343,11 +1343,11 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 					RunPlotOnMainThread(plotPath, "auto_binarization_thresh", "\"" + xorScoresForThresholdsPath.string() + "\" \"" + calculatedThresholdPath.string() + "\" \"" + savePath.string() + "\"");
 				}
 				// Error handling
-				catch (const Camystat::ProcessingAbortedException& e) {
+				catch (const Camystat::ProcessingAbortedException&) {
 					internalCleanup();
 					return MainFrame::AnalysisResult::ABORTED;
 				}
-				catch (const std::exception& e) {
+				catch (const std::exception&) {
 					wxMessageDialog dialog1(NULL, "ERROR: (calculateBinarizationThreshold) An error occurred during the binarization threshold calculation", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_ERROR | wxDIALOG_NO_PARENT);
 					dialog1.ShowModal();
 
@@ -1380,11 +1380,11 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 					heatmap11 = Camystat::Preprocessing::createHeatmap(inputPath, startFrame, endFrame, threshold, heatmapPath, stopAnalysisThreadFlag);
 				}
 				// Error handling
-				catch (const Camystat::ProcessingAbortedException& e) {
+				catch (const Camystat::ProcessingAbortedException&) {
 					internalCleanup();
 					return MainFrame::AnalysisResult::ABORTED;
 				}
-				catch (const std::exception& e) {
+				catch (const std::exception&) {
 					wxMessageDialog dialog1(NULL, "ERROR: (createHeatmap) An error occurred during heatmap creation", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_ERROR | wxDIALOG_NO_PARENT);
 					dialog1.ShowModal();
 
@@ -1402,7 +1402,7 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 						heatmap11, squarePercent, topPercent, heatmapCoordinatesPath.string(), heatmapPath.string(), stopAnalysisThreadFlag
 					);
 				}
-				catch (const Camystat::ProcessingAbortedException& e) {
+				catch (const Camystat::ProcessingAbortedException&) {
 					internalCleanup();
 					return MainFrame::AnalysisResult::ABORTED;
 				}
@@ -1420,7 +1420,7 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 					{
 						passedDoubleVector = Camystat::Preprocessing::countOnesInXorAtCoordinates(inputPath, maxSumCoords12, threshold, rawCSVPath, stopAnalysisThreadFlag);
 					}
-					catch (const Camystat::ProcessingAbortedException& e) {
+					catch (const Camystat::ProcessingAbortedException&) {
 						internalCleanup();
 						return MainFrame::AnalysisResult::ABORTED;
 					}
@@ -1443,12 +1443,12 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 #endif
 				}
 			}
-			catch (const Camystat::ProcessingAbortedException& e) {
+			catch (const Camystat::ProcessingAbortedException&) {
 				internalCleanup();
 				return MainFrame::AnalysisResult::ABORTED;
 			}
 			// Error handling
-			catch (const std::exception& e) {
+			catch (const std::exception&) {
 				wxMessageDialog dialog1(NULL, "ERROR: (countOnesInXorAtCoordinates) An error occurred during counting ones in XOR at coordinates", wxMessageBoxCaptionStr, wxOK | wxCENTER | wxICON_ERROR | wxDIALOG_NO_PARENT);
 				dialog1.ShowModal();
 
@@ -1467,7 +1467,7 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 				{
 					passedDoubleVector = Savgol::savgolFilter(passedDoubleVector, savitzkyGolayWindowLength, polyorder);
 				}
-				catch (const Camystat::ProcessingAbortedException& e) {
+				catch (const Camystat::ProcessingAbortedException&) {
 					internalCleanup();
 					return MainFrame::AnalysisResult::ABORTED;
 				}
@@ -1485,7 +1485,7 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 				{
 					passedDoubleVector = Camystat::Smoothing::modifyMeans(passedDoubleVector, movingAverageWindowLength, numberOfRepetitions, stopAnalysisThreadFlag);
 				}
-				catch (const Camystat::ProcessingAbortedException& e) {
+				catch (const Camystat::ProcessingAbortedException&) {
 					internalCleanup();
 					return MainFrame::AnalysisResult::ABORTED;
 				}
@@ -1546,7 +1546,7 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 				{
 					events = Camystat::Detection::calculate_integrals_with_reference_points(passedDoubleVector, stopAnalysisThreadFlag);
 				}
-				catch (const Camystat::ProcessingAbortedException& e) {
+				catch (const Camystat::ProcessingAbortedException&) {
 					internalCleanup();
 					return MainFrame::AnalysisResult::ABORTED;
 				}
@@ -1580,7 +1580,7 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 				{
 					events = Utils::normalizeSecondColumnInCopy(events);
 				}
-				catch (const Camystat::ProcessingAbortedException& e) {
+				catch (const Camystat::ProcessingAbortedException&) {
 					internalCleanup();
 					return MainFrame::AnalysisResult::ABORTED;
 				}
@@ -1618,7 +1618,7 @@ MainFrame::AnalysisResult MainFrame::RunAnalysis()
 					assert(phaseStats.contractionCount == phaseStats.relaxationCount);
 					reportWriter.rowBuffer.approvedEventsForContrRelaxAnalysis = phaseStats.contractionCount;
 				}
-				catch (const Camystat::ProcessingAbortedException& e) {
+				catch (const Camystat::ProcessingAbortedException&) {
 					internalCleanup();
 					return MainFrame::AnalysisResult::ABORTED;
 				}
