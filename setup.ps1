@@ -59,7 +59,9 @@ $wc.Downloadfile("https://raw.githubusercontent.com/wxWidgets/wxWidgets/master/d
 # build wxWidgets
 $VSWPath = "${Env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe"
 
-$installationPath = & $VSWPath -prerelease -latest -property installationPath
+# Pick the newest stable Visual Studio that has the C++ toolset (a prerelease install may lack it)
+$installationPath = & $VSWPath -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+Write-Host "Using Visual Studio at: $installationPath"
 if ($installationPath -and (test-path "$installationPath\Common7\Tools\vsdevcmd.bat")) {
   & "${env:COMSPEC}" /s /c "`"$installationPath\Common7\Tools\vsdevcmd.bat`" -no_logo && set" | foreach-object {
     $name, $value = $_ -split '=', 2
@@ -82,10 +84,16 @@ foreach ($file in $vcxprojFiles) {
 }
 
 msbuild wx_vc17.sln /p:Configuration=Release /property:MultiProcessorCompilation=true /p:Platform=x64
+if ($LASTEXITCODE -ne 0) {
+  throw "Building wxWidgets failed (msbuild exit code $LASTEXITCODE)"
+}
 
 Set-Location ../..
 Write-Host "Copying wxWidgets lib files..."
 Copy-Item -Path lib/vc_x64_lib/* -Destination ../camystat/lib/wxwidgets-MT -Force
+if (!(Test-Path ../camystat/lib/wxwidgets-MT/wxbase32u.lib)) {
+  throw "wxWidgets libraries were not found in camystat/lib/wxwidgets-MT"
+}
 Set-Location ..
 
 Write-Host "Activating python venv..."
